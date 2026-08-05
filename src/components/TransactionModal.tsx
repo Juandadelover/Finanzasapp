@@ -163,7 +163,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
           ) : null}
           <button
             type="submit"
-            className="gradient-brand flex-1 rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(18,184,134,0.35)] transition active:scale-[0.99]"
+            className="gradient-brand flex-1 rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition active:scale-[0.99]"
           >
             {editing ? "Guardar cambios" : "Guardar movimiento"}
           </button>

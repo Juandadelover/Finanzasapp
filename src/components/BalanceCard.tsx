@@ -13,7 +13,7 @@ export function BalanceCard({ balance, income, expense, currency }: BalanceCardP
   const availablePct = income > 0 ? Math.max(0, Math.min(100, Math.round((balance / income) * 100))) : 0;
 
   return (
-    <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(11,110,86,0.35)]">
+    <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(138,5,190,0.35)]">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-white/80">Balance Disponible</span>
         <HelpCircle size={18} className="text-white/60" />
