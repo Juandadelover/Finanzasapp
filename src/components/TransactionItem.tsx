@@ -1,0 +1,51 @@
+"use client";
+
+import { ICONS } from "@/lib/icons";
+import { formatAmount, formatDayLabel } from "@/lib/format";
+import { useUI } from "@/context/UIContext";
+import type { Category, CurrencyCode, Transaction } from "@/types/finance";
+
+interface TransactionItemProps {
+  transaction: Transaction;
+  category: Category | undefined;
+  currency: CurrencyCode;
+}
+
+export function TransactionItem({ transaction, category, currency }: TransactionItemProps) {
+  const { openEditTransaction } = useUI();
+  const color = category?.color ?? "#64748b";
+  const isExpense = transaction.type === "expense";
+
+  return (
+    <button
+      type="button"
+      onClick={() => openEditTransaction(transaction)}
+      className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
+    >
+      <span
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+        style={{ backgroundColor: `${color}22`, color }}
+      >
+        {(() => {
+          const Icon = ICONS[category?.icon ?? "more-horizontal"];
+          return <Icon size={19} />;
+        })()}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-[var(--color-text)]">
+          {transaction.description || category?.name || "Movimiento"}
+        </span>
+        <span className="block text-xs text-[var(--color-text-faint)]">
+          {category?.name ?? "Sin categoría"} · {formatDayLabel(transaction.date)}
+        </span>
+      </span>
+      <span
+        className="shrink-0 text-sm font-semibold"
+        style={{ color: isExpense ? "var(--color-expense)" : "var(--color-income)" }}
+      >
+        {isExpense ? "-" : "+"}
+        {formatAmount(transaction.amount, currency)}
+      </span>
+    </button>
+  );
+}
