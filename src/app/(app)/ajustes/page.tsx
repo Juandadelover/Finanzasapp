@@ -170,7 +170,9 @@ export default function AjustesPage() {
         )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{user?.name ?? "Tu cuenta"}</p>
-          <p className="truncate text-xs text-[var(--color-text-faint)]">{user?.email}</p>
+          <p className="truncate text-xs text-[var(--color-text-faint)]">
+            {user?.email || "Modo invitado — datos de prueba"}
+          </p>
         </div>
         <button
           type="button"

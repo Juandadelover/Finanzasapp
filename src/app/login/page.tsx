@@ -2,8 +2,13 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+
+// Desactivado temporalmente para pruebas: el proveedor de Google aún no
+// está habilitado en Supabase Auth. El botón y su lógica quedan intactos
+// para reactivarlos cuando se configuren las credenciales de Google Cloud.
+const GOOGLE_LOGIN_ENABLED = false;
 
 function GoogleIcon() {
   return (
@@ -50,6 +55,22 @@ function LoginContent() {
     }
   }
 
+  async function handleGuestLogin() {
+    setLoading(true);
+    setError(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInAnonymously({
+      options: { data: { full_name: "Invitado" } },
+    });
+    if (error) {
+      setError("No se pudo entrar en modo invitado. Intenta de nuevo.");
+      setLoading(false);
+      return;
+    }
+    const redirectTo = searchParams.get("redirectTo") ?? "/";
+    window.location.href = redirectTo;
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6">
       <div className="gradient-brand flex h-16 w-16 items-center justify-center rounded-3xl shadow-[0_8px_24px_rgba(138,5,190,0.4)]">
@@ -60,21 +81,36 @@ function LoginContent() {
         Controla tus ingresos y gastos, organizados por categorías, con estadísticas claras.
       </p>
 
-      <button
-        type="button"
-        onClick={handleGoogleLogin}
-        disabled={loading}
-        className="mt-10 flex w-full max-w-xs items-center justify-center gap-3 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-3.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-surface-2)] disabled:opacity-60"
-      >
-        <GoogleIcon />
-        {loading ? "Conectando..." : "Continuar con Google"}
-      </button>
+      <div className="mt-10 flex w-full max-w-xs flex-col gap-3">
+        {GOOGLE_LOGIN_ENABLED ? (
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="flex items-center justify-center gap-3 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-3.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-surface-2)] disabled:opacity-60"
+          >
+            <GoogleIcon />
+            {loading ? "Conectando..." : "Continuar con Google"}
+          </button>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={handleGuestLogin}
+          disabled={loading}
+          className="gradient-brand flex items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition disabled:opacity-60"
+        >
+          <User size={17} />
+          {loading ? "Entrando..." : "Continuar como invitado (modo prueba)"}
+        </button>
+      </div>
 
       {error ? <p className="mt-4 text-sm text-[var(--color-expense)]">{error}</p> : null}
 
       <p className="mt-10 max-w-xs text-center text-[11px] leading-relaxed text-[var(--color-text-faint)]">
-        Tus datos financieros se guardan de forma privada en tu cuenta y solo tú puedes acceder a
-        ellos.
+        {GOOGLE_LOGIN_ENABLED
+          ? "Tus datos financieros se guardan de forma privada en tu cuenta y solo tú puedes acceder a ellos."
+          : "Modo de prueba: el inicio de sesión con Google llegará pronto. Por ahora entra como invitado para probar la app — tus datos quedan igual de privados y protegidos."}
       </p>
     </div>
   );

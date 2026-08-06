@@ -10,7 +10,7 @@ Identidad visual propia en morado, tema oscuro.
 - **Movimientos**: historial completo con búsqueda por nombre/categoría y filtro por tipo (ingreso/gasto).
 - **Estadísticas**: tendencia de gastos, proyección de balance futuro a 90 días, gastos por categoría (gráfica circular) e ingresos vs. gastos por mes (gráfica de barras).
 - **Ajustes**: cuenta y cierre de sesión, bloqueo con huella/Face ID, gestión de categorías, moneda, exportar/importar respaldo en JSON y borrado de datos.
-- **Autenticación con Google** — cada usuario solo ve sus propios datos (Row Level Security en Postgres).
+- **Autenticación con Google** — cada usuario solo ve sus propios datos (Row Level Security en Postgres). *Temporalmente desactivado en el botón de login* (`GOOGLE_LOGIN_ENABLED = false` en `src/app/login/page.tsx`) hasta configurar el proveedor en Supabase; mientras tanto hay un modo **"Continuar como invitado"** (sign-in anónimo de Supabase) para probar toda la app con datos reales y privados sin necesitar cuenta de Google.
 - **Bloqueo biométrico local**: una vez con sesión iniciada, puedes exigir huella/Face ID para reabrir la app en ese dispositivo (WebAuthn).
 
 ## Stack técnico
@@ -61,6 +61,14 @@ Para que el botón **"Continuar con Google"** funcione, hay que habilitar el pro
      `https://tu-dominio.vercel.app/auth/callback` (y `http://localhost:3000/auth/callback` para probar en local).
 
 Sin este paso, el botón de Google mostrará un error al iniciar sesión — el resto de la app (esquema, RLS, rutas protegidas) ya está listo.
+
+### Para probar ya, sin esperar lo de Google
+
+Mientras tanto, activa el inicio de sesión anónimo para poder entrar con el botón **"Continuar como invitado"**:
+
+- **Supabase Dashboard** → tu proyecto **Finanzasapp** → *Authentication → Sign In / Providers* → activa **"Allow anonymous sign-ins"**.
+
+Con eso puedes probar todo el flujo (movimientos, categorías, estadísticas, bloqueo biométrico) con datos reales guardados en tu propia cuenta temporal — no comparte datos con nadie más, gracias a RLS.
 
 ## Deployment (Vercel)
 
