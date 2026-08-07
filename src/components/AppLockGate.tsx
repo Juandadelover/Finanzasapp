@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Fingerprint, TrendingUp } from "lucide-react";
 import { getAppLockConfig, verifyAppLock } from "@/lib/webauthn";
+import { cn } from "@/lib/cn";
+
+type Status = "checking" | "locked" | "verifying" | "unlocked";
 
 export function AppLockGate({ children }: { children: React.ReactNode }) {
-  const [status, setStatus] = useState<"checking" | "locked" | "unlocked">("checking");
+  const [status, setStatus] = useState<Status>("checking");
   const [error, setError] = useState<string | null>(null);
+  const autoAttempted = useRef(false);
 
   useEffect(() => {
     // The lock config only exists in localStorage, which isn't available
@@ -16,13 +20,26 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
     setStatus(config?.enabled ? "locked" : "unlocked");
   }, []);
 
-  async function handleUnlock() {
+  useEffect(() => {
+    if (status !== "locked" || autoAttempted.current) return;
+    autoAttempted.current = true;
+    attemptUnlock(false);
+  }, [status]);
+
+  async function attemptUnlock(isManual: boolean) {
     setError(null);
+    setStatus("verifying");
     const ok = await verifyAppLock();
     if (ok) {
       setStatus("unlocked");
-    } else {
-      setError("No se pudo verificar tu huella o Face ID. Intenta de nuevo.");
+      return;
+    }
+    setStatus("locked");
+    // The automatic attempt fires the instant the screen appears — if the
+    // browser blocks it or there's no prior gesture, fail silently and let
+    // the user tap. Only surface an error after a real, manual try.
+    if (isManual) {
+      setError("No se pudo verificar. Toca de nuevo para intentarlo.");
     }
   }
 
@@ -30,30 +47,49 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  if (status === "locked") {
+  if (status === "locked" || status === "verifying") {
+    const verifying = status === "verifying";
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-6">
+      <div className="flex min-h-screen flex-col items-center justify-center px-6 animate-[fadeIn_0.3s_ease-out]">
         <div className="gradient-brand flex h-16 w-16 items-center justify-center rounded-3xl shadow-[0_8px_24px_rgba(138,5,190,0.4)]">
           <TrendingUp size={30} className="text-white" strokeWidth={2.5} />
         </div>
         <h1 className="mt-6 text-xl font-bold tracking-tight">Finanzas está bloqueada</h1>
         <p className="mt-2 max-w-xs text-center text-sm text-[var(--color-text-muted)]">
-          Desbloquea con tu huella o Face ID para continuar.
+          {verifying ? "Confirmando tu identidad…" : "Toca el ícono y usa tu huella o Face ID."}
         </p>
 
         <button
           type="button"
-          onClick={handleUnlock}
-          className="gradient-brand mt-8 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-[0_8px_24px_rgba(138,5,190,0.4)] transition active:scale-95"
-          aria-label="Desbloquear"
+          onClick={() => attemptUnlock(true)}
+          disabled={verifying}
+          aria-label="Desbloquear con huella o Face ID"
+          className="relative mt-9 flex h-20 w-20 items-center justify-center"
         >
-          <Fingerprint size={28} />
+          {!verifying ? (
+            <>
+              <span className="absolute inset-0 animate-ping rounded-full bg-[var(--color-brand)]/30" />
+              <span className="absolute -inset-2 animate-pulse rounded-full bg-[var(--color-brand)]/15" />
+            </>
+          ) : null}
+          <span
+            className={cn(
+              "gradient-brand relative flex h-16 w-16 items-center justify-center rounded-full text-white shadow-[0_8px_24px_rgba(138,5,190,0.45)] transition-transform",
+              verifying ? "animate-pulse" : "active:scale-90"
+            )}
+          >
+            <Fingerprint size={28} />
+          </span>
         </button>
 
-        {error ? <p className="mt-4 text-sm text-[var(--color-expense)]">{error}</p> : null}
+        {error ? (
+          <p className="mt-4 max-w-xs text-center text-sm text-[var(--color-expense)] animate-[slideDown_0.25s_ease-out]">
+            {error}
+          </p>
+        ) : null}
       </div>
     );
   }
 
-  return <>{children}</>;
+  return <div className="animate-[fadeIn_0.3s_ease-out]">{children}</div>;
 }
