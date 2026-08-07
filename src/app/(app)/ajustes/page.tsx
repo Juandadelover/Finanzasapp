@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { CategoryModal } from "@/components/CategoryModal";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ICONS } from "@/lib/icons";
 import { CURRENCY_LABELS } from "@/lib/defaults";
 import { useFinance } from "@/context/FinanceContext";
@@ -188,19 +189,25 @@ export default function AjustesPage() {
         <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-faint)]">
           Preferencias
         </h2>
-        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
-          <label className="mb-1.5 block text-xs font-medium text-[var(--color-text-faint)]">Moneda</label>
-          <select
-            value={state.settings.currency}
-            onChange={(e) => updateSettings({ currency: e.target.value as CurrencyCode })}
-            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-          >
-            {Object.entries(CURRENCY_LABELS).map(([code, label]) => (
-              <option key={code} value={code}>
-                {label}
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-[var(--color-text-faint)]">Apariencia</label>
+            <ThemeToggle />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-[var(--color-text-faint)]">Moneda</label>
+            <select
+              value={state.settings.currency}
+              onChange={(e) => updateSettings({ currency: e.target.value as CurrencyCode })}
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
+            >
+              {Object.entries(CURRENCY_LABELS).map(([code, label]) => (
+                <option key={code} value={code}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </section>
 

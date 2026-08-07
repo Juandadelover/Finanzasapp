@@ -9,6 +9,7 @@ import { IncomeExpenseBarChart } from "@/components/charts/IncomeExpenseBarChart
 import { TrendLineChart } from "@/components/charts/TrendLineChart";
 import { FutureBalanceChart } from "@/components/charts/FutureBalanceChart";
 import { useFinance } from "@/context/FinanceContext";
+import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import {
   categoryBreakdown,
   computeTotals,
@@ -20,6 +21,7 @@ import { formatAmount, monthShortLabel } from "@/lib/format";
 
 export default function EstadisticasPage() {
   const { state, hydrated, selectedYear, selectedMonth } = useFinance();
+  const { hidden } = usePrivacy();
 
   const monthTransactions = useMemo(
     () => transactionsForMonth(state.transactions, selectedYear, selectedMonth),
@@ -95,7 +97,7 @@ export default function EstadisticasPage() {
         <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-3 text-sm">
           <span className="text-[var(--color-text-muted)]">Proyectado en 90d</span>
           <span className="font-semibold text-[var(--color-brand-light)]">
-            {formatAmount(projected90d, state.settings.currency)}
+            {hidden ? MASKED_AMOUNT : formatAmount(projected90d, state.settings.currency)}
           </span>
         </div>
       </section>
@@ -108,6 +110,7 @@ export default function EstadisticasPage() {
               data={expenseBreakdown}
               currency={state.settings.currency}
               emptyLabel="No hay gastos en este período"
+              hidden={hidden}
             />
           ) : (
             <div className="h-56 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />

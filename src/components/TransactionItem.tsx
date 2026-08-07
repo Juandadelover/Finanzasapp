@@ -3,6 +3,7 @@
 import { ICONS } from "@/lib/icons";
 import { formatAmount, formatDayLabel } from "@/lib/format";
 import { useUI } from "@/context/UIContext";
+import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import type { Category, CurrencyCode, Transaction } from "@/types/finance";
 
 interface TransactionItemProps {
@@ -13,6 +14,7 @@ interface TransactionItemProps {
 
 export function TransactionItem({ transaction, category, currency }: TransactionItemProps) {
   const { openEditTransaction } = useUI();
+  const { hidden } = usePrivacy();
   const color = category?.color ?? "#64748b";
   const isExpense = transaction.type === "expense";
 
@@ -43,8 +45,7 @@ export function TransactionItem({ transaction, category, currency }: Transaction
         className="shrink-0 text-sm font-semibold"
         style={{ color: isExpense ? "var(--color-expense)" : "var(--color-income)" }}
       >
-        {isExpense ? "-" : "+"}
-        {formatAmount(transaction.amount, currency)}
+        {hidden ? MASKED_AMOUNT : `${isExpense ? "-" : "+"}${formatAmount(transaction.amount, currency)}`}
       </span>
     </button>
   );

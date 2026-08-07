@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,7 +20,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0e13",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f5f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0e13" },
+  ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -29,9 +33,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[var(--color-bg)] text-[var(--color-text)]">{children}</body>
+      <body className="min-h-full bg-[var(--color-bg)] text-[var(--color-text)]">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -3,6 +3,7 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { getIcon } from "@/lib/icons";
 import { formatAmount } from "@/lib/format";
+import { MASKED_AMOUNT } from "@/context/PrivacyContext";
 import { EmptyState } from "@/components/EmptyState";
 import { PieChart as PieChartIcon } from "lucide-react";
 import type { CategoryBreakdownItem } from "@/lib/selectors";
@@ -12,9 +13,10 @@ interface CategoryPieChartProps {
   data: CategoryBreakdownItem[];
   currency: CurrencyCode;
   emptyLabel: string;
+  hidden?: boolean;
 }
 
-export function CategoryPieChart({ data, currency, emptyLabel }: CategoryPieChartProps) {
+export function CategoryPieChart({ data, currency, emptyLabel, hidden = false }: CategoryPieChartProps) {
   if (data.length === 0) {
     return <EmptyState icon={PieChartIcon} title={emptyLabel} />;
   }
@@ -39,7 +41,7 @@ export function CategoryPieChart({ data, currency, emptyLabel }: CategoryPieChar
             </Pie>
             <Tooltip
               formatter={(value, _name, payload) => [
-                formatAmount(Number(value), currency),
+                hidden ? MASKED_AMOUNT : formatAmount(Number(value), currency),
                 payload?.payload?.category?.name,
               ]}
               contentStyle={{
@@ -69,7 +71,7 @@ export function CategoryPieChart({ data, currency, emptyLabel }: CategoryPieChar
                 <div className="flex items-center justify-between text-sm">
                   <span className="truncate font-medium">{item.category.name}</span>
                   <span className="shrink-0 text-[var(--color-text-muted)]">
-                    {formatAmount(item.total, currency)}
+                    {hidden ? MASKED_AMOUNT : formatAmount(item.total, currency)}
                   </span>
                 </div>
                 <div className="mt-1 h-1.5 w-full rounded-full bg-[var(--color-surface-2)]">

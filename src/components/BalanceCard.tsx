@@ -1,5 +1,8 @@
+"use client";
+
 import { HelpCircle, TrendingDown, TrendingUp } from "lucide-react";
 import { formatAmount } from "@/lib/format";
+import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import type { CurrencyCode } from "@/types/finance";
 
 interface BalanceCardProps {
@@ -10,6 +13,7 @@ interface BalanceCardProps {
 }
 
 export function BalanceCard({ balance, income, expense, currency }: BalanceCardProps) {
+  const { hidden } = usePrivacy();
   const availablePct = income > 0 ? Math.max(0, Math.min(100, Math.round((balance / income) * 100))) : 0;
 
   return (
@@ -18,7 +22,9 @@ export function BalanceCard({ balance, income, expense, currency }: BalanceCardP
         <span className="text-sm font-medium text-white/80">Balance Disponible</span>
         <HelpCircle size={18} className="text-white/60" />
       </div>
-      <p className="mt-2 text-4xl font-bold tracking-tight">{formatAmount(balance, currency)}</p>
+      <p className="mt-2 text-4xl font-bold tracking-tight">
+        {hidden ? MASKED_AMOUNT : formatAmount(balance, currency)}
+      </p>
 
       <div className="mt-4">
         <div className="flex items-center justify-between text-xs font-medium text-white/70">
@@ -39,14 +45,18 @@ export function BalanceCard({ balance, income, expense, currency }: BalanceCardP
             <TrendingUp size={14} />
             Ingresos
           </div>
-          <p className="mt-1 text-lg font-semibold">{formatAmount(income, currency, { signed: true })}</p>
+          <p className="mt-1 text-lg font-semibold">
+            {hidden ? MASKED_AMOUNT : formatAmount(income, currency, { signed: true })}
+          </p>
         </div>
         <div className="rounded-2xl bg-black/10 p-3">
           <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-white/70">
             <TrendingDown size={14} />
             Gastos
           </div>
-          <p className="mt-1 text-lg font-semibold">-{formatAmount(expense, currency)}</p>
+          <p className="mt-1 text-lg font-semibold">
+            {hidden ? MASKED_AMOUNT : `-${formatAmount(expense, currency)}`}
+          </p>
         </div>
       </div>
     </div>

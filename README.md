@@ -2,14 +2,16 @@
 
 Aplicación web personal de finanzas para registrar ingresos y gastos, organizarlos por categorías y visualizar estadísticas. Construida con **Next.js 16 (App Router)**, **TypeScript**, **Tailwind CSS v4** y **Supabase** (base de datos + autenticación).
 
-Identidad visual propia en morado, tema oscuro.
+Identidad visual propia en morado, con modo claro y oscuro.
 
 ## Funcionalidades
 
 - **Inicio**: balance disponible del mes, resumen de ingresos/gastos, accesos rápidos para registrar movimientos y últimos movimientos.
 - **Movimientos**: historial completo con búsqueda por nombre/categoría y filtro por tipo (ingreso/gasto).
 - **Estadísticas**: tendencia de gastos, proyección de balance futuro a 90 días, gastos por categoría (gráfica circular) e ingresos vs. gastos por mes (gráfica de barras).
-- **Ajustes**: cuenta y cierre de sesión, bloqueo con huella/Face ID, gestión de categorías, moneda, exportar/importar respaldo en JSON y borrado de datos.
+- **Ajustes**: cuenta y cierre de sesión, apariencia (claro/oscuro/sistema), bloqueo con huella/Face ID, gestión de categorías, moneda, exportar/importar respaldo en JSON y borrado de datos.
+- **Modo claro/oscuro**: toggle en Ajustes (con opción "Sistema"), vía `next-themes`; por defecto arranca en oscuro.
+- **Privacidad**: ícono de ojo en el encabezado para ocultar/mostrar montos (balance, ingresos, gastos, movimientos, proyección) en cualquier pantalla — útil si alguien más puede ver tu pantalla. Es una preferencia local del dispositivo.
 - **Autenticación con Google** — cada usuario solo ve sus propios datos (Row Level Security en Postgres). *Temporalmente desactivado en el botón de login* (`GOOGLE_LOGIN_ENABLED = false` en `src/app/login/page.tsx`) hasta configurar el proveedor en Supabase; mientras tanto hay un modo **"Continuar como invitado"** (sign-in anónimo de Supabase) para probar toda la app con datos reales y privados sin necesitar cuenta de Google.
 - **Bloqueo biométrico local**: una vez con sesión iniciada, puedes exigir huella/Face ID para reabrir la app en ese dispositivo (WebAuthn).
 
