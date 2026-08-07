@@ -19,9 +19,17 @@ interface CategoryModalProps {
   defaultType: TransactionType;
   onSave: (data: { name: string; icon: CategoryIcon; color: string; type: TransactionType }) => void;
   onDelete?: (id: string) => void;
+  lockType?: boolean;
 }
 
-export function CategoryModal({ onClose, editing, defaultType, onSave, onDelete }: CategoryModalProps) {
+export function CategoryModal({
+  onClose,
+  editing,
+  defaultType,
+  onSave,
+  onDelete,
+  lockType = false,
+}: CategoryModalProps) {
   const [name, setName] = useState(editing?.name ?? "");
   const [icon, setIcon] = useState<CategoryIcon>(editing?.icon ?? "more-horizontal");
   const [color, setColor] = useState(editing?.color ?? COLOR_PALETTE[0]);
@@ -37,7 +45,7 @@ export function CategoryModal({ onClose, editing, defaultType, onSave, onDelete 
   return (
     <BottomSheet isOpen onClose={onClose} title={editing ? "Editar categoría" : "Nueva categoría"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        {!editing ? (
+        {!editing && !lockType ? (
           <div className="flex rounded-full bg-[var(--color-surface-2)] p-1">
             <button
               type="button"

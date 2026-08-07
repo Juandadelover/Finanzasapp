@@ -48,7 +48,7 @@ interface FinanceContextValue {
   addTransaction: (input: NewTransactionInput) => Promise<void>;
   updateTransaction: (id: string, input: NewTransactionInput) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
-  addCategory: (category: Omit<Category, "id" | "isDefault">) => Promise<void>;
+  addCategory: (category: Omit<Category, "id" | "isDefault">) => Promise<Category | null>;
   updateCategory: (id: string, updates: Partial<Omit<Category, "id">>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   updateSettings: (updates: Partial<Settings>) => Promise<void>;
@@ -212,7 +212,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const addCategory = useCallback(
     async (category: Omit<Category, "id" | "isDefault">) => {
-      if (!user) return;
+      if (!user) return null;
       const { data, error } = await supabase
         .from("categories")
         .insert({
@@ -228,10 +228,11 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo crear la categoría", error);
-        return;
+        return null;
       }
       const newCategory = rowToCategory(data as CategoryRow);
       setState((prev) => ({ ...prev, categories: [...prev.categories, newCategory] }));
+      return newCategory;
     },
     [supabase, user]
   );

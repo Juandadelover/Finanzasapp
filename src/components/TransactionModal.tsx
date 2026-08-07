@@ -4,11 +4,12 @@ import { useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { CategoryPicker } from "@/components/CategoryPicker";
+import { CategoryModal } from "@/components/CategoryModal";
 import { useFinance } from "@/context/FinanceContext";
 import { useUI } from "@/context/UIContext";
 import { cn } from "@/lib/cn";
 import { toISODate } from "@/lib/format";
-import type { Transaction, TransactionType } from "@/types/finance";
+import type { CategoryIcon, Transaction, TransactionType } from "@/types/finance";
 
 function parseDigits(value: string): number {
   const digits = value.replace(/[^\d]/g, "");
@@ -27,7 +28,7 @@ interface TransactionSheetProps {
 }
 
 function TransactionSheet({ type: initialType, editing, onClose }: TransactionSheetProps) {
-  const { state, addTransaction, updateTransaction, deleteTransaction } = useFinance();
+  const { state, addTransaction, updateTransaction, deleteTransaction, addCategory } = useFinance();
 
   const [type, setType] = useState<TransactionType>(editing?.type ?? initialType);
   const [amount, setAmount] = useState(editing?.amount ?? 0);
@@ -35,6 +36,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
   const [description, setDescription] = useState(editing?.description ?? "");
   const [date, setDate] = useState(editing?.date ?? toISODate(new Date()));
   const [error, setError] = useState<string | null>(null);
+  const [creatingCategory, setCreatingCategory] = useState(false);
 
   const categories = useMemo(
     () => state.categories.filter((c) => c.type === type),
@@ -66,6 +68,17 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
       deleteTransaction(editing.id);
       onClose();
     }
+  }
+
+  async function handleCreateCategory(data: {
+    name: string;
+    icon: CategoryIcon;
+    color: string;
+    type: TransactionType;
+  }) {
+    const created = await addCategory(data);
+    setCreatingCategory(false);
+    if (created) setCategoryId(created.id);
   }
 
   return (
@@ -119,7 +132,12 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
           <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
             Categoría
           </label>
-          <CategoryPicker categories={categories} selectedId={categoryId} onSelect={setCategoryId} />
+          <CategoryPicker
+            categories={categories}
+            selectedId={categoryId}
+            onSelect={setCategoryId}
+            onCreateNew={() => setCreatingCategory(true)}
+          />
         </div>
 
         <div className="flex flex-col gap-3">
@@ -169,6 +187,16 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
           </button>
         </div>
       </form>
+
+      {creatingCategory ? (
+        <CategoryModal
+          onClose={() => setCreatingCategory(false)}
+          editing={null}
+          defaultType={type}
+          lockType
+          onSave={handleCreateCategory}
+        />
+      ) : null}
     </BottomSheet>
   );
 }
