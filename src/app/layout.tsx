@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,6 +18,11 @@ export const metadata: Metadata = {
   title: "Finanzas — Controla tus gastos e ingresos",
   description:
     "Aplicación personal de finanzas para registrar gastos e ingresos, organizarlos por categorías y ver estadísticas.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Finanzas",
+  },
 };
 
 export const viewport: Viewport = {
@@ -40,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           {children}
         </ThemeProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
