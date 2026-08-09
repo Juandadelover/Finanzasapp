@@ -18,11 +18,11 @@ export function FutureBalanceChart({ data, currency }: FutureBalanceChartProps) 
         <AreaChart data={points} margin={{ left: -12, right: 8, top: 12 }}>
           <defs>
             <linearGradient id="futureBalanceFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-brand-light)" stopOpacity={0.45} />
+              <stop offset="0%" stopColor="var(--color-brand-light)" stopOpacity={0.22} />
               <stop offset="100%" stopColor="var(--color-brand-light)" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke="var(--color-border)" vertical={false} strokeDasharray="4 4" />
+          <CartesianGrid stroke="var(--color-border)" vertical={false} />
           <XAxis
             dataKey="label"
             tickLine={false}
@@ -44,9 +44,10 @@ export function FutureBalanceChart({ data, currency }: FutureBalanceChartProps) 
             type="monotone"
             dataKey="balance"
             stroke="var(--color-brand-light)"
-            strokeWidth={2.5}
+            strokeWidth={2}
             fill="url(#futureBalanceFill)"
-            dot={{ r: 3, fill: "var(--color-brand-light)", strokeWidth: 0 }}
+            dot={{ r: 4, fill: "var(--color-brand-light)", stroke: "var(--color-surface)", strokeWidth: 2 }}
+            activeDot={{ r: 5, stroke: "var(--color-surface)", strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>

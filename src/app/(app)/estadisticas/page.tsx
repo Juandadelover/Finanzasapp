@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import { Info } from "lucide-react";
+import { ArrowDown, ArrowUp, BarChart3, PiggyBank, TrendingDown, TrendingUp } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
+import { StatTile } from "@/components/StatTile";
+import { ChartCard } from "@/components/charts/ChartCard";
 import { CategoryPieChart } from "@/components/charts/CategoryPieChart";
 import { IncomeExpenseBarChart } from "@/components/charts/IncomeExpenseBarChart";
 import { TrendLineChart } from "@/components/charts/TrendLineChart";
@@ -14,14 +16,21 @@ import {
   categoryBreakdown,
   computeTotals,
   lastNMonths,
+  previousMonth,
   projectFutureBalance,
   transactionsForMonth,
 } from "@/lib/selectors";
 import { formatAmount, monthShortLabel } from "@/lib/format";
 
+function percentDelta(current: number, previous: number): number | null {
+  if (previous === 0) return null;
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
 export default function EstadisticasPage() {
   const { state, hydrated, selectedYear, selectedMonth } = useFinance();
   const { hidden } = usePrivacy();
+  const currency = state.settings.currency;
 
   const monthTransactions = useMemo(
     () => transactionsForMonth(state.transactions, selectedYear, selectedMonth),
@@ -29,6 +38,11 @@ export default function EstadisticasPage() {
   );
 
   const totals = useMemo(() => computeTotals(monthTransactions), [monthTransactions]);
+
+  const previousTotals = useMemo(() => {
+    const { year, month } = previousMonth(selectedYear, selectedMonth);
+    return computeTotals(transactionsForMonth(state.transactions, year, month));
+  }, [state.transactions, selectedYear, selectedMonth]);
 
   const expenseBreakdown = useMemo(
     () => categoryBreakdown(monthTransactions, state.categories, "expense"),
@@ -53,90 +67,131 @@ export default function EstadisticasPage() {
     });
   }, [state.transactions, selectedYear, selectedMonth]);
 
+  const allTimeBalance = useMemo(() => computeTotals(state.transactions).balance, [state.transactions]);
+
   const projection = useMemo(() => {
-    const allTimeBalance = computeTotals(state.transactions).balance;
     const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
     const avgDailyNet = totals.balance / daysInMonth;
     return projectFutureBalance(allTimeBalance, avgDailyNet, 90);
-  }, [state.transactions, totals.balance, selectedYear, selectedMonth]);
+  }, [allTimeBalance, totals.balance, selectedYear, selectedMonth]);
 
   const projected90d = projection.at(-1)?.balance ?? 0;
+  const projectionUp = projected90d >= allTimeBalance;
 
   return (
     <>
       <AppHeader />
       <MonthSelector />
 
-      <section className="mx-4 mt-2 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-        <h2 className="text-sm font-semibold">Tendencia de Gastos</h2>
-        <p className="text-xs text-[var(--color-text-faint)]">Últimos 8 meses</p>
-        <div className="mt-2">
-          {hydrated ? (
-            <TrendLineChart data={trendPoints} currency={state.settings.currency} />
-          ) : (
-            <div className="h-52 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
-          )}
-        </div>
-      </section>
+      <div className="mx-4 flex gap-2.5">
+        <StatTile
+          label="Ingresos"
+          value={hidden ? MASKED_AMOUNT : formatAmount(totals.income, currency)}
+          icon={TrendingUp}
+          accent="var(--color-income)"
+          deltaPct={percentDelta(totals.income, previousTotals.income)}
+          goodDirection="up"
+        />
+        <StatTile
+          label="Gastos"
+          value={hidden ? MASKED_AMOUNT : formatAmount(totals.expense, currency)}
+          icon={TrendingDown}
+          accent="var(--color-expense)"
+          deltaPct={percentDelta(totals.expense, previousTotals.expense)}
+          goodDirection="down"
+        />
+        <StatTile
+          label="Balance"
+          value={hidden ? MASKED_AMOUNT : formatAmount(totals.balance, currency)}
+          icon={PiggyBank}
+          accent="var(--color-brand)"
+          deltaPct={percentDelta(totals.balance, previousTotals.balance)}
+          goodDirection="up"
+        />
+      </div>
 
-      <section className="mx-4 mt-4 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold">Balance Futuro</h2>
-            <p className="text-xs text-[var(--color-text-faint)]">Proyección a 90 días</p>
+      <ChartCard icon={BarChart3} accent="var(--color-brand)" title="Gastos por Categoría" subtitle="Este mes">
+        {hydrated ? (
+          <CategoryPieChart
+            data={expenseBreakdown}
+            currency={currency}
+            emptyLabel="No hay gastos en este período"
+            hidden={hidden}
+          />
+        ) : (
+          <div className="h-56 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+        )}
+      </ChartCard>
+
+      <ChartCard
+        icon={BarChart3}
+        accent="var(--color-income)"
+        title="Ingresos vs Gastos"
+        subtitle="Últimos 6 meses"
+        footer={
+          <div className="mt-3 flex items-center justify-center gap-5 text-xs">
+            <span className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-income)]" /> Ingresos
+            </span>
+            <span className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-expense)]" /> Gastos
+            </span>
           </div>
-          <Info size={16} className="text-[var(--color-text-faint)]" />
-        </div>
-        <div className="mt-2">
-          {hydrated ? (
-            <FutureBalanceChart data={projection} currency={state.settings.currency} />
-          ) : (
-            <div className="h-52 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
-          )}
-        </div>
-        <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-3 text-sm">
-          <span className="text-[var(--color-text-muted)]">Proyectado en 90d</span>
-          <span className="font-semibold text-[var(--color-brand-light)]">
-            {hidden ? MASKED_AMOUNT : formatAmount(projected90d, state.settings.currency)}
-          </span>
-        </div>
-      </section>
+        }
+      >
+        {hydrated ? (
+          <IncomeExpenseBarChart data={sixMonthPoints} currency={currency} />
+        ) : (
+          <div className="h-56 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+        )}
+      </ChartCard>
 
-      <section className="mx-4 mt-4 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-        <h2 className="text-sm font-semibold">Gastos por Categoría</h2>
-        <div className="mt-3">
-          {hydrated ? (
-            <CategoryPieChart
-              data={expenseBreakdown}
-              currency={state.settings.currency}
-              emptyLabel="No hay gastos en este período"
-              hidden={hidden}
-            />
-          ) : (
-            <div className="h-56 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
-          )}
-        </div>
-      </section>
+      <ChartCard
+        icon={TrendingDown}
+        accent="var(--color-expense)"
+        title="Tendencia de Gastos"
+        subtitle="Últimos 8 meses"
+      >
+        {hydrated ? (
+          <TrendLineChart data={trendPoints} currency={currency} />
+        ) : (
+          <div className="h-52 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+        )}
+      </ChartCard>
 
-      <section className="mx-4 mt-4 mb-4 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-        <h2 className="text-sm font-semibold">Ingresos vs Gastos</h2>
-        <p className="text-xs text-[var(--color-text-faint)]">Últimos 6 meses</p>
-        <div className="mt-2">
-          {hydrated ? (
-            <IncomeExpenseBarChart data={sixMonthPoints} currency={state.settings.currency} />
-          ) : (
-            <div className="h-56 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
-          )}
-        </div>
-        <div className="mt-3 flex items-center justify-center gap-5 text-xs">
-          <span className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-            <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-income)]" /> Ingresos
-          </span>
-          <span className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-            <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-expense)]" /> Gastos
-          </span>
-        </div>
-      </section>
+      <ChartCard
+        icon={TrendingUp}
+        accent="var(--color-brand)"
+        title="Balance Futuro"
+        subtitle="Proyección a 90 días"
+        footer={
+          <div className="mt-3 flex items-center justify-between border-t border-[var(--color-border)] pt-3 text-sm">
+            <span className="text-[var(--color-text-muted)]">Proyectado en 90d</span>
+            <span className="flex items-center gap-1 font-semibold text-[var(--color-text)]">
+              {!hidden ? (
+                <span
+                  className="flex h-4 w-4 items-center justify-center rounded-full"
+                  style={{
+                    backgroundColor: projectionUp ? "color-mix(in oklab, var(--color-income) 18%, transparent)" : "color-mix(in oklab, var(--color-expense) 18%, transparent)",
+                    color: projectionUp ? "var(--color-income)" : "var(--color-expense)",
+                  }}
+                >
+                  {projectionUp ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+                </span>
+              ) : null}
+              {hidden ? MASKED_AMOUNT : formatAmount(projected90d, currency)}
+            </span>
+          </div>
+        }
+      >
+        {hydrated ? (
+          <FutureBalanceChart data={projection} currency={currency} />
+        ) : (
+          <div className="h-52 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+        )}
+      </ChartCard>
+
+      <div className="mb-4" />
     </>
   );
 }

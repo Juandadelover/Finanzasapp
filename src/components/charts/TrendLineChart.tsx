@@ -19,7 +19,7 @@ export function TrendLineChart({ data, currency }: TrendLineChartProps) {
     <div className="h-52 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ left: -20, right: 8, top: 12 }}>
-          <CartesianGrid stroke="var(--color-border)" vertical={false} strokeDasharray="4 4" />
+          <CartesianGrid stroke="var(--color-border)" vertical={false} />
           <XAxis
             dataKey="label"
             tickLine={false}
@@ -41,9 +41,9 @@ export function TrendLineChart({ data, currency }: TrendLineChartProps) {
             type="monotone"
             dataKey="expense"
             stroke="var(--color-expense)"
-            strokeWidth={2.5}
-            dot={{ r: 3, fill: "var(--color-expense)", strokeWidth: 0 }}
-            activeDot={{ r: 5 }}
+            strokeWidth={2}
+            dot={{ r: 4, fill: "var(--color-expense)", stroke: "var(--color-surface)", strokeWidth: 2 }}
+            activeDot={{ r: 5, stroke: "var(--color-surface)", strokeWidth: 2 }}
           />
         </LineChart>
       </ResponsiveContainer>

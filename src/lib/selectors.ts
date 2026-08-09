@@ -68,6 +68,11 @@ export interface MonthPoint {
   expense: number;
 }
 
+export function previousMonth(year: number, month: number): { year: number; month: number } {
+  const d = new Date(year, month - 1, 1);
+  return { year: d.getFullYear(), month: d.getMonth() };
+}
+
 export function lastNMonths(
   transactions: Transaction[],
   referenceYear: number,
