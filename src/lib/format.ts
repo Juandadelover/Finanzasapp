@@ -86,3 +86,13 @@ export function formatDayLabel(isoDate: string): string {
   const d = new Date(isoDate + "T00:00:00");
   return new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short" }).format(d);
 }
+
+export function parseAmountInput(value: string): number {
+  const digits = value.replace(/[^\d]/g, "");
+  return digits ? Number(digits) : 0;
+}
+
+export function formatAmountInput(value: number): string {
+  if (!value) return "";
+  return new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(value);
+}

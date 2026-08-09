@@ -1,16 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, TriangleAlert } from "lucide-react";
+import { Search, SlidersHorizontal, TriangleAlert, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
+import { MovimientosFilterSheet, type DateRange } from "@/components/MovimientosFilterSheet";
 import { useFinance } from "@/context/FinanceContext";
 import { transactionsForMonth } from "@/lib/selectors";
 import { formatDayLabel } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import type { TransactionType } from "@/types/finance";
+import type { Transaction, TransactionType } from "@/types/finance";
 
 type Filter = "all" | TransactionType;
 
@@ -18,16 +19,27 @@ export default function MovimientosPage() {
   const { state, hydrated, selectedYear, selectedMonth } = useFinance();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<Set<string>>(new Set());
+  const [dateRange, setDateRange] = useState<DateRange | null>(null);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const monthTransactions = useMemo(
     () => transactionsForMonth(state.transactions, selectedYear, selectedMonth),
     [state.transactions, selectedYear, selectedMonth]
   );
 
+  const baseTransactions = useMemo<Transaction[]>(() => {
+    if (!dateRange) return monthTransactions;
+    return state.transactions
+      .filter((t) => t.date >= dateRange.from && t.date <= dateRange.to)
+      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.createdAt.localeCompare(a.createdAt)));
+  }, [state.transactions, monthTransactions, dateRange]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return monthTransactions.filter((t) => {
+    return baseTransactions.filter((t) => {
       if (filter !== "all" && t.type !== filter) return false;
+      if (categoryFilter.size > 0 && !categoryFilter.has(t.categoryId)) return false;
       if (!q) return true;
       const category = state.categories.find((c) => c.id === t.categoryId);
       return (
@@ -35,7 +47,7 @@ export default function MovimientosPage() {
         (category?.name.toLowerCase().includes(q) ?? false)
       );
     });
-  }, [monthTransactions, filter, query, state.categories]);
+  }, [baseTransactions, filter, categoryFilter, query, state.categories]);
 
   const groups = useMemo(() => {
     const map = new Map<string, typeof filtered>();
@@ -47,13 +59,31 @@ export default function MovimientosPage() {
     return Array.from(map.entries());
   }, [filtered]);
 
-  const incomeCount = monthTransactions.filter((t) => t.type === "income").length;
-  const expenseCount = monthTransactions.filter((t) => t.type === "expense").length;
+  const incomeCount = baseTransactions.filter((t) => t.type === "income").length;
+  const expenseCount = baseTransactions.filter((t) => t.type === "expense").length;
+  const hasActiveFilters = categoryFilter.size > 0 || dateRange !== null;
 
   return (
     <>
       <AppHeader />
-      <MonthSelector />
+
+      {dateRange ? (
+        <div className="mx-4 flex items-center justify-center gap-2 py-3">
+          <span className="text-sm font-medium tracking-wide text-[var(--color-brand-light)] uppercase">
+            Rango personalizado
+          </span>
+          <button
+            type="button"
+            onClick={() => setDateRange(null)}
+            aria-label="Quitar rango de fechas"
+            className="rounded-full p-1 text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ) : (
+        <MonthSelector />
+      )}
 
       <div className="mx-4 flex items-center justify-between">
         <span className="text-2xl font-bold">
@@ -69,15 +99,33 @@ export default function MovimientosPage() {
         </div>
       </div>
 
-      <div className="mx-4 mt-3 flex items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5">
-        <Search size={16} className="text-[var(--color-text-faint)]" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por nombre o categoría"
-          className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--color-text-faint)]"
-        />
+      <div className="mx-4 mt-3 flex items-center gap-2">
+        <div className="flex flex-1 items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5">
+          <Search size={16} className="text-[var(--color-text-faint)]" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por nombre o categoría"
+            className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--color-text-faint)]"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setFilterSheetOpen(true)}
+          aria-label="Filtros"
+          className={cn(
+            "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition",
+            hasActiveFilters
+              ? "border-[var(--color-brand)] bg-[var(--color-brand)]/10 text-[var(--color-brand-light)]"
+              : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]"
+          )}
+        >
+          <SlidersHorizontal size={17} />
+          {hasActiveFilters ? (
+            <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-[var(--color-brand)]" />
+          ) : null}
+        </button>
       </div>
 
       <div className="mx-4 mt-3 flex gap-2">
@@ -133,6 +181,19 @@ export default function MovimientosPage() {
           ))
         )}
       </div>
+
+      {filterSheetOpen ? (
+        <MovimientosFilterSheet
+          categories={state.categories}
+          selectedCategoryIds={categoryFilter}
+          dateRange={dateRange}
+          onClose={() => setFilterSheetOpen(false)}
+          onApply={(categoryIds, range) => {
+            setCategoryFilter(categoryIds);
+            setDateRange(range);
+          }}
+        />
+      ) : null}
     </>
   );
 }

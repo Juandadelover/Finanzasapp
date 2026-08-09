@@ -8,18 +8,8 @@ import { CategoryModal } from "@/components/CategoryModal";
 import { useFinance } from "@/context/FinanceContext";
 import { useUI } from "@/context/UIContext";
 import { cn } from "@/lib/cn";
-import { toISODate } from "@/lib/format";
+import { formatAmountInput, parseAmountInput, toISODate } from "@/lib/format";
 import type { CategoryIcon, Transaction, TransactionType } from "@/types/finance";
-
-function parseDigits(value: string): number {
-  const digits = value.replace(/[^\d]/g, "");
-  return digits ? Number(digits) : 0;
-}
-
-function formatDigits(value: number): string {
-  if (!value) return "";
-  return new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(value);
-}
 
 interface TransactionSheetProps {
   type: TransactionType;
@@ -75,6 +65,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
     icon: CategoryIcon;
     color: string;
     type: TransactionType;
+    monthlyBudget: number | null;
   }) {
     const created = await addCategory(data);
     setCreatingCategory(false);
@@ -121,8 +112,8 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
               autoFocus
               inputMode="numeric"
               placeholder="0"
-              value={formatDigits(amount)}
-              onChange={(e) => setAmount(parseDigits(e.target.value))}
+              value={formatAmountInput(amount)}
+              onChange={(e) => setAmount(parseAmountInput(e.target.value))}
               className="w-48 bg-transparent text-center text-4xl font-bold text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-faint)]"
             />
           </div>

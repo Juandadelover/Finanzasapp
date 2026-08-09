@@ -60,6 +60,29 @@ export function categoryBreakdown(
   return items.sort((a, b) => b.total - a.total);
 }
 
+export interface BudgetProgressItem {
+  category: Category;
+  spent: number;
+  budget: number;
+}
+
+export function budgetProgress(transactions: Transaction[], categories: Category[]): BudgetProgressItem[] {
+  const spentByCategory = new Map<string, number>();
+  for (const t of transactions) {
+    if (t.type !== "expense") continue;
+    spentByCategory.set(t.categoryId, (spentByCategory.get(t.categoryId) ?? 0) + t.amount);
+  }
+
+  return categories
+    .filter((c): c is Category & { monthlyBudget: number } => c.type === "expense" && Boolean(c.monthlyBudget))
+    .map((category) => ({
+      category,
+      spent: spentByCategory.get(category.id) ?? 0,
+      budget: category.monthlyBudget,
+    }))
+    .sort((a, b) => b.spent / b.budget - a.spent / a.budget);
+}
+
 export interface MonthPoint {
   year: number;
   month: number;

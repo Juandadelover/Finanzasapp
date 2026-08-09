@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { rowToCategory, rowToSettings, rowToTransaction } from "@/lib/supabase/mappers";
 import type { CategoryRow, SettingsRow, TransactionRow } from "@/lib/supabase/mappers";
@@ -162,6 +163,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo guardar el movimiento", error);
+        toast.error("No se pudo guardar el movimiento. Revisa tu conexión e intenta de nuevo.");
         return;
       }
       const transaction = rowToTransaction(data as TransactionRow);
@@ -187,6 +189,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo actualizar el movimiento", error);
+        toast.error("No se pudo actualizar el movimiento. Intenta de nuevo.");
         return;
       }
       const transaction = rowToTransaction(data as TransactionRow);
@@ -203,6 +206,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from("transactions").delete().eq("id", id);
       if (error) {
         console.error("No se pudo eliminar el movimiento", error);
+        toast.error("No se pudo eliminar el movimiento. Intenta de nuevo.");
         return;
       }
       setState((prev) => ({ ...prev, transactions: prev.transactions.filter((t) => t.id !== id) }));
@@ -222,12 +226,14 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           color: category.color,
           type: category.type,
           is_default: false,
+          monthly_budget: category.monthlyBudget,
         })
         .select()
         .single();
 
       if (error || !data) {
         console.error("No se pudo crear la categoría", error);
+        toast.error("No se pudo crear la categoría. Intenta de nuevo.");
         return null;
       }
       const newCategory = rowToCategory(data as CategoryRow);
@@ -246,6 +252,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           ...(updates.icon !== undefined ? { icon: updates.icon } : {}),
           ...(updates.color !== undefined ? { color: updates.color } : {}),
           ...(updates.type !== undefined ? { type: updates.type } : {}),
+          ...(updates.monthlyBudget !== undefined ? { monthly_budget: updates.monthlyBudget } : {}),
         })
         .eq("id", id)
         .select()
@@ -253,6 +260,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo actualizar la categoría", error);
+        toast.error("No se pudo actualizar la categoría. Intenta de nuevo.");
         return;
       }
       const category = rowToCategory(data as CategoryRow);
@@ -269,6 +277,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from("categories").delete().eq("id", id);
       if (error) {
         console.error("No se pudo eliminar la categoría", error);
+        toast.error("No se pudo eliminar la categoría. Intenta de nuevo.");
         return;
       }
       setState((prev) => ({
@@ -299,6 +308,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo actualizar la configuración", error);
+        toast.error("No se pudo guardar la configuración. Intenta de nuevo.");
         return;
       }
       setState((prev) => ({ ...prev, settings: rowToSettings(data as SettingsRow) }));
@@ -308,11 +318,19 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const resetAllData = useCallback(async () => {
     if (!user) return;
-    await supabase.from("transactions").delete().eq("user_id", user.id);
-    await supabase.from("categories").delete().eq("user_id", user.id);
-    await supabase
-      .from("user_settings")
-      .upsert({ user_id: user.id, currency: "COP", monthly_budget: null }, { onConflict: "user_id" });
+    const [transactionsRes, categoriesRes, settingsRes] = await Promise.all([
+      supabase.from("transactions").delete().eq("user_id", user.id),
+      supabase.from("categories").delete().eq("user_id", user.id),
+      supabase
+        .from("user_settings")
+        .upsert({ user_id: user.id, currency: "COP", monthly_budget: null }, { onConflict: "user_id" }),
+    ]);
+
+    const error = transactionsRes.error || categoriesRes.error || settingsRes.error;
+    if (error) {
+      console.error("No se pudieron borrar los datos", error);
+      toast.error("No se pudieron borrar todos los datos. Intenta de nuevo.");
+    }
     await loadAll(user.id);
   }, [supabase, user, loadAll]);
 
@@ -339,6 +357,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
               color: category.color,
               type: category.type,
               is_default: false,
+              monthly_budget: category.monthlyBudget ?? null,
             })
             .select()
             .single();
@@ -359,7 +378,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
         await loadAll(user.id);
         return true;
-      } catch {
+      } catch (error) {
+        console.error("No se pudo importar el respaldo", error);
+        toast.error("No se pudo importar el respaldo. Intenta de nuevo.");
         return false;
       }
     },

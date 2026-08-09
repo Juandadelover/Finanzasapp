@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { ICONS } from "@/lib/icons";
 import { cn } from "@/lib/cn";
+import { formatAmountInput, parseAmountInput } from "@/lib/format";
 import type { Category, CategoryIcon, TransactionType } from "@/types/finance";
 
 const COLOR_PALETTE = [
@@ -17,7 +18,13 @@ interface CategoryModalProps {
   onClose: () => void;
   editing: Category | null;
   defaultType: TransactionType;
-  onSave: (data: { name: string; icon: CategoryIcon; color: string; type: TransactionType }) => void;
+  onSave: (data: {
+    name: string;
+    icon: CategoryIcon;
+    color: string;
+    type: TransactionType;
+    monthlyBudget: number | null;
+  }) => void;
   onDelete?: (id: string) => void;
   lockType?: boolean;
 }
@@ -34,11 +41,18 @@ export function CategoryModal({
   const [icon, setIcon] = useState<CategoryIcon>(editing?.icon ?? "more-horizontal");
   const [color, setColor] = useState(editing?.color ?? COLOR_PALETTE[0]);
   const [type, setType] = useState<TransactionType>(editing?.type ?? defaultType);
+  const [monthlyBudget, setMonthlyBudget] = useState(editing?.monthlyBudget ?? 0);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    onSave({ name: name.trim(), icon, color, type });
+    onSave({
+      name: name.trim(),
+      icon,
+      color,
+      type,
+      monthlyBudget: type === "expense" && monthlyBudget > 0 ? monthlyBudget : null,
+    });
     onClose();
   }
 
@@ -59,7 +73,10 @@ export function CategoryModal({
             </button>
             <button
               type="button"
-              onClick={() => setType("income")}
+              onClick={() => {
+                setType("income");
+                setMonthlyBudget(0);
+              }}
               className={cn(
                 "flex-1 rounded-full py-2 text-sm font-medium transition",
                 type === "income" ? "bg-[var(--color-income)] text-white" : "text-[var(--color-text-muted)]"
@@ -94,6 +111,25 @@ export function CategoryModal({
             className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)]"
           />
         </div>
+
+        {type === "expense" ? (
+          <div>
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
+              Presupuesto mensual (opcional)
+            </label>
+            <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 focus-within:border-[var(--color-brand)]">
+              <span className="text-sm text-[var(--color-text-muted)]">$</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={formatAmountInput(monthlyBudget)}
+                onChange={(e) => setMonthlyBudget(parseAmountInput(e.target.value))}
+                placeholder="Sin límite"
+                className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--color-text-faint)]"
+              />
+            </div>
+          </div>
+        ) : null}
 
         <div>
           <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">

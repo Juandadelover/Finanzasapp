@@ -3,6 +3,7 @@ import { UIProvider } from "@/context/UIContext";
 import { PrivacyProvider } from "@/context/PrivacyContext";
 import { AppShell } from "@/components/AppShell";
 import { AppLockGate } from "@/components/AppLockGate";
+import { Toaster } from "@/components/Toaster";
 
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +13,7 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
           <AppLockGate>
             <AppShell>{children}</AppShell>
           </AppLockGate>
+          <Toaster />
         </PrivacyProvider>
       </UIProvider>
     </FinanceProvider>

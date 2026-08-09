@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { ArrowDown, ArrowUp, BarChart3, PiggyBank, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowDown, ArrowUp, BarChart3, PiggyBank, Target, TrendingDown, TrendingUp } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
 import { StatTile } from "@/components/StatTile";
 import { ChartCard } from "@/components/charts/ChartCard";
+import { BudgetSection } from "@/components/charts/BudgetSection";
 import { CategoryPieChart } from "@/components/charts/CategoryPieChart";
 import { IncomeExpenseBarChart } from "@/components/charts/IncomeExpenseBarChart";
 import { TrendLineChart } from "@/components/charts/TrendLineChart";
@@ -13,6 +14,7 @@ import { FutureBalanceChart } from "@/components/charts/FutureBalanceChart";
 import { useFinance } from "@/context/FinanceContext";
 import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import {
+  budgetProgress,
   categoryBreakdown,
   computeTotals,
   lastNMonths,
@@ -46,6 +48,11 @@ export default function EstadisticasPage() {
 
   const expenseBreakdown = useMemo(
     () => categoryBreakdown(monthTransactions, state.categories, "expense"),
+    [monthTransactions, state.categories]
+  );
+
+  const budgetItems = useMemo(
+    () => budgetProgress(monthTransactions, state.categories),
     [monthTransactions, state.categories]
   );
 
@@ -109,6 +116,14 @@ export default function EstadisticasPage() {
           goodDirection="up"
         />
       </div>
+
+      <ChartCard icon={Target} accent="var(--color-brand)" title="Presupuestos" subtitle="Este mes">
+        {hydrated ? (
+          <BudgetSection items={budgetItems} currency={currency} hidden={hidden} />
+        ) : (
+          <div className="h-16 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+        )}
+      </ChartCard>
 
       <ChartCard icon={BarChart3} accent="var(--color-brand)" title="Gastos por Categoría" subtitle="Este mes">
         {hydrated ? (

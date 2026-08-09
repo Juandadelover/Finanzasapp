@@ -25,9 +25,18 @@ import {
   isPlatformAuthenticatorAvailable,
   registerAppLock,
 } from "@/lib/webauthn";
+import { formatAmount } from "@/lib/format";
 import type { Category, CurrencyCode, TransactionType } from "@/types/finance";
 
-function CategoryRow({ category, onClick }: { category: Category; onClick: () => void }) {
+function CategoryRow({
+  category,
+  currency,
+  onClick,
+}: {
+  category: Category;
+  currency: CurrencyCode;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
@@ -43,7 +52,14 @@ function CategoryRow({ category, onClick }: { category: Category; onClick: () =>
           return <Icon size={17} />;
         })()}
       </span>
-      <span className="flex-1 text-sm font-medium">{category.name}</span>
+      <span className="flex-1">
+        <span className="block text-sm font-medium">{category.name}</span>
+        {category.monthlyBudget ? (
+          <span className="block text-xs text-[var(--color-text-faint)]">
+            Presupuesto: {formatAmount(category.monthlyBudget, currency)}
+          </span>
+        ) : null}
+      </span>
       <ChevronRight size={16} className="text-[var(--color-text-faint)]" />
     </button>
   );
@@ -84,7 +100,13 @@ export default function AjustesPage() {
   const expenseCategories = state.categories.filter((c) => c.type === "expense");
   const incomeCategories = state.categories.filter((c) => c.type === "income");
 
-  function handleSaveCategory(data: { name: string; icon: Category["icon"]; color: string; type: TransactionType }) {
+  function handleSaveCategory(data: {
+    name: string;
+    icon: Category["icon"];
+    color: string;
+    type: TransactionType;
+    monthlyBudget: number | null;
+  }) {
     if (categoryModal.editing) {
       updateCategory(categoryModal.editing.id, data);
     } else {
@@ -263,6 +285,7 @@ export default function AjustesPage() {
             <CategoryRow
               key={c.id}
               category={c}
+              currency={state.settings.currency}
               onClick={() => setCategoryModal({ open: true, editing: c, defaultType: "expense" })}
             />
           ))}
@@ -287,6 +310,7 @@ export default function AjustesPage() {
             <CategoryRow
               key={c.id}
               category={c}
+              currency={state.settings.currency}
               onClick={() => setCategoryModal({ open: true, editing: c, defaultType: "income" })}
             />
           ))}

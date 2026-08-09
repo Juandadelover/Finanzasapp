@@ -8,6 +8,7 @@ export interface CategoryRow {
   color: string;
   type: TransactionType;
   is_default: boolean;
+  monthly_budget: number | string | null;
   created_at: string;
 }
 
@@ -37,6 +38,7 @@ export function rowToCategory(row: CategoryRow): Category {
     color: row.color,
     type: row.type,
     isDefault: row.is_default,
+    monthlyBudget: row.monthly_budget !== null ? Number(row.monthly_budget) : null,
   };
 }
 

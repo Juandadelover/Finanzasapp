@@ -34,6 +34,7 @@ export interface Category {
   color: string;
   type: TransactionType;
   isDefault?: boolean;
+  monthlyBudget: number | null;
 }
 
 export interface Transaction {
