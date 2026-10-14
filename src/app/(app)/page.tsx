@@ -16,7 +16,7 @@ import { useUI } from "@/context/UIContext";
 import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import { formatAmount } from "@/lib/format";
 import { pendingTransactions, sumAmount } from "@/lib/cartera";
-import { computeTotals, transactionsForMonth } from "@/lib/selectors";
+import { accountBalances, computeTotals, transactionsForMonth } from "@/lib/selectors";
 
 export default function HomePage() {
   const { state, hydrated, selectedYear, selectedMonth, permissions } = useFinance();
@@ -28,6 +28,12 @@ export default function HomePage() {
   );
 
   const totals = useMemo(() => computeTotals(monthTransactions), [monthTransactions]);
+  const accountsTotal = useMemo(() => {
+    const balances = accountBalances(state);
+    return balances.length ? balances.reduce((sum, b) => sum + b.balance, 0) : null;
+  }, [state]);
+  // "Solo registro" solo ve sus propios gastos: un total calculado con ellos engañaría.
+  const isRecorder = !permissions.canEditTransactions && permissions.canCreateExpense;
   const recent = monthTransactions.slice(0, 5);
   const { hidden } = usePrivacy();
   const owed = sumAmount(pendingTransactions(state.transactions, "income"));
@@ -56,8 +62,15 @@ export default function HomePage() {
       <AppHeader />
       <h1 className="sr-only">Inicio</h1>
       <MonthSelector />
+      {isRecorder ? (
+        <p className="mx-4 mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm text-[var(--color-text-muted)]">
+          Registra aquí los gastos del negocio. Verás solo los que tú anotes.
+        </p>
+      ) : (
+      <>
       <BalanceCard
-        balance={totals.balance}
+        accountsTotal={accountsTotal}
+        monthResult={totals.balance}
         income={totals.income}
         expense={totals.expense}
         currency={state.settings.currency}
@@ -79,6 +92,8 @@ export default function HomePage() {
           </Link>
         ))}
       </div>
+      </>
+      )}
       <QuickActions />
       <GettingStarted />
 

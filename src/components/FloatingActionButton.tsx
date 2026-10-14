@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Plus, TrendingDown, TrendingUp, X } from "lucide-react";
 import { useFinance } from "@/context/FinanceContext";
 import { useUI } from "@/context/UIContext";
@@ -17,6 +18,9 @@ export function FloatingActionButton() {
     openNewTransaction(type);
   }
 
+  // Solo en las pantallas de movimientos: en las demás tapaba botones de acción.
+  const pathname = usePathname();
+  if (!["/", "/movimientos", "/estadisticas"].includes(pathname)) return null;
   if (!canCreateIncome && !canCreateExpense) return null;
 
   return (

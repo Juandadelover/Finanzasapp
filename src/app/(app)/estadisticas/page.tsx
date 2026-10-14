@@ -24,7 +24,7 @@ import {
   projectFutureBalance,
   transactionsForMonth,
 } from "@/lib/selectors";
-import { formatAmount, monthShortLabel } from "@/lib/format";
+import { formatAmount, formatCompactAmount, monthShortLabel } from "@/lib/format";
 
 function percentDelta(current: number, previous: number): number | null {
   if (previous === 0) return null;
@@ -96,7 +96,7 @@ export default function EstadisticasPage() {
       <div className="mx-4 flex gap-2.5">
         <StatTile
           label="Ingresos"
-          value={hidden ? MASKED_AMOUNT : formatAmount(totals.income, currency)}
+          value={hidden ? MASKED_AMOUNT : formatCompactAmount(totals.income, currency)}
           icon={TrendingUp}
           accent="var(--color-income)"
           deltaPct={percentDelta(totals.income, previousTotals.income)}
@@ -104,7 +104,7 @@ export default function EstadisticasPage() {
         />
         <StatTile
           label="Gastos"
-          value={hidden ? MASKED_AMOUNT : formatAmount(totals.expense, currency)}
+          value={hidden ? MASKED_AMOUNT : formatCompactAmount(totals.expense, currency)}
           icon={TrendingDown}
           accent="var(--color-expense)"
           deltaPct={percentDelta(totals.expense, previousTotals.expense)}
@@ -112,7 +112,7 @@ export default function EstadisticasPage() {
         />
         <StatTile
           label="Balance"
-          value={hidden ? MASKED_AMOUNT : formatAmount(totals.balance, currency)}
+          value={hidden ? MASKED_AMOUNT : formatCompactAmount(totals.balance, currency)}
           icon={PiggyBank}
           accent="var(--color-brand)"
           deltaPct={percentDelta(totals.balance, previousTotals.balance)}

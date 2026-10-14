@@ -7,21 +7,27 @@ import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import type { CurrencyCode } from "@/types/finance";
 
 interface BalanceCardProps {
-  balance: number;
+  /** Saldo real sumando las cuentas (null si el negocio aún no tiene cuentas). */
+  accountsTotal: number | null;
+  /** Ingresos − gastos pagados del mes seleccionado. */
+  monthResult: number;
   income: number;
   expense: number;
   currency: CurrencyCode;
 }
 
-export function BalanceCard({ balance, income, expense, currency }: BalanceCardProps) {
+export function BalanceCard({ accountsTotal, monthResult, income, expense, currency }: BalanceCardProps) {
   const { hidden } = usePrivacy();
-  const balanceText = hidden ? MASKED_AMOUNT : formatAmount(balance, currency);
-  const availablePct = income > 0 ? Math.max(0, Math.min(100, Math.round((balance / income) * 100))) : 0;
+  // La cifra grande es la plata que hay de verdad; sin cuentas, el resultado del mes.
+  const headline = accountsTotal ?? monthResult;
+  const balanceText = hidden ? MASKED_AMOUNT : formatAmount(headline, currency);
 
   return (
     <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[var(--shadow-brand-lg)]">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-white/85">Balance Disponible</span>
+        <span className="text-sm font-medium text-white/85">
+          {accountsTotal !== null ? "Saldo en cuentas" : "Resultado del mes"}
+        </span>
         <Link
           href="/cuentas"
           className="-mr-2 flex min-h-11 items-center gap-0.5 px-2 text-xs font-medium text-white/85 hover:text-white"
@@ -36,18 +42,14 @@ export function BalanceCard({ balance, income, expense, currency }: BalanceCardP
         {balanceText}
       </p>
 
-      <div className="mt-4">
-        <div className="flex items-center justify-between text-xs font-medium text-white/85">
-          <span className="uppercase tracking-wide">Disponible</span>
-          <span>{availablePct}%</span>
-        </div>
-        <div className="mt-1.5 h-2 rounded-full bg-white/20" role="progressbar" aria-label="Disponible" aria-valuemin={0} aria-valuemax={100} aria-valuenow={availablePct}>
-          <div
-            className="h-2 rounded-full bg-white transition-all"
-            style={{ width: `${availablePct}%` }}
-          />
-        </div>
-      </div>
+      {accountsTotal !== null ? (
+        <p className="mt-1 text-sm text-white/85">
+          {monthResult >= 0 ? "Ganancia" : "Pérdida"} del mes:{" "}
+          <span className="tabular font-semibold text-white">
+            {hidden ? MASKED_AMOUNT : formatAmount(monthResult, currency, { signed: true })}
+          </span>
+        </p>
+      ) : null}
 
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div className="min-w-0 rounded-2xl bg-white/10 p-3">
@@ -65,7 +67,7 @@ export function BalanceCard({ balance, income, expense, currency }: BalanceCardP
             Gastos
           </div>
           <p className="tabular mt-1 truncate text-lg font-semibold">
-            {hidden ? MASKED_AMOUNT : `-${formatAmount(expense, currency)}`}
+            {hidden ? MASKED_AMOUNT : formatAmount(-expense, currency)}
           </p>
         </div>
       </div>
