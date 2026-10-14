@@ -42,7 +42,7 @@ export default function RestablecerPage() {
         <TrendingUp size={30} className="text-white" strokeWidth={2.5} />
       </div>
       <h1 className="mt-6 text-2xl font-bold tracking-tight">Nueva contraseña</h1>
-      <div className="mt-6 flex w-full max-w-sm flex-col gap-3">
+      <div className="mt-6 flex w-full max-w-sm flex-col gap-3 lg:max-w-md lg:rounded-3xl lg:border lg:border-[var(--color-border)] lg:bg-[var(--color-surface)] lg:p-8">
         {hasSession === null ? (
           <p role="status" className="text-center text-sm text-[var(--color-text-muted)]">
             Verificando el enlace...

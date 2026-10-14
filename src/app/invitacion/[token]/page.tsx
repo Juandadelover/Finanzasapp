@@ -70,7 +70,7 @@ export default function InvitacionPage({ params }: { params: Promise<{ token: st
   const btnAlt = buttonClass({ variant: "secondary", fullWidth: true });
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-10">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-10 lg:max-w-lg">
       <div className="mb-6 flex items-center justify-center gap-3">
         <div className="gradient-brand flex h-10 w-10 items-center justify-center rounded-2xl">
           <TrendingUp size={20} className="text-white" strokeWidth={2.5} />
@@ -78,7 +78,7 @@ export default function InvitacionPage({ params }: { params: Promise<{ token: st
         <span className="text-lg font-semibold tracking-tight">Finanzas</span>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+      <div className="flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 lg:rounded-3xl lg:p-8">
         {loading ? (
           <div role="status" className="flex flex-col gap-3">
             <span className="sr-only">Cargando invitación...</span>

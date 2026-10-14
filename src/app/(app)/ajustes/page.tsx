@@ -53,7 +53,7 @@ const wellClass =
 
 function Group({ id, title, children }: { id?: string; title: string; children: ReactNode }) {
   return (
-    <section id={id} className="mx-4 mt-5 scroll-mt-4" aria-label={title}>
+    <section id={id} className="mx-4 mt-5 scroll-mt-4 lg:mx-0" aria-label={title}>
       <h2 className={groupTitleClass}>{title}</h2>
       <div className={groupCardClass}>{children}</div>
     </section>
@@ -277,9 +277,10 @@ export default function AjustesPage() {
       <AppHeader />
       <PageHeader title="Ajustes" />
 
+      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6">
       <section
         aria-label="Tu perfil"
-        className="mx-4 mt-4 flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5"
+        className="mx-4 mt-4 flex lg:col-span-2 lg:mx-0 items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5"
       >
         {user?.avatarUrl ? (
           <Image
@@ -431,14 +432,14 @@ export default function AjustesPage() {
         <p
           role="status"
           className={cn(
-            "mx-4 mt-2 px-1 text-xs",
+            "mx-4 mt-2 px-1 text-xs lg:col-span-2 lg:mx-0",
             importMessage.ok ? "text-[var(--color-income)]" : "text-[var(--color-expense)]",
           )}
         >
           {importMessage.text}
         </p>
       ) : null}
-      <p className="mx-4 mt-3 px-1 text-xs leading-relaxed text-[var(--color-text-muted)]">
+      <p className="mx-4 mt-3 px-1 text-xs leading-relaxed lg:col-span-2 lg:mx-0 text-[var(--color-text-muted)]">
         Tus datos se guardan en la cuenta del negocio y los ves desde cualquier dispositivo donde inicies sesión.
       </p>
 
@@ -448,7 +449,7 @@ export default function AjustesPage() {
         </Group>
       ) : null}
 
-      <section id="categorias" className="mx-4 mt-6 scroll-mt-4" aria-labelledby="categorias-title">
+      <section id="categorias" className="mx-4 mt-6 scroll-mt-4 lg:col-span-2 lg:mx-0" aria-labelledby="categorias-title">
         <div className="mb-2 flex min-h-11 items-center justify-between gap-3 px-1">
           <h2 id="categorias-title" className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
             Categorías
@@ -498,7 +499,7 @@ export default function AjustesPage() {
             description={canManage ? "Toca Agregar para crear la primera." : "Quien administra el negocio puede crearlas."}
           />
         ) : (
-          <div className={groupCardClass}>
+          <div className={cn(groupCardClass, "lg:grid lg:grid-cols-2 lg:gap-x-2")}>
             {visibleCategories.map((c) => (
               <CategoryRow
                 key={c.id}
@@ -513,7 +514,7 @@ export default function AjustesPage() {
         )}
       </section>
 
-      <section className="mx-4 mb-6 mt-6 flex items-start gap-3 rounded-2xl border border-dashed border-[var(--color-brand)]/40 bg-[var(--color-brand)]/10 p-4">
+      <section className="mx-4 mb-6 mt-6 flex items-start lg:col-span-2 lg:mx-0 gap-3 rounded-2xl border border-dashed border-[var(--color-brand)]/40 bg-[var(--color-brand)]/10 p-4">
         <span className={wellClass}>
           <Sparkles size={18} aria-hidden />
         </span>
@@ -525,6 +526,7 @@ export default function AjustesPage() {
           </p>
         </div>
       </section>
+      </div>
 
       {categoryModal.open ? (
         <CategoryModal

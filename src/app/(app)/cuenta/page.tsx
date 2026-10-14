@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
@@ -117,7 +118,7 @@ export default function CuentaPage() {
   const pending = profile?.deletion_requested_at ?? null;
 
   return (
-    <div className="pb-28">
+    <PageContainer size="narrow" className="pb-28 lg:pb-8">
       <AppHeader />
       <PageHeader title="Mi cuenta" backHref="/ajustes" backLabel="Ajustes" />
       <div className="mx-4 mt-4 flex flex-col gap-4">
@@ -245,6 +246,6 @@ export default function CuentaPage() {
           )}
         </section>
       </div>
-    </div>
+    </PageContainer>
   );
 }

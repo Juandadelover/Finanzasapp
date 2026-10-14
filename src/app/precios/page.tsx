@@ -101,7 +101,7 @@ export default function PreciosPage() {
   const anySavings = plans.some((p) => p.monthly_price > 0 && p.annual_price < p.monthly_price * 12);
 
   return (
-    <div className="mx-auto min-h-dvh max-w-3xl px-5 pb-16 pt-6">
+    <div className="mx-auto min-h-dvh max-w-3xl px-5 pb-16 pt-6 lg:max-w-6xl lg:px-10 lg:pt-8">
       <header className="flex items-center justify-between">
         <Link href="/login" className="flex min-h-11 items-center gap-2 text-sm font-semibold">
           <span className="gradient-brand flex h-8 w-8 items-center justify-center rounded-xl">
@@ -115,15 +115,16 @@ export default function PreciosPage() {
       </header>
 
       <main>
-        <section className="mt-8 text-center">
-          <h1 className="mx-auto max-w-xl text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+        <div className="lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-center lg:gap-16">
+        <section className="mt-8 text-center lg:mt-0 lg:text-left">
+          <h1 className="mx-auto max-w-xl text-balance text-3xl font-bold tracking-tight sm:text-4xl lg:mx-0 lg:text-5xl">
             Sabe cuánta plata tiene tu negocio, hoy
           </h1>
-          <p className="mx-auto mt-3 max-w-md text-base text-[var(--color-text-muted)]">
+          <p className="mx-auto mt-3 max-w-md text-base text-[var(--color-text-muted)] lg:mx-0 lg:max-w-lg lg:text-lg">
             Registra una venta o un gasto en segundos desde el celular y mira tu saldo, lo que te deben y lo que debes.
             Hecho para el dueño, no para el contador.
           </p>
-          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
             <Link href="/login?modo=registro" className={buttonClass({ size: "lg", className: "w-full rounded-full sm:w-auto sm:px-8" })}>
               Empieza gratis
             </Link>
@@ -134,7 +135,7 @@ export default function PreciosPage() {
           <p className="mt-3 text-xs text-[var(--color-text-muted)]">Sin tarjeta. Los planes de pago incluyen 14 días de prueba.</p>
         </section>
 
-        <section aria-labelledby="ejemplo" className="mx-auto mt-10 max-w-sm">
+        <section aria-labelledby="ejemplo" className="mx-auto mt-10 max-w-sm lg:mx-0 lg:mt-0 lg:max-w-md lg:justify-self-end">
           <h2 id="ejemplo" className="sr-only">Así se ve tu saldo</h2>
           <div className="gradient-brand rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(138,5,190,0.35)]">
             <p className="text-sm text-white/85">Saldo total · Tienda Demo</p>
@@ -152,10 +153,11 @@ export default function PreciosPage() {
           </div>
           <p className="mt-2 text-center text-xs text-[var(--color-text-muted)]">Ejemplo con datos de demostración.</p>
         </section>
+        </div>
 
-        <section aria-labelledby="incluye" className="mt-14">
+        <section aria-labelledby="incluye" className="mt-14 lg:mt-20">
           <h2 id="incluye" className="text-xl font-bold">Lo que hace por tu negocio</h2>
-          <ul className="mt-4 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          <ul className="mt-4 grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-y-8">
             {FEATURES.map(({ icon: Icon, title, text }) => (
               <li key={title} className="flex items-start gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]">
@@ -167,7 +169,7 @@ export default function PreciosPage() {
                 </div>
               </li>
             ))}
-            <li className="flex items-start gap-3 sm:col-span-2">
+            <li className="flex items-start gap-3 sm:col-span-2 lg:col-span-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]">
                 <Download size={18} aria-hidden />
               </span>
@@ -181,7 +183,7 @@ export default function PreciosPage() {
           </ul>
         </section>
 
-        <section id="planes" aria-labelledby="planes-title" className="mt-14 scroll-mt-6">
+        <section id="planes" aria-labelledby="planes-title" className="mt-14 scroll-mt-6 lg:mt-20">
           <div className="text-center">
             <h2 id="planes-title" className="text-xl font-bold">Elige tu plan</h2>
             <p className="mt-1 text-sm text-[var(--color-text-muted)]">Empieza gratis y sube de plan cuando lo necesites.</p>
@@ -228,7 +230,7 @@ export default function PreciosPage() {
               Los planes no están disponibles en este momento. Crea tu cuenta gratis y vuelve a verlos pronto.
             </p>
           ) : (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
               {plans.map((p) => {
                 const price = annual ? p.annual_price : p.monthly_price;
                 const highlight = p.code === "emprendedor";
@@ -287,9 +289,9 @@ export default function PreciosPage() {
           </p>
         </section>
 
-        <section className="mt-14" aria-labelledby="faq-title">
+        <section className="mt-14 lg:mt-20" aria-labelledby="faq-title">
           <h2 id="faq-title" className="text-xl font-bold">Preguntas frecuentes</h2>
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0">
             {FAQ.map(([q, a]) => (
               <details key={q} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4">
                 <summary className="flex min-h-12 cursor-pointer items-center py-2 text-sm font-medium">{q}</summary>

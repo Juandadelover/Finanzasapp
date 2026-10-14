@@ -8,6 +8,8 @@ import { AppHeader } from "@/components/AppHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { DataTable } from "@/components/ui/DataTable";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
@@ -33,6 +35,7 @@ const inputClass =
   "w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-base outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40";
 const labelClass =
   "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]";
+const compactSelectClass = inputClass.replace("w-full", "w-48");
 const cardClass = "rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4";
 const chipClass =
   "shrink-0 rounded-full bg-[var(--color-brand)]/15 px-2.5 py-0.5 text-xs font-medium text-[var(--color-brand-light)]";
@@ -171,7 +174,7 @@ export default function EquipoPage() {
   const me = members.find((m) => m.userId === user?.id);
 
   return (
-    <div className="pb-8">
+    <PageContainer className="pb-8">
       <AppHeader />
       <PageHeader
         title="Equipo"
@@ -179,9 +182,13 @@ export default function EquipoPage() {
         backHref="/ajustes"
         backLabel="Ajustes"
       />
-      <div className="mx-4 mt-4 flex flex-col gap-4">
+      <div className="mx-4 mt-4 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:gap-6">
         {isAdmin ? (
-          <form onSubmit={handleInvite} noValidate className={`${cardClass} flex flex-col gap-3`}>
+          <form
+            onSubmit={handleInvite}
+            noValidate
+            className={`${cardClass} flex flex-col gap-3 lg:sticky lg:top-[calc(var(--app-header-h)+1rem)] lg:col-start-2 lg:row-start-1`}
+          >
             <h2 className="text-sm font-semibold">Invitar a alguien</h2>
             <label className="block">
               <span className={labelClass}>Email</span>
@@ -228,7 +235,11 @@ export default function EquipoPage() {
           </form>
         ) : null}
 
-        <section className={cardClass} aria-labelledby="miembros-title">
+        <div className="flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-start-1">
+        <section
+          className={`${cardClass} lg:border-0 lg:bg-transparent lg:p-0`}
+          aria-labelledby="miembros-title"
+        >
           <h2 id="miembros-title" className="mb-3 text-sm font-semibold">
             Miembros
           </h2>
@@ -253,12 +264,75 @@ export default function EquipoPage() {
           ) : members.length === 0 ? (
             <EmptyState icon={Users} title="Todavía no hay miembros" description="Invita a alguien para trabajar juntos." />
           ) : (
-            <ul className="flex flex-col divide-y divide-[var(--color-border)]">
-              {members.map((m) => {
+            <DataTable
+              caption="Miembros del negocio"
+              rows={members}
+              getRowKey={(m) => m.userId}
+              mobileClassName="flex flex-col divide-y divide-[var(--color-border)] [&>li:first-child>div]:pt-0 [&>li:last-child>div]:pb-0"
+              columns={[
+                {
+                  key: "member",
+                  header: "Miembro",
+                  className: "w-full",
+                  cell: (m) => (
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">
+                        {m.fullName || m.email || "Sin nombre"}
+                        {m.userId === user?.id ? (
+                          <span className="ml-1.5 text-xs text-[var(--color-brand-light)]">Tú</span>
+                        ) : null}
+                      </p>
+                      {m.fullName && m.email ? (
+                        <p className="truncate text-xs text-[var(--color-text-muted)]">{m.email}</p>
+                      ) : null}
+                    </div>
+                  ),
+                },
+                {
+                  key: "role",
+                  header: "Rol",
+                  cell: (m) => {
+                    const editable = isAdmin && m.userId !== user?.id && m.role !== "owner";
+                    return editable ? (
+                      <select
+                        aria-label={`Rol de ${m.fullName || m.email || "este miembro"}`}
+                        className={compactSelectClass}
+                        value={m.role}
+                        onChange={(e) => changeRole(m, e.target.value as InviteRole)}
+                      >
+                        {INVITE_ROLES.map((r) => (
+                          <option key={r.value} value={r.value}>
+                            {ROLE_LABELS[r.value]}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className={chipClass}>{ROLE_LABELS[m.role]}</span>
+                    );
+                  },
+                },
+                {
+                  key: "actions",
+                  header: <span className="sr-only">Acciones</span>,
+                  align: "right",
+                  cell: (m) =>
+                    isAdmin && m.userId !== user?.id && m.role !== "owner" ? (
+                      <Button
+                        variant="danger"
+                        onClick={() => remove(m)}
+                        aria-label={`Quitar a ${m.fullName || m.email || "este miembro"} del negocio`}
+                        className="ml-auto w-11 shrink-0 !px-0"
+                      >
+                        <Trash2 size={16} aria-hidden />
+                      </Button>
+                    ) : null,
+                },
+              ]}
+              renderMobile={(m) => {
                 const isMe = m.userId === user?.id;
                 const editable = isAdmin && !isMe && m.role !== "owner";
                 return (
-                  <li key={m.userId} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0">
+                  <div className="flex flex-col gap-2 py-3">
                     <div className="flex items-center gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">
@@ -295,10 +369,10 @@ export default function EquipoPage() {
                         </Button>
                       </div>
                     ) : null}
-                  </li>
+                  </div>
                 );
-              })}
-            </ul>
+              }}
+            />
           )}
         </section>
 
@@ -349,7 +423,8 @@ export default function EquipoPage() {
             <LogOut size={16} aria-hidden /> Salir del negocio
           </Button>
         ) : null}
+        </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

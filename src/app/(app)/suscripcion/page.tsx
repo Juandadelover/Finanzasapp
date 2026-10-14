@@ -389,7 +389,7 @@ export default function SuscripcionPage() {
     <>
       <AppHeader />
       <PageHeader title="Mi suscripción" backHref="/ajustes" backLabel="Ajustes" />
-      <main className="mx-4 mt-4 flex flex-col gap-5 pb-8">
+      <main className="mx-4 mt-4 flex flex-col gap-5 pb-8 lg:mx-0">
         {loading ? (
           <div role="status" className="flex flex-col gap-3">
             <span className="sr-only">Cargando tu suscripción...</span>
@@ -426,8 +426,8 @@ export default function SuscripcionPage() {
         ) : (
           <>
             {sub ? (
-              <section className={cardClass}>
-                <div className="flex items-start justify-between gap-3">
+              <section className={cn(cardClass, "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:items-start lg:gap-x-8 lg:p-6")}>
+                <div className="flex items-start justify-between gap-3 lg:col-start-1 lg:row-start-1">
                   <div>
                     <p className={labelClass}>Tu plan</p>
                     <p className="text-xl font-bold">{planName(sub.effective_plan)}</p>
@@ -437,7 +437,7 @@ export default function SuscripcionPage() {
                     {STATUS_LABEL[sub.status]}
                   </span>
                 </div>
-                <div className="mt-4 flex flex-col gap-3.5">
+                <div className="mt-4 flex flex-col gap-3.5 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:grid lg:grid-cols-3 lg:gap-6">
                   <Meter label="Movimientos este mes" used={sub.usage.tx_this_month} limit={limits?.max_tx_per_month} />
                   <Meter
                     label="Documentos de cobro este mes"
@@ -447,16 +447,16 @@ export default function SuscripcionPage() {
                   <Meter label="Negocios" used={sub.usage.workspaces_owned} limit={limits?.max_workspaces_owned} />
                 </div>
                 {hasPaidPeriod ? (
-                  <>
+                  <div className="lg:col-start-1 lg:row-start-2">
                     {cancelFlag ? (
                       <p className="mt-4 text-sm text-[var(--color-text-muted)]">
                         La renovación está cancelada: conservas tu plan hasta que termine el periodo pagado.
                       </p>
                     ) : null}
-                    <Button variant="secondary" onClick={handleToggleCancel} fullWidth className="mt-3">
+                    <Button variant="secondary" onClick={handleToggleCancel} fullWidth className="mt-3 lg:w-fit">
                       {cancelFlag ? "Reanudar renovación" : "Cancelar renovación"}
                     </Button>
-                  </>
+                  </div>
                 ) : null}
               </section>
             ) : (
@@ -486,7 +486,7 @@ export default function SuscripcionPage() {
               {cycle === "annual" ? (
                 <p className="mb-2 text-xs text-[var(--color-income)]">Pagas el año y te ahorras 2 meses.</p>
               ) : null}
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] lg:gap-4">
                 {plans.map((plan) => {
                   const current = sub?.plan_code === plan.code && ["active", "grace"].includes(sub.status);
                   const price = planPrice(plan, cycle);
@@ -495,7 +495,7 @@ export default function SuscripcionPage() {
                     <div
                       key={plan.code}
                       className={cn(
-                        "flex items-center gap-3 rounded-2xl border bg-[var(--color-surface)] p-4",
+                        "flex items-center gap-3 rounded-2xl border bg-[var(--color-surface)] p-4 lg:flex-col lg:items-stretch lg:gap-4 lg:p-5",
                         current ? "border-[var(--color-brand)]" : "border-[var(--color-border)]"
                       )}
                     >
@@ -532,7 +532,7 @@ export default function SuscripcionPage() {
               {payments.length === 0 ? (
                 <p className="rounded-2xl border border-dashed border-[var(--color-border)] px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">Aún no tienes pagos. Cuando elijas un plan, aquí verás cada pago y su estado.</p>
               ) : (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-3 xl:grid-cols-3">
                   {payments.map((p) => {
                     const st = PAYMENT_STATUS[p.status];
                     return (
