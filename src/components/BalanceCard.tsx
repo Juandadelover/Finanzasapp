@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { ExpenseIcon, IncomeIcon } from "@/components/icons/money";
 import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { formatAmount } from "@/lib/format";
 import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
@@ -55,7 +56,7 @@ export function BalanceCard({ accountsTotal, monthResult, income, expense, curre
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div className="min-w-0 rounded-2xl bg-white/10 p-3">
           <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-white/85">
-            <TrendingUp size={14} />
+            <IncomeIcon size={14} />
             Ingresos
           </div>
           <p className="tabular mt-1 truncate text-lg font-semibold">
@@ -64,7 +65,7 @@ export function BalanceCard({ accountsTotal, monthResult, income, expense, curre
         </div>
         <div className="min-w-0 rounded-2xl bg-black/10 p-3">
           <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-white/85">
-            <TrendingDown size={14} />
+            <ExpenseIcon size={14} />
             Gastos
           </div>
           <p className="tabular mt-1 truncate text-lg font-semibold">

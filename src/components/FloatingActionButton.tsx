@@ -2,7 +2,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Plus, TrendingDown, TrendingUp, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
+import { ExpenseIcon, IncomeIcon } from "@/components/icons/money";
 import { useFinance } from "@/context/FinanceContext";
 import { useUI } from "@/context/UIContext";
 import { SPRINGS, createSpring, haptic, type Spring } from "@/components/ui/motion";
@@ -85,7 +86,7 @@ export function FloatingActionButton() {
             <button type="button" onClick={() => handleSelect("income")} className={ITEM_CLASS}>
               Ingreso
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-income)]/15 text-[var(--color-income)]">
-                <TrendingUp size={16} />
+                <IncomeIcon size={16} />
               </span>
             </button>
           ) : null}
@@ -93,7 +94,7 @@ export function FloatingActionButton() {
             <button type="button" onClick={() => handleSelect("expense")} className={ITEM_CLASS}>
               Gasto
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-expense)]/15 text-[var(--color-expense)]">
-                <TrendingDown size={16} />
+                <ExpenseIcon size={16} />
               </span>
             </button>
           ) : null}

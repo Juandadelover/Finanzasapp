@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { ExpenseIcon, IncomeIcon } from "@/components/icons/money";
 import { useFinance } from "@/context/FinanceContext";
 import { useUI } from "@/context/UIContext";
 import { cn } from "@/lib/cn";
@@ -21,7 +21,7 @@ export function QuickActions() {
           className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] py-5 transition hover:bg-[var(--color-surface-2)] active:scale-[0.97]"
         >
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-expense)]/15 text-[var(--color-expense)]">
-            <TrendingDown size={20} />
+            <ExpenseIcon size={20} />
           </span>
           <span className="text-sm font-semibold">Gasto</span>
           <span className="text-xs text-[var(--color-text-faint)]">Manual</span>
@@ -34,7 +34,7 @@ export function QuickActions() {
           className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] py-5 transition hover:bg-[var(--color-surface-2)] active:scale-[0.97]"
         >
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-income)]/15 text-[var(--color-income)]">
-            <TrendingUp size={20} />
+            <IncomeIcon size={20} />
           </span>
           <span className="text-sm font-semibold">Ingreso</span>
           <span className="text-xs text-[var(--color-text-faint)]">Manual</span>

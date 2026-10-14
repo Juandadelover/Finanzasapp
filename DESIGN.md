@@ -235,6 +235,10 @@ Soft and rounded. Scale in use: `rounded-xl` 12px (inputs, buttons, small wells;
 ### Empty State
 - Dashed 16px-radius box, 48px circular surface-2 icon well, 14px muted title, 12px faint description.
 
+### Íconos de tipo de movimiento
+
+Gasto e Ingreso usan íconos propios (`src/components/icons/money.ts`): una billetera con la plata que sale (`ExpenseIcon`, flecha hacia arriba) o entra (`IncomeIcon`, flecha hacia abajo), creados con `createLucideIcon` para heredar el trazo de 2px y la grilla de 24px de lucide. Las flechas de tendencia (`TrendingUp`/`TrendingDown`) quedan reservadas para el logo y para gráficas de tendencia; no representan ingresos ni gastos.
+
 ## Do's and Don'ts
 
 ### Do:

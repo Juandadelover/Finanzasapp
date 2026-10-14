@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { ArrowDown, ArrowUp, BarChart3, PiggyBank, Target, TrendingDown, TrendingUp } from "lucide-react";
+import { ExpenseIcon, IncomeIcon } from "@/components/icons/money";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -97,7 +98,7 @@ export default function EstadisticasPage() {
         <StatTile
           label="Ingresos"
           value={hidden ? MASKED_AMOUNT : formatCompactAmount(totals.income, currency)}
-          icon={TrendingUp}
+          icon={IncomeIcon}
           accent="var(--color-income)"
           deltaPct={percentDelta(totals.income, previousTotals.income)}
           goodDirection="up"
@@ -105,7 +106,7 @@ export default function EstadisticasPage() {
         <StatTile
           label="Gastos"
           value={hidden ? MASKED_AMOUNT : formatCompactAmount(totals.expense, currency)}
-          icon={TrendingDown}
+          icon={ExpenseIcon}
           accent="var(--color-expense)"
           deltaPct={percentDelta(totals.expense, previousTotals.expense)}
           goodDirection="down"
