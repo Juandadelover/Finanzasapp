@@ -18,7 +18,8 @@ interface TransactionSheetProps {
 }
 
 function TransactionSheet({ type: initialType, editing, onClose }: TransactionSheetProps) {
-  const { state, addTransaction, updateTransaction, deleteTransaction, addCategory } = useFinance();
+  const { state, permissions, addTransaction, updateTransaction, deleteTransaction, addCategory } =
+    useFinance();
 
   const [type, setType] = useState<TransactionType>(editing?.type ?? initialType);
   const [amount, setAmount] = useState(editing?.amount ?? 0);
@@ -89,6 +90,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
           >
             Gasto
           </button>
+          {permissions.canCreateIncome || editing ? (
           <button
             type="button"
             onClick={() => {
@@ -102,6 +104,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
           >
             Ingreso
           </button>
+          ) : null}
         </div>
 
         <div className="flex flex-col items-center gap-1 py-2">
@@ -127,7 +130,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
             categories={categories}
             selectedId={categoryId}
             onSelect={setCategoryId}
-            onCreateNew={() => setCreatingCategory(true)}
+            onCreateNew={permissions.canManageCategories ? () => setCreatingCategory(true) : undefined}
           />
         </div>
 

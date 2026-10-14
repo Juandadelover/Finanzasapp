@@ -6,20 +6,24 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { rowToCategory, rowToSettings, rowToTransaction } from "@/lib/supabase/mappers";
-import type { CategoryRow, SettingsRow, TransactionRow } from "@/lib/supabase/mappers";
+import { rowToCategory, rowToTransaction, rowToWorkspace } from "@/lib/supabase/mappers";
+import type { CategoryRow, TransactionRow, WorkspaceRow } from "@/lib/supabase/mappers";
 import { DEFAULT_SETTINGS } from "@/lib/defaults";
+import { permissionsFor } from "@/lib/permissions";
+import type { Permissions } from "@/lib/permissions";
 import type {
   Category,
   FinanceState,
-  Settings,
   Transaction,
   TransactionType,
+  Workspace,
+  WorkspaceRole,
 } from "@/types/finance";
 
 export interface NewTransactionInput {
@@ -40,6 +44,10 @@ export interface AuthUser {
 interface FinanceContextValue {
   user: AuthUser | null;
   state: FinanceState;
+  workspaces: Workspace[];
+  currentWorkspace: Workspace | null;
+  switchWorkspace: (id: string) => Promise<void>;
+  permissions: Permissions;
   hydrated: boolean;
   selectedYear: number;
   selectedMonth: number;
@@ -52,42 +60,139 @@ interface FinanceContextValue {
   addCategory: (category: Omit<Category, "id" | "isDefault">) => Promise<Category | null>;
   updateCategory: (id: string, updates: Partial<Omit<Category, "id">>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
-  updateSettings: (updates: Partial<Settings>) => Promise<void>;
   resetAllData: () => Promise<void>;
   exportData: () => string;
   importData: (json: string) => Promise<boolean>;
   signOut: () => Promise<void>;
 }
 
+const WORKSPACE_KEY = "finanzasapp:workspace";
+
+function readStoredWorkspace(): string | null {
+  try {
+    return localStorage.getItem(WORKSPACE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeWorkspace(id: string) {
+  try {
+    localStorage.setItem(WORKSPACE_KEY, id);
+  } catch {
+    // localStorage no disponible (modo privado, etc.): se ignora.
+  }
+}
+
 const FinanceContext = createContext<FinanceContextValue | null>(null);
 
-function emptyState(): FinanceState {
-  return { transactions: [], categories: [], settings: DEFAULT_SETTINGS };
+type WorkspaceData = Omit<FinanceState, "settings">;
+
+function emptyData(): WorkspaceData {
+  return { transactions: [], categories: [] };
+}
+
+interface MembershipRow {
+  role: WorkspaceRole;
+  workspaces: WorkspaceRow | WorkspaceRow[] | null;
 }
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [state, setState] = useState<FinanceState>(emptyState);
+  const [data, setData] = useState<WorkspaceData>(emptyData);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  const currentIdRef = useRef<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonthState] = useState(() => new Date().getMonth());
 
-  const loadAll = useCallback(
-    async (userId: string) => {
-      const [categoriesRes, transactionsRes, settingsRes] = await Promise.all([
-        supabase.from("categories").select("*").order("created_at", { ascending: true }),
-        supabase.from("transactions").select("*").order("date", { ascending: false }),
-        supabase.from("user_settings").select("*").eq("user_id", userId).maybeSingle(),
+  const loadWorkspaceData = useCallback(
+    async (workspaceId: string) => {
+      const [categoriesRes, transactionsRes] = await Promise.all([
+        supabase
+          .from("categories")
+          .select("*")
+          .eq("workspace_id", workspaceId)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("transactions")
+          .select("*")
+          .eq("workspace_id", workspaceId)
+          .order("date", { ascending: false }),
       ]);
 
-      setState({
+      // Ignora respuestas de un negocio que ya no es el actual.
+      if (currentIdRef.current !== workspaceId) return;
+      setData({
         categories: ((categoriesRes.data as CategoryRow[] | null) ?? []).map(rowToCategory),
         transactions: ((transactionsRes.data as TransactionRow[] | null) ?? []).map(rowToTransaction),
-        settings: settingsRes.data ? rowToSettings(settingsRes.data as SettingsRow) : DEFAULT_SETTINGS,
       });
     },
     [supabase]
+  );
+
+  const selectWorkspace = useCallback((id: string | null) => {
+    currentIdRef.current = id;
+    setCurrentId(id);
+  }, []);
+
+  const loadAll = useCallback(
+    async (userId: string) => {
+      const { data: rows } = await supabase
+        .from("memberships")
+        .select("role, workspaces(id, name, currency, monthly_budget)")
+        .eq("user_id", userId);
+
+      const list: Workspace[] = [];
+      for (const row of (rows as MembershipRow[] | null) ?? []) {
+        const ws = Array.isArray(row.workspaces) ? row.workspaces[0] : row.workspaces;
+        if (ws) list.push(rowToWorkspace(ws, row.role));
+      }
+      setWorkspaces(list);
+
+      const wanted = currentIdRef.current ?? readStoredWorkspace();
+      const chosen =
+        list.find((w) => w.id === wanted) ?? list.find((w) => w.role === "owner") ?? list[0] ?? null;
+
+      selectWorkspace(chosen?.id ?? null);
+      if (chosen) {
+        storeWorkspace(chosen.id);
+        await loadWorkspaceData(chosen.id);
+      } else {
+        setData(emptyData());
+      }
+    },
+    [supabase, loadWorkspaceData, selectWorkspace]
+  );
+
+  const switchWorkspace = useCallback(
+    async (id: string) => {
+      if (id === currentIdRef.current || !workspaces.some((w) => w.id === id)) return;
+      storeWorkspace(id);
+      selectWorkspace(id);
+      setData(emptyData());
+      await loadWorkspaceData(id);
+    },
+    [workspaces, selectWorkspace, loadWorkspaceData]
+  );
+
+  const currentWorkspace = useMemo(
+    () => workspaces.find((w) => w.id === currentId) ?? null,
+    [workspaces, currentId]
+  );
+
+  const permissions = useMemo(() => permissionsFor(currentWorkspace?.role ?? null), [currentWorkspace]);
+
+  const state = useMemo<FinanceState>(
+    () => ({
+      ...data,
+      settings: currentWorkspace
+        ? { currency: currentWorkspace.currency, monthlyBudget: currentWorkspace.monthlyBudget }
+        : DEFAULT_SETTINGS,
+    }),
+    [data, currentWorkspace]
   );
 
   const applyUser = useCallback((authUser: { id: string; email?: string; user_metadata?: Record<string, unknown> } | null) => {
@@ -120,7 +225,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         loadAll(session.user.id);
       } else {
-        setState(emptyState());
+        setWorkspaces([]);
+        selectWorkspace(null);
+        setData(emptyData());
       }
     });
 
@@ -128,7 +235,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       active = false;
       subscription.subscription.unsubscribe();
     };
-  }, [supabase, applyUser, loadAll]);
+  }, [supabase, applyUser, loadAll, selectWorkspace]);
 
   const setSelectedMonth = useCallback((year: number, month: number) => {
     setSelectedYear(year);
@@ -147,11 +254,11 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const addTransaction = useCallback(
     async (input: NewTransactionInput) => {
-      if (!user) return;
+      if (!currentId) return;
       const { data, error } = await supabase
         .from("transactions")
         .insert({
-          user_id: user.id,
+          workspace_id: currentId,
           type: input.type,
           amount: input.amount,
           category_id: input.categoryId,
@@ -167,9 +274,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         return;
       }
       const transaction = rowToTransaction(data as TransactionRow);
-      setState((prev) => ({ ...prev, transactions: [transaction, ...prev.transactions] }));
+      setData((prev) => ({ ...prev, transactions: [transaction, ...prev.transactions] }));
     },
-    [supabase, user]
+    [supabase, currentId]
   );
 
   const updateTransaction = useCallback(
@@ -193,7 +300,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         return;
       }
       const transaction = rowToTransaction(data as TransactionRow);
-      setState((prev) => ({
+      setData((prev) => ({
         ...prev,
         transactions: prev.transactions.map((t) => (t.id === id ? transaction : t)),
       }));
@@ -209,18 +316,18 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         toast.error("No se pudo eliminar el movimiento. Intenta de nuevo.");
         return;
       }
-      setState((prev) => ({ ...prev, transactions: prev.transactions.filter((t) => t.id !== id) }));
+      setData((prev) => ({ ...prev, transactions: prev.transactions.filter((t) => t.id !== id) }));
     },
     [supabase]
   );
 
   const addCategory = useCallback(
     async (category: Omit<Category, "id" | "isDefault">) => {
-      if (!user) return null;
+      if (!currentId) return null;
       const { data, error } = await supabase
         .from("categories")
         .insert({
-          user_id: user.id,
+          workspace_id: currentId,
           name: category.name,
           icon: category.icon,
           color: category.color,
@@ -237,10 +344,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         return null;
       }
       const newCategory = rowToCategory(data as CategoryRow);
-      setState((prev) => ({ ...prev, categories: [...prev.categories, newCategory] }));
+      setData((prev) => ({ ...prev, categories: [...prev.categories, newCategory] }));
       return newCategory;
     },
-    [supabase, user]
+    [supabase, currentId]
   );
 
   const updateCategory = useCallback(
@@ -264,7 +371,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         return;
       }
       const category = rowToCategory(data as CategoryRow);
-      setState((prev) => ({
+      setData((prev) => ({
         ...prev,
         categories: prev.categories.map((c) => (c.id === id ? category : c)),
       }));
@@ -280,7 +387,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         toast.error("No se pudo eliminar la categoría. Intenta de nuevo.");
         return;
       }
-      setState((prev) => ({
+      setData((prev) => ({
         ...prev,
         categories: prev.categories.filter((c) => c.id !== id),
         transactions: prev.transactions.filter((t) => t.categoryId !== id),
@@ -289,50 +396,23 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     [supabase]
   );
 
-  const updateSettings = useCallback(
-    async (updates: Partial<Settings>) => {
-      if (!user) return;
-      const { data, error } = await supabase
-        .from("user_settings")
-        .upsert(
-          {
-            user_id: user.id,
-            currency: updates.currency ?? state.settings.currency,
-            monthly_budget: updates.monthlyBudget ?? state.settings.monthlyBudget,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" }
-        )
-        .select()
-        .single();
-
-      if (error || !data) {
-        console.error("No se pudo actualizar la configuración", error);
-        toast.error("No se pudo guardar la configuración. Intenta de nuevo.");
-        return;
-      }
-      setState((prev) => ({ ...prev, settings: rowToSettings(data as SettingsRow) }));
-    },
-    [supabase, user, state.settings]
-  );
-
   const resetAllData = useCallback(async () => {
-    if (!user) return;
-    const [transactionsRes, categoriesRes, settingsRes] = await Promise.all([
-      supabase.from("transactions").delete().eq("user_id", user.id),
-      supabase.from("categories").delete().eq("user_id", user.id),
-      supabase
-        .from("user_settings")
-        .upsert({ user_id: user.id, currency: "COP", monthly_budget: null }, { onConflict: "user_id" }),
-    ]);
+    if (!user || !currentId) return;
+    const transactionsRes = await supabase.from("transactions").delete().eq("workspace_id", currentId);
+    const categoriesRes = transactionsRes.error
+      ? null
+      : await supabase.from("categories").delete().eq("workspace_id", currentId).eq("is_default", false);
+    const budgetsRes = categoriesRes?.error
+      ? null
+      : await supabase.from("categories").update({ monthly_budget: null }).eq("workspace_id", currentId);
 
-    const error = transactionsRes.error || categoriesRes.error || settingsRes.error;
+    const error = transactionsRes.error || categoriesRes?.error || budgetsRes?.error;
     if (error) {
       console.error("No se pudieron borrar los datos", error);
       toast.error("No se pudieron borrar todos los datos. Intenta de nuevo.");
     }
-    await loadAll(user.id);
-  }, [supabase, user, loadAll]);
+    await loadWorkspaceData(currentId);
+  }, [supabase, user, currentId, loadWorkspaceData]);
 
   const exportData = useCallback(() => {
     return JSON.stringify({ ...state, exportedAt: new Date().toISOString() }, null, 2);
@@ -340,7 +420,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const importData = useCallback(
     async (json: string) => {
-      if (!user) return false;
+      if (!user || !currentId) return false;
       try {
         const parsed = JSON.parse(json) as Partial<FinanceState>;
         if (!Array.isArray(parsed.transactions) || !Array.isArray(parsed.categories)) return false;
@@ -351,7 +431,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           const { data } = await supabase
             .from("categories")
             .insert({
-              user_id: user.id,
+              workspace_id: currentId,
               name: category.name,
               icon: category.icon,
               color: category.color,
@@ -367,7 +447,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         for (const transaction of parsed.transactions as Transaction[]) {
           const mappedCategoryId = categoryIdMap.get(transaction.categoryId) ?? null;
           await supabase.from("transactions").insert({
-            user_id: user.id,
+            workspace_id: currentId,
             type: transaction.type,
             amount: transaction.amount,
             category_id: mappedCategoryId,
@@ -376,7 +456,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           });
         }
 
-        await loadAll(user.id);
+        await loadWorkspaceData(currentId);
         return true;
       } catch (error) {
         console.error("No se pudo importar el respaldo", error);
@@ -384,7 +464,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    [supabase, user, loadAll]
+    [supabase, user, currentId, loadWorkspaceData]
   );
 
   const signOut = useCallback(async () => {
@@ -395,6 +475,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       state,
+      workspaces,
+      currentWorkspace,
+      switchWorkspace,
+      permissions,
       hydrated,
       selectedYear,
       selectedMonth,
@@ -407,7 +491,6 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       addCategory,
       updateCategory,
       deleteCategory,
-      updateSettings,
       resetAllData,
       exportData,
       importData,
@@ -416,6 +499,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     [
       user,
       state,
+      workspaces,
+      currentWorkspace,
+      switchWorkspace,
+      permissions,
       hydrated,
       selectedYear,
       selectedMonth,
@@ -428,7 +515,6 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       addCategory,
       updateCategory,
       deleteCategory,
-      updateSettings,
       resetAllData,
       exportData,
       importData,

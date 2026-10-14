@@ -17,7 +17,6 @@ import { AppHeader } from "@/components/AppHeader";
 import { CategoryModal } from "@/components/CategoryModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ICONS } from "@/lib/icons";
-import { CURRENCY_LABELS } from "@/lib/defaults";
 import { useFinance } from "@/context/FinanceContext";
 import {
   disableAppLock,
@@ -35,14 +34,10 @@ function CategoryRow({
 }: {
   category: Category;
   currency: CurrencyCode;
-  onClick: () => void;
+  onClick?: () => void;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
-    >
+  const content = (
+    <>
       <span
         className="flex h-10 w-10 items-center justify-center rounded-xl"
         style={{ backgroundColor: `${category.color}22`, color: category.color }}
@@ -60,7 +55,21 @@ function CategoryRow({
           </span>
         ) : null}
       </span>
-      <ChevronRight size={16} className="text-[var(--color-text-faint)]" />
+      {onClick ? <ChevronRight size={16} className="text-[var(--color-text-faint)]" /> : null}
+    </>
+  );
+
+  if (!onClick) {
+    return <div className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left">{content}</div>;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
+    >
+      {content}
     </button>
   );
 }
@@ -69,7 +78,7 @@ export default function AjustesPage() {
   const {
     user,
     state,
-    updateSettings,
+    permissions,
     addCategory,
     updateCategory,
     deleteCategory,
@@ -216,20 +225,6 @@ export default function AjustesPage() {
             <label className="mb-1.5 block text-xs font-medium text-[var(--color-text-faint)]">Apariencia</label>
             <ThemeToggle />
           </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-[var(--color-text-faint)]">Moneda</label>
-            <select
-              value={state.settings.currency}
-              onChange={(e) => updateSettings({ currency: e.target.value as CurrencyCode })}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
-            >
-              {Object.entries(CURRENCY_LABELS).map(([code, label]) => (
-                <option key={code} value={code}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
       </section>
 
@@ -272,13 +267,15 @@ export default function AjustesPage() {
           <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-faint)]">
             Categorías de gastos
           </h2>
-          <button
-            type="button"
-            onClick={() => setCategoryModal({ open: true, editing: null, defaultType: "expense" })}
-            className="flex items-center gap-1 text-xs font-medium text-[var(--color-brand-light)]"
-          >
-            <Plus size={14} /> Agregar
-          </button>
+          {permissions.canManageCategories ? (
+            <button
+              type="button"
+              onClick={() => setCategoryModal({ open: true, editing: null, defaultType: "expense" })}
+              className="flex items-center gap-1 text-xs font-medium text-[var(--color-brand-light)]"
+            >
+              <Plus size={14} /> Agregar
+            </button>
+          ) : null}
         </div>
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5">
           {expenseCategories.map((c) => (
@@ -286,7 +283,11 @@ export default function AjustesPage() {
               key={c.id}
               category={c}
               currency={state.settings.currency}
-              onClick={() => setCategoryModal({ open: true, editing: c, defaultType: "expense" })}
+              onClick={
+                permissions.canManageCategories
+                  ? () => setCategoryModal({ open: true, editing: c, defaultType: "expense" })
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -297,13 +298,15 @@ export default function AjustesPage() {
           <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-faint)]">
             Categorías de ingresos
           </h2>
-          <button
-            type="button"
-            onClick={() => setCategoryModal({ open: true, editing: null, defaultType: "income" })}
-            className="flex items-center gap-1 text-xs font-medium text-[var(--color-brand-light)]"
-          >
-            <Plus size={14} /> Agregar
-          </button>
+          {permissions.canManageCategories ? (
+            <button
+              type="button"
+              onClick={() => setCategoryModal({ open: true, editing: null, defaultType: "income" })}
+              className="flex items-center gap-1 text-xs font-medium text-[var(--color-brand-light)]"
+            >
+              <Plus size={14} /> Agregar
+            </button>
+          ) : null}
         </div>
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5">
           {incomeCategories.map((c) => (
@@ -311,7 +314,11 @@ export default function AjustesPage() {
               key={c.id}
               category={c}
               currency={state.settings.currency}
-              onClick={() => setCategoryModal({ open: true, editing: c, defaultType: "income" })}
+              onClick={
+                permissions.canManageCategories
+                  ? () => setCategoryModal({ open: true, editing: c, defaultType: "income" })
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -345,29 +352,35 @@ export default function AjustesPage() {
             <Download size={17} className="text-[var(--color-text-muted)]" />
             Exportar copia de seguridad (JSON)
           </button>
-          <button
-            type="button"
-            onClick={handleImportClick}
-            className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-left text-sm transition hover:bg-[var(--color-surface-2)]"
-          >
-            <Upload size={17} className="text-[var(--color-text-muted)]" />
-            Importar copia de seguridad
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={handleReset}
-            className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-left text-sm text-[var(--color-expense)] transition hover:bg-[var(--color-surface-2)]"
-          >
-            <Trash2 size={17} />
-            Borrar todos los datos
-          </button>
+          {permissions.canImport ? (
+            <>
+              <button
+                type="button"
+                onClick={handleImportClick}
+                className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-left text-sm transition hover:bg-[var(--color-surface-2)]"
+              >
+                <Upload size={17} className="text-[var(--color-text-muted)]" />
+                Importar copia de seguridad
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/json"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </>
+          ) : null}
+          {permissions.canResetData ? (
+            <button
+              type="button"
+              onClick={handleReset}
+              className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-left text-sm text-[var(--color-expense)] transition hover:bg-[var(--color-surface-2)]"
+            >
+              <Trash2 size={17} />
+              Borrar todos los datos
+            </button>
+          ) : null}
         </div>
         {importMessage ? (
           <p className="mt-2 flex items-center gap-1.5 px-1 text-xs text-[var(--color-text-muted)]">
@@ -375,8 +388,8 @@ export default function AjustesPage() {
           </p>
         ) : null}
         <p className="mt-3 px-1 text-[11px] leading-relaxed text-[var(--color-text-faint)]">
-          Tus datos se guardan en tu cuenta y están disponibles desde cualquier dispositivo en el
-          que inicies sesión con Google.
+          Tus datos se guardan en la cuenta del negocio y están disponibles desde cualquier
+          dispositivo en el que inicies sesión.
         </p>
       </section>
 

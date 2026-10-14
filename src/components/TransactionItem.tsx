@@ -2,6 +2,7 @@
 
 import { ICONS } from "@/lib/icons";
 import { formatAmount, formatDayLabel } from "@/lib/format";
+import { useFinance } from "@/context/FinanceContext";
 import { useUI } from "@/context/UIContext";
 import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import type { Category, CurrencyCode, Transaction } from "@/types/finance";
@@ -15,15 +16,12 @@ interface TransactionItemProps {
 export function TransactionItem({ transaction, category, currency }: TransactionItemProps) {
   const { openEditTransaction } = useUI();
   const { hidden } = usePrivacy();
+  const { permissions } = useFinance();
   const color = category?.color ?? "#64748b";
   const isExpense = transaction.type === "expense";
 
-  return (
-    <button
-      type="button"
-      onClick={() => openEditTransaction(transaction)}
-      className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
-    >
+  const content = (
+    <>
       <span
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
         style={{ backgroundColor: `${color}22`, color }}
@@ -47,6 +45,20 @@ export function TransactionItem({ transaction, category, currency }: Transaction
       >
         {hidden ? MASKED_AMOUNT : `${isExpense ? "-" : "+"}${formatAmount(transaction.amount, currency)}`}
       </span>
+    </>
+  );
+
+  if (!permissions.canEditTransactions) {
+    return <div className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left">{content}</div>;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => openEditTransaction(transaction)}
+      className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
+    >
+      {content}
     </button>
   );
 }

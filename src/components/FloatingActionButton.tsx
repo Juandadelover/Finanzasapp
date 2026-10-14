@@ -2,22 +2,28 @@
 
 import { useState } from "react";
 import { Plus, TrendingDown, TrendingUp, X } from "lucide-react";
+import { useFinance } from "@/context/FinanceContext";
 import { useUI } from "@/context/UIContext";
 import { cn } from "@/lib/cn";
 
 export function FloatingActionButton() {
   const [open, setOpen] = useState(false);
   const { openNewTransaction } = useUI();
+  const { permissions } = useFinance();
+  const { canCreateIncome, canCreateExpense } = permissions;
 
   function handleSelect(type: "expense" | "income") {
     setOpen(false);
     openNewTransaction(type);
   }
 
+  if (!canCreateIncome && !canCreateExpense) return null;
+
   return (
     <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+92px)] right-4 z-40 flex flex-col items-end gap-3">
       {open ? (
         <div className="flex flex-col items-end gap-2">
+          {canCreateIncome ? (
           <button
             type="button"
             onClick={() => handleSelect("income")}
@@ -28,6 +34,8 @@ export function FloatingActionButton() {
               <TrendingUp size={16} />
             </span>
           </button>
+          ) : null}
+          {canCreateExpense ? (
           <button
             type="button"
             onClick={() => handleSelect("expense")}
@@ -38,6 +46,7 @@ export function FloatingActionButton() {
               <TrendingDown size={16} />
             </span>
           </button>
+          ) : null}
         </div>
       ) : null}
 
