@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T00:00:00Z",
+  "title": "Design System: Finanzas",
+  "extensions": {
+    "colorMeta": {
+      "brand": {"role": "primary", "displayName": "Ledger Violet", "canonical": "#8a05be", "tonalRamp": ["#2a0340", "#3d0560", "#560a82", "#6f08a0", "#8a05be", "#a63fd0", "#c57fe3", "#e6c8f3"]},
+      "brand-dark": {"role": "primary", "displayName": "Deep Violet", "canonical": "#560a82", "tonalRamp": ["#1d0430", "#2d0648", "#3d0865", "#560a82", "#6e2a9a", "#8a55b3", "#b08fcd", "#dccbe8"]},
+      "bg-dark": {"role": "neutral", "displayName": "Night Ink", "canonical": "#0a0e13", "tonalRamp": ["#0a0e13", "#121820", "#1a212b", "#232b37", "#5f6b7a", "#97a2b0", "#d3d9e0", "#f4f6f8"]},
+      "bg-light": {"role": "neutral", "displayName": "Lilac Mist", "canonical": "#f6f5f8", "tonalRamp": ["#17151c", "#5c5868", "#8b8697", "#c4c0cf", "#e2dfea", "#e6e3ee", "#f1eff5", "#f6f5f8"]},
+      "income-dark": {"role": "secondary", "displayName": "Income Green", "canonical": "#34d399", "tonalRamp": ["#053d2b", "#065f46", "#059669", "#10b981", "#34d399", "#6ee7b7", "#a7f3d0", "#d1fae5"]},
+      "expense-dark": {"role": "secondary", "displayName": "Expense Red", "canonical": "#f26d6d", "tonalRamp": ["#450a0a", "#7f1d1d", "#b91c1c", "#dc2626", "#f26d6d", "#f69a9a", "#fbc7c7", "#fde8e8"]}
+    },
+    "typographyMeta": {
+      "display": {"displayName": "Display", "purpose": "Balance figure only."},
+      "headline": {"displayName": "Headline", "purpose": "Page titles."},
+      "title": {"displayName": "Title", "purpose": "Section headings, card titles, button labels."},
+      "body": {"displayName": "Body", "purpose": "Rows, descriptions, inputs."},
+      "label": {"displayName": "Label", "purpose": "Metadata, field labels, deltas."}
+    },
+    "shadows": [
+      {"name": "brand-glow-lg", "value": "0 16px 40px rgba(138,5,190,0.35)", "purpose": "Hero balance card."},
+      {"name": "brand-glow-button", "value": "0 8px 24px rgba(138,5,190,0.35)", "purpose": "Primary submit buttons."},
+      {"name": "fab-glow", "value": "0 10px 30px rgba(138,5,190,0.45)", "purpose": "Floating action button."},
+      {"name": "floating-nav", "value": "0 8px 30px rgba(0,0,0,0.45)", "purpose": "Bottom navigation pill."}
+    ],
+    "motion": [
+      {"name": "theme-transition", "value": "background-color 0.2s ease, color 0.2s ease", "purpose": "Theme switch on body."},
+      {"name": "fadeIn", "value": "0.15s ease-out opacity 0 to 1", "purpose": "Sheet scrim."},
+      {"name": "slideDown", "value": "opacity and translateY(-6px) to 0", "purpose": "Dropdown entrance keyframe."}
+    ],
+    "breakpoints": [
+      {"name": "sm", "value": "640px"}
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Gradient submit action in sheets and forms.",
+      "html": "<button class=\"ds-btn-primary\">Confirmar pago</button>",
+      "css": ".ds-btn-primary{background:linear-gradient(135deg,var(--color-brand) 0%,var(--color-brand-dark) 100%);color:#fff;border:0;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(138,5,190,0.35);cursor:pointer;transition:transform .15s}.ds-btn-primary:hover{filter:brightness(1.08)}.ds-btn-primary:active{transform:scale(.99)}.ds-btn-primary:focus-visible{outline:2px solid var(--color-brand-light);outline-offset:2px}"
+    },
+    {
+      "name": "Floating Action Button",
+      "kind": "custom",
+      "refersTo": "button-fab",
+      "description": "56px gradient circle that opens the Ingreso/Gasto menu.",
+      "html": "<button class=\"ds-fab\" aria-label=\"Agregar movimiento\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg></button>",
+      "css": ".ds-fab{width:56px;height:56px;border-radius:9999px;border:0;color:#fff;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--color-brand),var(--color-brand-dark));box-shadow:0 10px 30px rgba(138,5,190,0.45);cursor:pointer;transition:transform .2s}.ds-fab:hover{transform:scale(1.04)}.ds-fab:focus-visible{outline:2px solid var(--color-brand-light);outline-offset:3px}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Sheet form field on surface-2.",
+      "html": "<input class=\"ds-input\" placeholder=\"Ej. Bancolombia, Efectivo...\"/>",
+      "css": ".ds-input{width:100%;box-sizing:border-box;border:1px solid var(--color-border);background:var(--color-surface-2);color:var(--color-text);border-radius:12px;padding:10px 14px;font-size:14px;outline:none}.ds-input::placeholder{color:var(--color-text-faint)}.ds-input:focus,.ds-input:focus-visible{border-color:var(--color-brand)}"
+    },
+    {
+      "name": "Bottom Navigation",
+      "kind": "nav",
+      "refersTo": "nav-bottom",
+      "description": "Floating icon-only pill with five destinations.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-active\" href=\"#\" aria-label=\"Inicio\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\"><path d=\"M3 11l9-8 9 8v10H3z\"/></svg></a><a class=\"ds-nav-item\" href=\"#\" aria-label=\"Ajustes\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></a></nav>",
+      "css": ".ds-nav{display:inline-flex;gap:2px;padding:8px 6px;border-radius:9999px;border:1px solid var(--color-border);background:var(--color-surface-2);box-shadow:0 8px 30px rgba(0,0,0,0.45)}.ds-nav-item{width:56px;height:48px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:var(--color-text-faint);transition:color .15s}.ds-nav-item:hover{color:var(--color-text-muted)}.ds-nav-item.ds-active{background:var(--color-surface-3);color:var(--color-brand-light)}.ds-nav-item:focus-visible{outline:2px solid var(--color-brand-light)}"
+    },
+    {
+      "name": "Stat Tile",
+      "kind": "card",
+      "refersTo": "card-stat",
+      "description": "Bordered 16px tile with tinted icon well, value and delta.",
+      "html": "<div class=\"ds-tile\"><span class=\"ds-well\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 17l6-6 4 4 8-8\"/></svg></span><p class=\"ds-tile-label\">Ingresos</p><p class=\"ds-tile-value\">$ 1.250.000</p><span class=\"ds-delta\">12% vs. mes anterior</span></div>",
+      "css": ".ds-tile{display:flex;flex-direction:column;gap:10px;border:1px solid var(--color-border);background:var(--color-surface);border-radius:16px;padding:14px;color:var(--color-text)}.ds-well{width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--color-income);background:color-mix(in oklab,var(--color-income) 15%,transparent)}.ds-tile-label{margin:0;font-size:12px;color:var(--color-text-faint)}.ds-tile-value{margin:2px 0 0;font-size:18px;font-weight:600}.ds-delta{font-size:11px;font-weight:500;color:var(--color-income)}"
+    },
+    {
+      "name": "Balance Card",
+      "kind": "card",
+      "refersTo": "card-hero",
+      "description": "Hero gradient card with the balance figure.",
+      "html": "<div class=\"ds-hero\"><span class=\"ds-hero-label\">Balance Disponible</span><p class=\"ds-hero-amount\">$ 2.480.000</p></div>",
+      "css": ".ds-hero{background:linear-gradient(135deg,var(--color-brand),var(--color-brand-dark));color:#fff;border-radius:24px;padding:20px;box-shadow:0 16px 40px rgba(138,5,190,0.35)}.ds-hero-label{font-size:14px;font-weight:500;color:rgba(255,255,255,.8)}.ds-hero-amount{margin:8px 0 0;font-size:36px;font-weight:700;letter-spacing:-0.025em}"
+    },
+    {
+      "name": "Transaction Row",
+      "kind": "custom",
+      "description": "Tinted category well, description, meta and signed amount.",
+      "html": "<button class=\"ds-row\"><span class=\"ds-row-icon\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M6 2l1 4h10l1-4M4 6h16l-1 14H5z\"/></svg></span><span class=\"ds-row-text\"><span class=\"ds-row-title\">Mercado</span><span class=\"ds-row-meta\">Comida · Hoy</span></span><span class=\"ds-row-amount\">-$ 85.000</span></button>",
+      "css": ".ds-row{display:flex;width:100%;align-items:center;gap:12px;border:0;background:transparent;border-radius:16px;padding:10px 8px;text-align:left;cursor:pointer;color:var(--color-text);transition:background .15s}.ds-row:hover{background:var(--color-surface-2)}.ds-row:focus-visible{outline:2px solid var(--color-brand-light)}.ds-row-icon{width:44px;height:44px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:#f9731622;color:#f97316}.ds-row-text{flex:1;display:flex;flex-direction:column;min-width:0}.ds-row-title{font-size:14px;font-weight:500}.ds-row-meta{font-size:12px;color:var(--color-text-faint)}.ds-row-amount{font-size:14px;font-weight:600;color:var(--color-expense)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Pocket Ledger",
+    "overview": "A ledger you can read with one thumb at the counter. The surface is quiet, tonal and dark by default; one violet brand gradient marks the two things that matter most, the balance and the act of adding a movement. Everything else is stepped neutral surfaces, soft rounded forms and green/red money semantics.",
+    "keyCharacteristics": [
+      "Dark theme is the default; light theme is a full mirror via CSS variables and a .dark class.",
+      "Tonal layering (bg, surface, surface-2, surface-3) carries depth; borders are 1px hairlines.",
+      "One accent: the violet gradient. Green and red mean money in and out only.",
+      "Generous rounding (12 to 24px) and pill shapes for navigation and chips.",
+      "Lucide line icons in tinted rounded-square wells."
+    ],
+    "rules": [
+      {"name": "The Money Semantics Rule", "body": "Green and red appear only for money direction and error state, never as decoration.", "section": "colors"},
+      {"name": "The Gradient Is Earned Rule", "body": "The brand gradient fills only the hero balance card, primary submit buttons, the FAB and the logo tile.", "section": "colors"},
+      {"name": "The Amount First Rule", "body": "The largest, boldest text on a screen is a money figure, colored by direction where it is a movement.", "section": "typography"},
+      {"name": "The Flat Cards Rule", "body": "Content cards never get a shadow; only brand-gradient and floating elements do.", "section": "elevation"}
+    ],
+    "dos": [
+      "Do read colors from the CSS variables (var(--color-*)) so both themes work.",
+      "Do keep touch targets at 44px or larger and give icon-only controls an aria-label.",
+      "Do mask amounts with MASKED_AMOUNT when privacy mode is on.",
+      "Do use text-sm for body and text-xs for metadata; reserve bold large type for amounts and page titles.",
+      "Do reuse existing radii (12, 16, 24, full) rather than adding new steps."
+    ],
+    "donts": [
+      "Don't use the brand gradient on content cards, tiles or decorative fills.",
+      "Don't use green or red for anything other than income/expense semantics and errors.",
+      "Don't add shadows to ordinary content cards.",
+      "Don't hard-code hex colors for UI chrome; category colors are user data and the only exception."
+    ]
+  }
+}
