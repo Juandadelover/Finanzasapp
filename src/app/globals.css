@@ -5,24 +5,69 @@
   --color-surface: #ffffff;
   --color-surface-2: #f1eff5;
   --color-surface-3: #e6e3ee;
+  --color-surface-elevated: #ffffff;
   --color-border: #e2dfea;
+
+  /* Materials: translucent chrome over scrolling content (see .material). */
+  --material-bg: rgba(241, 239, 245, 0.72);
+  --material-bg-bar: rgba(246, 245, 248, 0.78);
+  --material-border: rgba(23, 21, 28, 0.08);
+  --material-highlight: rgba(255, 255, 255, 0.7);
+  --shadow-sheet: 0 -12px 48px rgba(23, 21, 28, 0.16);
 
   --color-text: #17151c;
   --color-text-muted: #5c5868;
-  --color-text-faint: #8b8697;
+  --color-text-faint: #6e697a;
 
   --color-brand: #8a05be;
   --color-brand-dark: #560a82;
   --color-brand-light: #7c1fb0;
 
-  --color-income: #059669;
+  --color-income: #047857;
   --color-expense: #dc2626;
-  --color-warning: #d97706;
+  --color-warning: #b45309;
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
+  --shadow-brand-sm: 0 4px 16px rgba(138, 5, 190, 0.35);
+  --shadow-brand-md: 0 8px 24px rgba(138, 5, 190, 0.35);
+  --shadow-brand-lg: 0 16px 40px rgba(138, 5, 190, 0.35);
+  --shadow-brand-fab: 0 10px 30px rgba(138, 5, 190, 0.45);
+
   color-scheme: light;
+}
+
+/* === Movimiento: tokens (ver DESIGN.md > Motion) ===
+   Duraciones: respuesta al toque, estado de UI, transiciones de contenido. Nada iniciado por el usuario pasa de 300ms. */
+:root {
+  --duration-instant: 75ms; /* press-down */
+  --duration-fast: 150ms; /* hover, color, salidas */
+  --duration-base: 200ms; /* entradas, cross-fade, cambio de cifra */
+  --duration-slow: 300ms; /* máximo: barras de progreso, gráficos */
+  --stagger: 30ms; /* retardo por ítem en listas (máx. 50ms) */
+  --stagger-max: 10; /* ítems escalonados como máximo: la lista nunca espera más de ~300ms */
+
+  /* Easing: entradas desacelerando, salidas acelerando. linear solo para progreso. */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-linear: linear;
+
+  /* Escala de capas (z-index). Cada capa de overlay vive por encima de la anterior. */
+  --z-raised: 10; /* elementos pegajosos dentro de un panel (cabecera de la sheet) */
+  --z-bar: 20; /* barras de acción fijas de página */
+  --z-header: 30; /* AppHeader sticky */
+  --z-nav: 40; /* BottomNav */
+  --z-fab: 45; /* FAB y su menú (por encima de la nav) */
+  --z-sheet: 50; /* BottomSheet / diálogo centrado */
+  --z-dialog: 60; /* ConfirmDialog (sobre las sheets) */
+  --z-toast: 70; /* Toasts (sobre todo) */
+}
+
+/* Las utilidades `transition` de Tailwind heredan los tokens. */
+@theme {
+  --default-transition-duration: var(--duration-fast);
+  --default-transition-timing-function: var(--ease-out);
 }
 
 .dark {
@@ -30,11 +75,18 @@
   --color-surface: #121820;
   --color-surface-2: #1a212b;
   --color-surface-3: #232b37;
+  --color-surface-elevated: #151c25;
   --color-border: #232b37;
+
+  --material-bg: rgba(26, 33, 43, 0.72);
+  --material-bg-bar: rgba(10, 14, 19, 0.72);
+  --material-border: rgba(255, 255, 255, 0.08);
+  --material-highlight: rgba(255, 255, 255, 0.06);
+  --shadow-sheet: 0 -12px 48px rgba(0, 0, 0, 0.55);
 
   --color-text: #f4f6f8;
   --color-text-muted: #97a2b0;
-  --color-text-faint: #5f6b7a;
+  --color-text-faint: #818d9d;
 
   --color-brand: #8a05be;
   --color-brand-dark: #560a82;
@@ -70,11 +122,54 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Sin retardo de toque: respuesta al instante (no double-tap-to-zoom en controles). */
+html,
+a,
+button,
+[role="button"],
+label,
+input,
+select,
+textarea,
+summary {
+  touch-action: manipulation;
+}
+
+/* Tipografía: tracking según el tamaño, interlineado cómodo en cuerpo. */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.014em;
+    text-wrap: balance;
+  }
+  h1 {
+    letter-spacing: -0.022em;
+  }
+  p {
+    text-wrap: pretty;
+  }
+}
+
+/* Cifras grandes (saldo): tracking cerrado e interlineado ajustado. */
+.amount-display {
+  letter-spacing: -0.032em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--duration-base) var(--ease-out), color var(--duration-base) var(--ease-out);
 }
 
 ::-webkit-scrollbar {
@@ -85,6 +180,36 @@ body {
 ::-webkit-scrollbar-thumb {
   background: var(--color-surface-3);
   border-radius: 999px;
+}
+
+/* Foco visible global (teclado) */
+:focus-visible {
+  outline: 2px solid var(--color-brand-light);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-brand) 35%, transparent);
+}
+
+input,
+textarea {
+  caret-color: var(--color-brand-light);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .gradient-brand {
@@ -100,12 +225,117 @@ body {
   scrollbar-width: none;
 }
 
+/* Materiales translúcidos: blur + saturación sobre una superficie semitransparente. */
+.material,
+.app-header::before {
+  background: var(--material-bg);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+.material-bar {
+  background: color-mix(in oklab, var(--color-surface-elevated) 86%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+}
+
+.material {
+  border: 1px solid var(--material-border);
+  box-shadow: inset 0 1px 0 var(--material-highlight), 0 8px 30px rgba(0, 0, 0, 0.28);
+}
+
+/* Cabecera: transparente arriba; al hacer scroll el material aparece (borde de scroll, no divisor fijo). */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  isolation: isolate;
+}
+
+.app-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--material-bg-bar);
+  border-bottom: 1px solid var(--material-border);
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-out);
+  pointer-events: none;
+}
+
+.app-header[data-scrolled="true"]::before {
+  opacity: 1;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .material,
+  .material-bar,
+  .app-header::before {
+    background: var(--color-surface-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .material-bar {
+    background: var(--color-surface-elevated);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .material,
+  .material-bar,
+  .app-header::before {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--color-text-muted);
+  }
+}
+
+/* Menú del FAB: escala anclada al origen (el botón), --p lo maneja un resorte (0 a 1). */
+.spring-pop {
+  opacity: var(--p, 1);
+  transform: translateY(calc((1 - var(--p, 1)) * 14px)) scale(calc(0.95 + 0.05 * var(--p, 1)));
+  transform-origin: bottom right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spring-pop {
+    transform: none;
+  }
+}
+
+/* Entradas: ease-out. Salidas: ease-in, más cortas (ver tokens arriba). */
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes popOut {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
   }
 }
 
@@ -117,5 +347,179 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes listIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes progressGrow {
+  from {
+    width: 0;
+  }
+}
+
+@keyframes numberSwap {
+  from {
+    opacity: 0.35;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes checkPop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes checkDraw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.anim-fade-in {
+  animation: fadeIn var(--duration-base) var(--ease-out);
+}
+.anim-fade-out {
+  animation: fadeOut var(--duration-fast) var(--ease-in) forwards;
+}
+.anim-pop-in {
+  animation: popIn var(--duration-base) var(--ease-out);
+}
+.anim-pop-out {
+  animation: popOut var(--duration-fast) var(--ease-in) forwards;
+}
+.anim-slide-down {
+  animation: slideDown var(--duration-base) var(--ease-out);
+}
+
+/* Contenido de pestañas / segmentos: cross-fade corto (≤200ms), sin movimiento, sin saltos de layout. */
+.tab-fade {
+  animation: fadeIn var(--duration-base) var(--ease-out);
+}
+
+/* Cambio de página entre pestañas de la nav: solo opacidad (no mueve el layout). `backwards` evita
+   dejar un contexto de apilamiento una vez terminada. */
+.page-enter {
+  animation: fadeIn var(--duration-fast) var(--ease-out) backwards;
+}
+
+/* Lista: entrada escalonada solo en la primera carga (--i lo pone el componente, tope --stagger-max). */
+.stagger-in {
+  animation: listIn var(--duration-base) var(--ease-out) backwards;
+  animation-delay: calc(min(var(--i, 0), var(--stagger-max)) * var(--stagger));
+}
+
+/* Barras de progreso: el ÚNICO uso de linear. Crecen desde 0 al montar y siguen los cambios de ancho. */
+.progress-fill {
+  animation: progressGrow var(--duration-slow) var(--ease-linear) backwards;
+  transition: width var(--duration-slow) var(--ease-linear);
+}
+
+/* Cifra que cambia: aparece desde un leve desplazamiento; el valor nuevo se lee desde el primer frame. */
+.number-swap {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: bottom;
+  animation: numberSwap var(--duration-base) var(--ease-out);
+}
+
+/* Check de éxito (toast): el círculo entra con escala y la marca se dibuja. */
+.check-pop {
+  animation: checkPop var(--duration-base) var(--ease-out) backwards;
+}
+.check-draw {
+  stroke-dasharray: 24;
+  animation: checkDraw var(--duration-base) var(--ease-out) 80ms backwards;
+}
+
+/* Sonner usa 400ms y `ease`: se alinea con los tokens (entrada ease-out, salida ease-in). */
+[data-sonner-toaster] [data-sonner-toast] {
+  transition:
+    transform var(--duration-slow) var(--ease-out),
+    opacity var(--duration-slow) var(--ease-out),
+    height var(--duration-slow) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out) !important;
+}
+[data-sonner-toaster] [data-sonner-toast][data-removed="true"] {
+  transition-duration: var(--duration-fast) !important;
+  transition-timing-function: var(--ease-in) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger-in,
+  .number-swap,
+  .check-pop,
+  .check-draw,
+  .page-enter {
+    animation: none;
+  }
+}
+
+/* Impresión de documentos (cuentas de cobro / cotizaciones) */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #print-area,
+  #print-area * {
+    visibility: visible !important;
+  }
+  #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+}
+
+/* === Reportes: impresión / PDF (/reportes) === */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  #print-area.report-print {
+    color: #111 !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+  #print-area.report-print * {
+    color: #111 !important;
+    background: transparent !important;
+    border-color: #ccc !important;
+  }
+  #print-area.report-print .report-row {
+    break-inside: avoid;
+  }
+}
+/* === Fin Reportes === */
+
+/* Glifos del FAB: con movimiento reducido solo se hace crossfade, sin rotación. */
+@media (prefers-reduced-motion: reduce) {
+  .fab-glyph {
+    transform: none !important;
   }
 }

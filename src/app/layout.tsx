@@ -15,9 +15,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Finanzas — Controla tus gastos e ingresos",
+  ...(process.env.NEXT_PUBLIC_APP_URL
+    ? { metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL) }
+    : {}),
+  title: {
+    default: "Finanzas — Controla tus gastos e ingresos",
+    template: "%s · Finanzas",
+  },
   description:
     "Aplicación personal de finanzas para registrar gastos e ingresos, organizarlos por categorías y ver estadísticas.",
+  // Public pages (/precios, /legal, /login) are allowed via robots.ts; app routes stay out of indexes.
+  robots: { index: false, follow: false },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -32,7 +40,6 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

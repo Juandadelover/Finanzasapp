@@ -1,5 +1,6 @@
 "use client";
 
+import { useReducedMotion } from "@/components/ui/motion";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { formatAmount } from "@/lib/format";
 import type { MonthPoint } from "@/lib/selectors";
@@ -11,8 +12,9 @@ interface IncomeExpenseBarChartProps {
 }
 
 export function IncomeExpenseBarChart({ data, currency }: IncomeExpenseBarChartProps) {
+  const reduced = useReducedMotion();
   return (
-    <div className="h-56 w-full">
+    <div className="h-56 w-full" role="img" aria-label="Ingresos y gastos de los últimos 6 meses">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} barGap={3} margin={{ left: -12, right: 8, top: 8 }}>
           <CartesianGrid stroke="var(--color-border)" vertical={false} />
@@ -36,8 +38,8 @@ export function IncomeExpenseBarChart({ data, currency }: IncomeExpenseBarChartP
               fontSize: 13,
             }}
           />
-          <Bar dataKey="income" fill="var(--color-income)" radius={[4, 4, 0, 0]} maxBarSize={18} />
-          <Bar dataKey="expense" fill="var(--color-expense)" radius={[4, 4, 0, 0]} maxBarSize={18} />
+          <Bar dataKey="income" isAnimationActive={!reduced} animationDuration={300} animationEasing="ease-out" fill="var(--color-income)" radius={[4, 4, 0, 0]} maxBarSize={18} />
+          <Bar dataKey="expense" isAnimationActive={!reduced} animationDuration={300} animationEasing="ease-out" fill="var(--color-expense)" radius={[4, 4, 0, 0]} maxBarSize={18} />
         </BarChart>
       </ResponsiveContainer>
     </div>

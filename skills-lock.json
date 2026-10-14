@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "12-principles-of-animation": {
+      "source": "raphaelsalaja/skill",
+      "sourceType": "github",
+      "skillPath": "skills/12-principles-of-animation/SKILL.md",
+      "computedHash": "fd8f83df6be0cebd89ac8c5e5345f7b5f4028a5e32f98f1699d52fa5008c7082"
+    }
+  }
+}

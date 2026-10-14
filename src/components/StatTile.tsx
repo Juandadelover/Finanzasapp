@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { cn } from "@/lib/cn";
 
 interface StatTileProps {
@@ -16,7 +17,7 @@ export function StatTile({ label, value, icon: Icon, accent, deltaPct, goodDirec
   const isGood = goodDirection === "up" ? isPositive : !isPositive;
 
   return (
-    <div className="flex flex-1 flex-col gap-2.5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
+    <div className="flex min-w-0 flex-1 flex-col gap-2.5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
       <span
         className="flex h-8 w-8 items-center justify-center rounded-xl"
         style={{ backgroundColor: `color-mix(in oklab, ${accent} 15%, transparent)`, color: accent }}
@@ -25,14 +26,14 @@ export function StatTile({ label, value, icon: Icon, accent, deltaPct, goodDirec
       </span>
       <div>
         <p className="text-xs text-[var(--color-text-faint)]">{label}</p>
-        <p className="mt-0.5 truncate text-lg font-semibold text-[var(--color-text)]">{value}</p>
+        <p title={value} className="tabular mt-0.5 truncate text-lg font-semibold text-[var(--color-text)]"><AnimatedValue value={value} className="truncate" /></p>
       </div>
       {deltaPct === null ? (
-        <span className="text-[11px] font-medium text-[var(--color-text-faint)]">Sin datos el mes pasado</span>
+        <span className="text-xs font-medium text-[var(--color-text-faint)]">Sin datos el mes pasado</span>
       ) : (
         <span
           className={cn(
-            "flex items-center gap-0.5 text-[11px] font-medium",
+            "flex items-center gap-0.5 text-xs font-medium",
             isGood ? "text-[var(--color-income)]" : "text-[var(--color-expense)]"
           )}
         >

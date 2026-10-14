@@ -1,61 +1,75 @@
 "use client";
 
-import { HelpCircle, TrendingDown, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { ExpenseIcon, IncomeIcon } from "@/components/icons/money";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { formatAmount } from "@/lib/format";
 import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import type { CurrencyCode } from "@/types/finance";
 
 interface BalanceCardProps {
-  balance: number;
+  /** Saldo real sumando las cuentas (null si el negocio aún no tiene cuentas). */
+  accountsTotal: number | null;
+  /** Ingresos − gastos pagados del mes seleccionado. */
+  monthResult: number;
   income: number;
   expense: number;
   currency: CurrencyCode;
 }
 
-export function BalanceCard({ balance, income, expense, currency }: BalanceCardProps) {
+export function BalanceCard({ accountsTotal, monthResult, income, expense, currency }: BalanceCardProps) {
   const { hidden } = usePrivacy();
-  const availablePct = income > 0 ? Math.max(0, Math.min(100, Math.round((balance / income) * 100))) : 0;
+  // La cifra grande es la plata que hay de verdad; sin cuentas, el resultado del mes.
+  const headline = accountsTotal ?? monthResult;
+  const balanceText = hidden ? MASKED_AMOUNT : formatAmount(headline, currency);
 
   return (
-    <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(138,5,190,0.35)]">
+    <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[var(--shadow-brand-lg)]">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-white/80">Balance Disponible</span>
-        <HelpCircle size={18} className="text-white/60" />
+        <span className="text-sm font-medium text-white/85">
+          {accountsTotal !== null ? "Saldo en cuentas" : "Resultado del mes"}
+        </span>
+        <Link
+          href="/cuentas"
+          className="-mr-2 flex min-h-11 items-center gap-0.5 px-2 text-xs font-medium text-white/85 hover:text-white"
+        >
+          Cuentas
+          <ChevronRight size={16} />
+        </Link>
       </div>
-      <p className="mt-2 text-4xl font-bold tracking-tight">
-        {hidden ? MASKED_AMOUNT : formatAmount(balance, currency)}
+      <p
+        className={`tabular amount-display mt-2 break-words font-bold ${balanceText.length > 14 ? "text-2xl" : balanceText.length > 11 ? "text-3xl" : "text-4xl"}`}
+      >
+        <AnimatedValue value={balanceText} />
       </p>
 
-      <div className="mt-4">
-        <div className="flex items-center justify-between text-xs font-medium text-white/70">
-          <span className="uppercase tracking-wide">Disponible</span>
-          <span>{availablePct}%</span>
-        </div>
-        <div className="mt-1.5 h-2 rounded-full bg-white/20">
-          <div
-            className="h-2 rounded-full bg-white transition-all"
-            style={{ width: `${availablePct}%` }}
-          />
-        </div>
-      </div>
+      {accountsTotal !== null ? (
+        <p className="mt-1 text-sm text-white/85">
+          {monthResult >= 0 ? "Ganancia" : "Pérdida"} del mes:{" "}
+          <span className="tabular font-semibold text-white">
+            <AnimatedValue value={hidden ? MASKED_AMOUNT : formatAmount(monthResult, currency, { signed: true })} />
+          </span>
+        </p>
+      ) : null}
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-white/10 p-3">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-white/70">
-            <TrendingUp size={14} />
+        <div className="min-w-0 rounded-2xl bg-white/10 p-3">
+          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-white/85">
+            <IncomeIcon size={14} />
             Ingresos
           </div>
-          <p className="mt-1 text-lg font-semibold">
-            {hidden ? MASKED_AMOUNT : formatAmount(income, currency, { signed: true })}
+          <p className="tabular mt-1 truncate text-lg font-semibold">
+            <AnimatedValue value={hidden ? MASKED_AMOUNT : formatAmount(income, currency, { signed: true })} className="truncate" />
           </p>
         </div>
-        <div className="rounded-2xl bg-black/10 p-3">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-white/70">
-            <TrendingDown size={14} />
+        <div className="min-w-0 rounded-2xl bg-black/10 p-3">
+          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-white/85">
+            <ExpenseIcon size={14} />
             Gastos
           </div>
-          <p className="mt-1 text-lg font-semibold">
-            {hidden ? MASKED_AMOUNT : `-${formatAmount(expense, currency)}`}
+          <p className="tabular mt-1 truncate text-lg font-semibold">
+            <AnimatedValue value={hidden ? MASKED_AMOUNT : formatAmount(-expense, currency)} className="truncate" />
           </p>
         </div>
       </div>

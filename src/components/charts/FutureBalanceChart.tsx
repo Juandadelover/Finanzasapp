@@ -1,5 +1,6 @@
 "use client";
 
+import { useReducedMotion } from "@/components/ui/motion";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatAmount } from "@/lib/format";
 import type { CurrencyCode } from "@/types/finance";
@@ -10,10 +11,11 @@ interface FutureBalanceChartProps {
 }
 
 export function FutureBalanceChart({ data, currency }: FutureBalanceChartProps) {
+  const reduced = useReducedMotion();
   const points = data.map((p) => ({ ...p, label: p.day === 0 ? "Hoy" : `${p.day}d` }));
 
   return (
-    <div className="h-52 w-full">
+    <div className="h-52 w-full" role="img" aria-label="Proyección del balance a 90 días">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={points} margin={{ left: -12, right: 8, top: 12 }}>
           <defs>
@@ -41,6 +43,9 @@ export function FutureBalanceChart({ data, currency }: FutureBalanceChartProps) 
             }}
           />
           <Area
+            isAnimationActive={!reduced}
+            animationDuration={300}
+            animationEasing="ease-out"
             type="monotone"
             dataKey="balance"
             stroke="var(--color-brand-light)"

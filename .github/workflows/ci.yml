@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-key-for-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DEV_SEED_PASSWORD: finanzas-local-dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase
+        run: supabase start -x studio,imgproxy,vector,logflare,edge-runtime,mailpit,postgres-meta,supavisor,realtime
+
+      - name: Load seeds
+        run: |
+          DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          {
+            echo "select set_config('app.dev_seed_password','${DEV_SEED_PASSWORD}',false);"
+            cat supabase/seed/dev_users.sql
+          } | psql "$DB_URL" -v ON_ERROR_STOP=1
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/seed/demo_data.sql
+
+      - name: Database tests (pgTAP)
+        run: supabase test db
+
+      - run: npm ci
+
+      - name: Build and start the app
+        run: |
+          eval "$(supabase status -o env | sed 's/^/export /')"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="${PUBLISHABLE_KEY:-$ANON_KEY}"
+          npm run build
+          nohup npx next start -H 127.0.0.1 -p 3100 > app.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:3100/login > /dev/null && exit 0
+            sleep 2
+          done
+          cat app.log
+          exit 1
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npx playwright test
+        env:
+          E2E_BASE_URL: http://127.0.0.1:3100
+          E2E_PASSWORD: finanzas-local-dev
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+            app.log
+          retention-days: 7

@@ -1,3 +1,5 @@
+import { Target } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { getIcon } from "@/lib/icons";
 import { formatAmount } from "@/lib/format";
 import { MASKED_AMOUNT } from "@/context/PrivacyContext";
@@ -19,9 +21,12 @@ function severityColor(ratio: number): string {
 export function BudgetSection({ items, currency, hidden }: BudgetSectionProps) {
   if (items.length === 0) {
     return (
-      <p className="text-sm text-[var(--color-text-faint)]">
-        Fija un presupuesto mensual en alguna categoría de gasto (desde Ajustes) para verlo aquí.
-      </p>
+      <EmptyState
+        icon={Target}
+        title="Aún no hay presupuestos"
+        description="Fija un presupuesto mensual en una categoría de gasto para ver tu avance aquí."
+        action={{ label: "Ir a Ajustes", href: "/ajustes" }}
+      />
     );
   }
 
@@ -42,17 +47,17 @@ export function BudgetSection({ items, currency, hidden }: BudgetSectionProps) {
                 <Icon size={16} />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between gap-2 text-sm">
                   <span className="truncate font-medium">{category.name}</span>
-                  <span className="shrink-0 text-[var(--color-text-muted)]">
+                  <span className="tabular shrink-0 text-[var(--color-text-muted)]">
                     {hidden
                       ? MASKED_AMOUNT
                       : `${formatAmount(spent, currency)} / ${formatAmount(budget, currency)}`}
                   </span>
                 </div>
-                <div className="mt-1.5 h-1.5 w-full rounded-full bg-[var(--color-surface-2)]">
+                <div role="progressbar" aria-label={`Presupuesto ${category.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={barWidth} className="mt-1.5 h-1.5 w-full rounded-full bg-[var(--color-surface-2)]">
                   <div
-                    className="h-1.5 rounded-full transition-all"
+                    className="progress-fill h-1.5 rounded-full"
                     style={{ width: `${barWidth}%`, backgroundColor: color }}
                   />
                 </div>

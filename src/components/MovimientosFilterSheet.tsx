@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
 import { useState } from "react";
 import { Check } from "lucide-react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
@@ -67,7 +68,7 @@ export function MovimientosFilterSheet({
                   key={category.id}
                   type="button"
                   onClick={() => toggleCategory(category.id)}
-                  className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-[var(--color-surface-2)]"
+                  className="flex w-full items-center gap-3 min-h-11 rounded-xl px-2 py-2 text-left transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
                 >
                   <span
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
@@ -78,7 +79,7 @@ export function MovimientosFilterSheet({
                   <span className="flex-1 text-sm font-medium">{category.name}</span>
                   <span
                     className={cn(
-                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition",
+                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition",
                       isSelected
                         ? "border-[var(--color-brand)] bg-[var(--color-brand)] text-white"
                         : "border-[var(--color-border)] text-transparent"
@@ -98,44 +99,36 @@ export function MovimientosFilterSheet({
           </label>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="mb-1 block text-[11px] text-[var(--color-text-faint)]">Desde</label>
-              <input
+              <label htmlFor="flt-f1" className="mb-1 block text-xs text-[var(--color-text-faint)]">Desde</label>
+              <input id="flt-f1"
                 type="date"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
+                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
               />
             </div>
             <div className="flex-1">
-              <label className="mb-1 block text-[11px] text-[var(--color-text-faint)]">Hasta</label>
-              <input
+              <label htmlFor="flt-f2" className="mb-1 block text-xs text-[var(--color-text-faint)]">Hasta</label>
+              <input id="flt-f2"
                 type="date"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
+                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
               />
             </div>
           </div>
-          <p className="mt-1.5 text-[11px] text-[var(--color-text-faint)]">
+          <p className="mt-1.5 text-xs text-[var(--color-text-faint)]">
             Un rango personalizado reemplaza al mes seleccionado arriba.
           </p>
         </div>
 
         <div className="flex gap-3 pt-1">
-          <button
-            type="button"
-            onClick={handleClear}
-            className="flex-1 rounded-xl border border-[var(--color-border)] py-3 text-sm font-semibold text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)]"
-          >
+          <Button variant="secondary" onClick={handleClear} className="flex-1">
             Limpiar
-          </button>
-          <button
-            type="button"
-            onClick={handleApply}
-            className="gradient-brand flex-1 rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition active:scale-[0.99]"
-          >
+          </Button>
+          <Button onClick={handleApply} className="flex-1">
             Aplicar
-          </button>
+          </Button>
         </div>
       </div>
     </BottomSheet>

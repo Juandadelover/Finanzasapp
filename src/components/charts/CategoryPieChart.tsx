@@ -1,5 +1,6 @@
 "use client";
 
+import { useReducedMotion } from "@/components/ui/motion";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { getIcon } from "@/lib/icons";
 import { formatAmount } from "@/lib/format";
@@ -17,16 +18,20 @@ interface CategoryPieChartProps {
 }
 
 export function CategoryPieChart({ data, currency, emptyLabel, hidden = false }: CategoryPieChartProps) {
+  const reduced = useReducedMotion();
   if (data.length === 0) {
     return <EmptyState icon={PieChartIcon} title={emptyLabel} />;
   }
 
   return (
     <div>
-      <div className="h-56 w-full">
+      <div className="h-56 w-full" role="img" aria-label="Gráfico de gastos por categoría; el detalle está en la lista de abajo">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
+              isAnimationActive={!reduced}
+              animationDuration={300}
+              animationEasing="ease-out"
               data={data}
               dataKey="total"
               nameKey="category.name"
@@ -68,15 +73,15 @@ export function CategoryPieChart({ data, currency, emptyLabel, hidden = false }:
                 <Icon size={16} />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between gap-2 text-sm">
                   <span className="truncate font-medium">{item.category.name}</span>
-                  <span className="shrink-0 text-[var(--color-text-muted)]">
+                  <span className="tabular shrink-0 text-[var(--color-text-muted)]">
                     {hidden ? MASKED_AMOUNT : formatAmount(item.total, currency)}
                   </span>
                 </div>
                 <div className="mt-1 h-1.5 w-full rounded-full bg-[var(--color-surface-2)]">
                   <div
-                    className="h-1.5 rounded-full"
+                    className="progress-fill h-1.5 rounded-full"
                     style={{ width: `${item.percentage}%`, backgroundColor: item.category.color }}
                   />
                 </div>
