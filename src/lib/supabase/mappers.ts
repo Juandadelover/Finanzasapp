@@ -10,6 +10,7 @@ import type {
   CurrencyCode,
   Transaction,
   TransactionType,
+  TaxRegime,
   Workspace,
   WorkspaceRole,
 } from "@/types/finance";
@@ -78,6 +79,8 @@ export interface WorkspaceRow {
   name: string;
   currency: string;
   monthly_budget: number | string | null;
+  document?: string | null;
+  tax_regime?: string | null;
 }
 
 export function rowToCategory(row: CategoryRow): Category {
@@ -149,5 +152,7 @@ export function rowToWorkspace(row: WorkspaceRow, role: WorkspaceRole): Workspac
     role,
     currency: row.currency as CurrencyCode,
     monthlyBudget: row.monthly_budget !== null ? Number(row.monthly_budget) : null,
+    document: row.document ?? null,
+    taxRegime: (row.tax_regime as TaxRegime | null | undefined) ?? null,
   };
 }

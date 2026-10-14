@@ -1,18 +1,42 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { Building2, Check, ChevronDown, Plus, Users } from "lucide-react";
+import { toast } from "sonner";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { useFinance } from "@/context/FinanceContext";
 import { cn } from "@/lib/cn";
 import { ROLE_LABELS } from "@/lib/permissions";
 
 export function WorkspaceSwitcher() {
-  const { workspaces, currentWorkspace, switchWorkspace } = useFinance();
+  const { workspaces, currentWorkspace, switchWorkspace, createWorkspace } = useFinance();
   const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const isAdmin = currentWorkspace?.role === "owner" || currentWorkspace?.role === "admin";
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    const n = newName.trim();
+    if (!n) {
+      toast.error("Escribe el nombre del negocio.");
+      return;
+    }
+    setBusy(true);
+    const ws = await createWorkspace(n);
+    setBusy(false);
+    if (ws) {
+      toast.success(`Negocio "${ws.name}" creado.`);
+      setNewName("");
+      setCreating(false);
+      setOpen(false);
+    }
+  }
 
   const name = currentWorkspace?.name ?? "Finanzas";
-  const canSwitch = workspaces.length > 1;
+  const canSwitch = true;
 
   const content = (
     <>
@@ -41,7 +65,7 @@ export function WorkspaceSwitcher() {
         <div className="flex min-w-0 items-center gap-2">{content}</div>
       )}
 
-      <BottomSheet isOpen={open} onClose={() => setOpen(false)} title="Cambiar de negocio">
+      <BottomSheet isOpen={open} onClose={() => setOpen(false)} title="Mis negocios">
         <div className="flex flex-col gap-1">
           {workspaces.map((w) => {
             const active = w.id === currentWorkspace?.id;
@@ -66,6 +90,54 @@ export function WorkspaceSwitcher() {
               </button>
             );
           })}
+        </div>
+        <div className="mt-3 flex flex-col gap-1 border-t border-[var(--color-border)] pt-3">
+          {creating ? (
+            <form onSubmit={handleCreate} className="flex gap-2">
+              <input
+                autoFocus
+                type="text"
+                value={newName}
+                maxLength={60}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Nombre del nuevo negocio"
+                className="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)]"
+              />
+              <button
+                type="submit"
+                disabled={busy}
+                className="gradient-brand rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {busy ? "Creando..." : "Crear"}
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium text-[var(--color-brand-light)] transition hover:bg-[var(--color-surface-2)]"
+            >
+              <Plus size={16} /> Crear negocio
+            </button>
+          )}
+          {currentWorkspace ? (
+            <Link
+              href="/equipo"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition hover:bg-[var(--color-surface-2)]"
+            >
+              <Users size={16} className="text-[var(--color-text-faint)]" /> Equipo
+            </Link>
+          ) : null}
+          {isAdmin ? (
+            <Link
+              href="/negocio"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition hover:bg-[var(--color-surface-2)]"
+            >
+              <Building2 size={16} className="text-[var(--color-text-faint)]" /> Datos del negocio
+            </Link>
+          ) : null}
         </div>
       </BottomSheet>
     </>

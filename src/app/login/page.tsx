@@ -1,9 +1,11 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { TrendingUp, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { TERMS_VERSION } from "@/lib/legal";
 
 // Desactivado hasta habilitar el proveedor de Google en Supabase Auth.
 const GOOGLE_LOGIN_ENABLED = false;
@@ -35,11 +37,15 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const searchParams = useSearchParams();
+  const invited = searchParams.get("invitado") === "1";
+  const [mode, setMode] = useState<"signin" | "signup">(
+    invited || searchParams.get("modo") === "registro" ? "signup" : "signin",
+  );
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState(searchParams.get("email") ?? "");
+  const [password, setPassword] = useState("");
+  const [accepted, setAccepted] = useState(false);
 
   const inputClass =
     "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-brand)] disabled:opacity-60";
@@ -58,6 +64,12 @@ function LoginContent() {
     setInfo(null);
     const supabase = createClient();
     const redirectTo = searchParams.get("redirectTo") ?? "/";
+
+    if (mode === "signup" && !accepted) {
+      setError("Debes aceptar los Términos y la Política de tratamiento de datos.");
+      setLoading(false);
+      return;
+    }
 
     if (mode === "signin") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -81,7 +93,11 @@ function LoginContent() {
       email,
       password,
       options: {
-        data: { full_name: fullName.trim() },
+        data: {
+          full_name: fullName.trim(),
+          terms_version: TERMS_VERSION,
+          ...(invited ? { invited: true } : {}),
+        },
         emailRedirectTo: `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`,
       },
     });
@@ -142,6 +158,11 @@ function LoginContent() {
       </p>
 
       <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
+        {invited ? (
+          <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-center text-xs text-[var(--color-text-muted)]">
+            Te invitaron a un negocio. Crea tu cuenta con el mismo correo de la invitación.
+          </p>
+        ) : null}
         <div className="grid grid-cols-2 gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] p-1">
           {(
             [
@@ -215,6 +236,35 @@ function LoginContent() {
               className={inputClass}
             />
           </div>
+          {mode === "signin" ? (
+            <Link
+              href={`/recuperar${email ? `?email=${encodeURIComponent(email)}` : ""}`}
+              className="-mt-1 self-end text-xs font-medium text-[var(--color-brand-light)] hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          ) : (
+            <label className="flex items-start gap-2 text-xs leading-relaxed text-[var(--color-text-muted)]">
+              <input
+                type="checkbox"
+                required
+                checked={accepted}
+                onChange={(e) => setAccepted(e.target.checked)}
+                disabled={loading}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-brand)]"
+              />
+              <span>
+                Acepto los{" "}
+                <Link href="/legal/terminos" target="_blank" className="font-medium text-[var(--color-brand-light)] underline">
+                  Términos
+                </Link>{" "}
+                y la{" "}
+                <Link href="/legal/privacidad" target="_blank" className="font-medium text-[var(--color-brand-light)] underline">
+                  Política de tratamiento de datos
+                </Link>
+              </span>
+            </label>
+          )}
           <button
             type="submit"
             disabled={loading}
@@ -263,6 +313,13 @@ function LoginContent() {
       <p className="mt-10 max-w-xs text-center text-[11px] leading-relaxed text-[var(--color-text-faint)]">
         Tus datos financieros se guardan de forma privada en tu cuenta y solo tú puedes acceder a ellos.
       </p>
+      <nav className="mt-4 flex max-w-xs flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-[var(--color-text-muted)]">
+        <Link href="/precios" className="hover:underline">Precios</Link>
+        <Link href="/legal/terminos" className="hover:underline">Términos</Link>
+        <Link href="/legal/privacidad" className="hover:underline">Privacidad</Link>
+        <Link href="/legal/reembolsos" className="hover:underline">Reembolsos</Link>
+        <Link href="/legal/aviso" className="hover:underline">Aviso</Link>
+      </nav>
     </div>
   );
 }

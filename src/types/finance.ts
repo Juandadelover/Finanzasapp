@@ -100,7 +100,11 @@ export interface Workspace {
   role: WorkspaceRole;
   currency: CurrencyCode;
   monthlyBudget: number | null;
+  document?: string | null;
+  taxRegime?: TaxRegime | null;
 }
+
+export type TaxRegime = "simple" | "ordinario" | "no_responsable_iva";
 
 export interface FinanceState {
   transactions: Transaction[];

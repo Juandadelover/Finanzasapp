@@ -39,6 +39,7 @@ import type {
   Transaction,
   TransactionStatus,
   TransactionType,
+  TaxRegime,
   Transfer,
   Workspace,
   WorkspaceRole,
@@ -74,6 +75,11 @@ interface FinanceContextValue {
   workspaces: Workspace[];
   currentWorkspace: Workspace | null;
   switchWorkspace: (id: string) => Promise<void>;
+  createWorkspace: (name: string) => Promise<Workspace | null>;
+  updateWorkspace: (
+    id: string,
+    input: { name: string; document: string | null; taxRegime: TaxRegime }
+  ) => Promise<boolean>;
   permissions: Permissions;
   hydrated: boolean;
   selectedYear: number;
@@ -139,6 +145,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [data, setData] = useState<WorkspaceData>(emptyData);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const workspacesRef = useRef<Workspace[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const currentIdRef = useRef<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -198,7 +205,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     async (userId: string) => {
       const { data: rows } = await supabase
         .from("memberships")
-        .select("role, workspaces(id, name, currency, monthly_budget)")
+        .select("role, workspaces(id, name, currency, monthly_budget, document, tax_regime)")
         .eq("user_id", userId);
 
       const list: Workspace[] = [];
@@ -206,6 +213,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         const ws = Array.isArray(row.workspaces) ? row.workspaces[0] : row.workspaces;
         if (ws) list.push(rowToWorkspace(ws, row.role));
       }
+      workspacesRef.current = list;
       setWorkspaces(list);
 
       const wanted = currentIdRef.current ?? readStoredWorkspace();
@@ -232,6 +240,48 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       await loadWorkspaceData(id);
     },
     [workspaces, selectWorkspace, loadWorkspaceData]
+  );
+
+  const createWorkspace = useCallback(
+    async (name: string): Promise<Workspace | null> => {
+      if (!user) return null;
+      const { data: row, error } = await supabase
+        .from("workspaces")
+        .insert({ name: name.trim(), owner_id: user.id })
+        .select("id")
+        .single();
+      if (error || !row) {
+        toastDbError(error, "No se pudo crear el negocio.");
+        return null;
+      }
+      const id = (row as { id: string }).id;
+      storeWorkspace(id);
+      selectWorkspace(id);
+      setData(emptyData());
+      await loadAll(user.id);
+      return workspacesRef.current.find((w) => w.id === id) ?? null;
+    },
+    [supabase, user, selectWorkspace, loadAll]
+  );
+
+  const updateWorkspace = useCallback(
+    async (id: string, input: { name: string; document: string | null; taxRegime: TaxRegime }) => {
+      const { error } = await supabase
+        .from("workspaces")
+        .update({ name: input.name.trim(), document: input.document, tax_regime: input.taxRegime })
+        .eq("id", id);
+      if (error) {
+        toastDbError(error, "No se pudieron guardar los datos del negocio.");
+        return false;
+      }
+      setWorkspaces((prev) =>
+        prev.map((w) =>
+          w.id === id ? { ...w, name: input.name.trim(), document: input.document, taxRegime: input.taxRegime } : w
+        )
+      );
+      return true;
+    },
+    [supabase]
   );
 
   const currentWorkspace = useMemo(
@@ -730,6 +780,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       workspaces,
       currentWorkspace,
       switchWorkspace,
+      createWorkspace,
+      updateWorkspace,
       permissions,
       hydrated,
       selectedYear,
@@ -763,6 +815,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       workspaces,
       currentWorkspace,
       switchWorkspace,
+      createWorkspace,
+      updateWorkspace,
       permissions,
       hydrated,
       selectedYear,
