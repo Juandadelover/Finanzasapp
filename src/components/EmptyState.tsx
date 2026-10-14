@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { buttonClass } from "@/components/ui/Button";
+import { buttonClass } from "@/components/ui/buttonStyles";
 
 /**
  * Empty / error state with an optional next action.

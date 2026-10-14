@@ -2,7 +2,6 @@
 
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/cn";
 
 /**
  * Shared button.
@@ -12,47 +11,9 @@ import { cn } from "@/lib/cn";
  * - fullWidth: w-full
  * Defaults to type="button". For a link look use <Link className={buttonClass({...})}>.
  */
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
-export type ButtonSize = "sm" | "md" | "lg";
+import { buttonClass, type ButtonSize, type ButtonVariant } from "@/components/ui/buttonStyles";
 
-const VARIANTS: Record<ButtonVariant, string> = {
-  primary:
-    "gradient-brand text-white shadow-[var(--shadow-brand-md)] active:scale-[0.99]",
-  secondary:
-    "border border-[var(--color-border)] bg-transparent text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
-  ghost:
-    "bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]",
-  danger:
-    "border border-[var(--color-border)] bg-transparent text-[var(--color-expense)] hover:bg-[var(--color-surface-2)]",
-};
-
-const SIZES: Record<ButtonSize, string> = {
-  sm: "min-h-11 px-3 text-xs",
-  md: "min-h-11 px-4 py-3 text-sm",
-  lg: "min-h-12 px-5 py-3.5 text-sm",
-};
-
-export function buttonClass({
-  variant = "primary",
-  size = "md",
-  fullWidth = false,
-  className,
-}: {
-  variant?: ButtonVariant;
-  size?: ButtonSize;
-  fullWidth?: boolean;
-  className?: string;
-} = {}) {
-  return cn(
-    "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition",
-    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-light)]",
-    "disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100",
-    VARIANTS[variant],
-    SIZES[size],
-    fullWidth && "w-full",
-    className
-  );
-}
+export { buttonClass, type ButtonSize, type ButtonVariant };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
