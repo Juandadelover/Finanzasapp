@@ -54,6 +54,16 @@ export interface Settings {
   monthlyBudget: number | null;
 }
 
+export type WorkspaceRole = "owner" | "admin" | "editor" | "accountant" | "recorder";
+
+export interface Workspace {
+  id: string;
+  name: string;
+  role: WorkspaceRole;
+  currency: CurrencyCode;
+  monthlyBudget: number | null;
+}
+
 export interface FinanceState {
   transactions: Transaction[];
   categories: Category[];
