@@ -8,6 +8,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { DataTable } from "@/components/ui/DataTable";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
@@ -183,8 +185,108 @@ export default function RecurrentesPage() {
   const active = items.filter((r) => r.active);
   const inactive = items.filter((r) => !r.active);
 
+  const actions = (r: Recurrence) => (
+    <>
+          <button
+            type="button"
+            aria-label={`${r.active ? "Pausar" : "Reanudar"} ${r.description || categoryName(r.categoryId)}`}
+            onClick={() => toggleActive(r)}
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+          >
+            {r.active ? <Pause size={16} aria-hidden /> : <Play size={16} aria-hidden />}
+          </button>
+          <button
+            type="button"
+            aria-label={`Editar ${r.description || categoryName(r.categoryId)}`}
+            onClick={() => setEditing(r)}
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+          >
+            <Pencil size={16} aria-hidden />
+          </button>
+          <button
+            type="button"
+            aria-label={`Eliminar ${r.description || categoryName(r.categoryId)}`}
+            onClick={() => remove(r)}
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-expense)]"
+          >
+            <Trash2 size={16} aria-hidden />
+          </button>
+    </>
+  );
+
+  const columns = [
+    {
+      key: "desc",
+      header: "Descripción",
+      className: "w-full max-w-0",
+      cell: (r: Recurrence) => (
+        <span className="block truncate font-medium">{r.description || categoryName(r.categoryId)}</span>
+      ),
+    },
+    {
+      key: "category",
+      header: "Categoría",
+      cell: (r: Recurrence) => <span className="whitespace-nowrap text-[var(--color-text-muted)]">{categoryName(r.categoryId)}</span>,
+    },
+    {
+      key: "freq",
+      header: "Frecuencia",
+      cell: (r: Recurrence) => <span className="whitespace-nowrap text-[var(--color-text-muted)]">{FREQUENCY_LABEL[r.frequency]}</span>,
+    },
+    {
+      key: "next",
+      header: "Próximo",
+      cell: (r: Recurrence) => (
+        <span className="whitespace-nowrap text-[var(--color-text-muted)]">
+          {r.active ? formatDayLabel(r.nextDate) : "Pausado o terminado"}
+        </span>
+      ),
+    },
+    {
+      key: "registers",
+      header: "Se registra",
+      cell: (r: Recurrence) => (
+        <span className="whitespace-nowrap text-xs text-[var(--color-text-muted)]">
+          {r.generatedStatus === "paid" ? "Pagado" : "Pendiente"}
+          {r.endDate ? ` · hasta ${formatDayLabel(r.endDate)}` : ""}
+        </span>
+      ),
+    },
+    {
+      key: "amount",
+      header: "Monto",
+      align: "right" as const,
+      cell: (r: Recurrence) => (
+        <span className="whitespace-nowrap font-semibold" style={{ color: r.type === "income" ? "var(--color-income)" : "var(--color-expense)" }}>
+          {r.type === "income" ? "+" : "-"}
+          {money(r.amount)}
+        </span>
+      ),
+    },
+    ...(canManage
+      ? [
+          {
+            key: "actions",
+            header: <span className="sr-only">Acciones</span>,
+            cell: (r: Recurrence) => <span className="flex justify-end">{actions(r)}</span>,
+          },
+        ]
+      : []),
+  ];
+
+  const table = (rows: Recurrence[], caption: string) => (
+    <DataTable
+      caption={caption}
+      rows={rows}
+      columns={columns}
+      getRowKey={(r) => r.id}
+      mobileClassName="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5"
+      renderMobile={renderRow}
+    />
+  );
+
   const renderRow = (r: Recurrence) => (
-    <div key={r.id} className="rounded-2xl px-2 py-2.5">
+    <div className="rounded-2xl px-2 py-2.5">
       <div className="flex items-center gap-3">
         <span
           className={cn(
@@ -217,30 +319,7 @@ export default function RecurrentesPage() {
       </div>
       {canManage ? (
         <span className="mt-1 flex items-center justify-end">
-          <button
-            type="button"
-            aria-label={`${r.active ? "Pausar" : "Reanudar"} ${r.description || categoryName(r.categoryId)}`}
-            onClick={() => toggleActive(r)}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
-          >
-            {r.active ? <Pause size={16} aria-hidden /> : <Play size={16} aria-hidden />}
-          </button>
-          <button
-            type="button"
-            aria-label={`Editar ${r.description || categoryName(r.categoryId)}`}
-            onClick={() => setEditing(r)}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
-          >
-            <Pencil size={16} aria-hidden />
-          </button>
-          <button
-            type="button"
-            aria-label={`Eliminar ${r.description || categoryName(r.categoryId)}`}
-            onClick={() => remove(r)}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-expense)]"
-          >
-            <Trash2 size={16} aria-hidden />
-          </button>
+          {actions(r)}
         </span>
       ) : null}
     </div>
@@ -249,7 +328,9 @@ export default function RecurrentesPage() {
   return (
     <>
       <AppHeader />
+      <PageContainer>
       <PageHeader
+        className="lg:mx-0 lg:mt-0"
         title="Recurrentes"
         subtitle={
           canManage
@@ -259,7 +340,7 @@ export default function RecurrentesPage() {
       />
 
       {loadError ? (
-        <div className="mx-4 mt-5">
+        <div className="mx-4 mt-5 lg:mx-0">
           <EmptyState
             icon={Repeat}
             title="No pudimos cargar tus recurrentes"
@@ -270,7 +351,7 @@ export default function RecurrentesPage() {
           </Button>
         </div>
       ) : items.length === 0 ? (
-        <div className="mx-4 mt-5">
+        <div className="mx-4 mt-5 lg:mx-0">
           <EmptyState
             icon={Repeat}
             title="Aún no tienes movimientos recurrentes"
@@ -279,30 +360,28 @@ export default function RecurrentesPage() {
         </div>
       ) : (
         <>
-          <section className="mx-4 mt-5">
+          <section className="mx-4 mt-5 lg:mx-0">
             <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
               Activos
             </h2>
             {active.length === 0 ? (
               <p className="px-1 text-sm text-[var(--color-text-muted)]">No hay recurrentes activos.</p>
             ) : (
-              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5">
-                {active.map(renderRow)}
-              </div>
+              table(active, "Recurrentes activos")
             )}
           </section>
           {inactive.length > 0 ? (
-            <section className="mx-4 mt-5 mb-4">
+            <section className="mx-4 mt-5 mb-4 lg:mx-0">
               <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                 Pausados o terminados
               </h2>
-              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 opacity-80">
-                {inactive.map(renderRow)}
-              </div>
+              <div className="opacity-80">{table(inactive, "Recurrentes pausados o terminados")}</div>
             </section>
           ) : null}
         </>
       )}
+
+      </PageContainer>
 
       {editing ? (
         <EditSheet key={editing.id} rec={editing} onClose={() => setEditing(null)} onSaved={() => void load()} />

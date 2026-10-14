@@ -5,6 +5,8 @@ import { ArrowDown, ArrowUp, BarChart3, PiggyBank, Target, TrendingDown, Trendin
 import { ExpenseIcon, IncomeIcon } from "@/components/icons/money";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
+import { PageContainer } from "@/components/ui/PageContainer";
+import { ResponsiveGrid } from "@/components/ui/ResponsiveGrid";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatTile } from "@/components/StatTile";
@@ -91,10 +93,11 @@ export default function EstadisticasPage() {
   return (
     <>
       <AppHeader />
-      <PageHeader title="Estadísticas" />
+      <PageContainer>
+      <PageHeader title="Estadísticas" className="lg:mx-0 lg:mt-0" />
       <MonthSelector />
 
-      <div className="mx-4 flex gap-2.5">
+      <div className="mx-4 flex gap-2.5 lg:mx-0 lg:gap-4">
         <StatTile
           label="Ingresos"
           value={hidden ? MASKED_AMOUNT : formatCompactAmount(totals.income, currency)}
@@ -121,6 +124,8 @@ export default function EstadisticasPage() {
         />
       </div>
 
+      <ResponsiveGrid variant="pair" className="gap-0 lg:mt-4">
+      <div className="lg:col-span-full">
       <ChartCard icon={Target} accent="var(--color-brand)" title="Presupuestos" subtitle="Este mes">
         {hydrated ? (
           <BudgetSection items={budgetItems} currency={currency} hidden={hidden} />
@@ -128,6 +133,7 @@ export default function EstadisticasPage() {
           <Skeleton className="h-16 rounded-2xl" />
         )}
       </ChartCard>
+      </div>
 
       <ChartCard icon={BarChart3} accent="var(--color-brand)" title="Gastos por Categoría" subtitle="Este mes">
         {hydrated ? (
@@ -210,6 +216,8 @@ export default function EstadisticasPage() {
         )}
       </ChartCard>
 
+      </ResponsiveGrid>
+      </PageContainer>
       <div className="mb-4" />
     </>
   );

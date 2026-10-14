@@ -6,6 +6,8 @@ import { AppHeader } from "@/components/AppHeader";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { DataTable } from "@/components/ui/DataTable";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -233,8 +235,9 @@ export default function ContactosPage() {
   return (
     <>
       <AppHeader />
-
+      <PageContainer>
       <PageHeader
+        className="lg:mx-0 lg:mt-0"
         title="Contactos"
         subtitle="Tus clientes y proveedores."
         backHref="/cartera"
@@ -254,10 +257,11 @@ export default function ContactosPage() {
         }
       />
 
+      <div className="lg:mt-4 lg:flex lg:items-center lg:gap-4">
       <div
         role="tablist"
         aria-label="Tipo de contacto"
-        className="mx-4 mt-4 grid grid-cols-2 gap-1 rounded-2xl bg-[var(--color-surface)] p-1"
+        className="mx-4 mt-4 grid grid-cols-2 gap-1 rounded-2xl bg-[var(--color-surface)] p-1 lg:mx-0 lg:mt-0 lg:w-72 lg:shrink-0"
       >
         {(["client", "supplier"] as const).map((k) => (
           <button
@@ -278,7 +282,7 @@ export default function ContactosPage() {
         ))}
       </div>
 
-      <div className="relative mx-4 mt-3">
+      <div className="relative mx-4 mt-3 lg:mx-0 lg:mt-0 lg:max-w-md lg:flex-1">
         <Search
           size={16}
           aria-hidden
@@ -294,7 +298,9 @@ export default function ContactosPage() {
         />
       </div>
 
-      <section className="mx-4 mt-4 mb-4">
+      </div>
+
+      <section className="mx-4 mt-4 mb-4 lg:mx-0 lg:mt-5">
         {list.length === 0 ? (
           <>
             <EmptyState
@@ -316,12 +322,49 @@ export default function ContactosPage() {
             ) : null}
           </>
         ) : (
-          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5">
-            {list.map((c) => {
+          <DataTable
+            caption={tab === "client" ? "Clientes" : "Proveedores"}
+            rows={list}
+            getRowKey={(c) => c.id}
+            onRowClick={(c) => setDetailId(c.id)}
+            mobileClassName="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5"
+            columns={[
+              {
+                key: "name",
+                header: "Contacto",
+                className: "w-full max-w-0",
+                cell: (c) => (
+                  <span className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand)]/15 text-sm font-semibold text-[var(--color-brand-light)]">
+                      {c.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="block truncate font-medium">{c.name}</span>
+                  </span>
+                ),
+              },
+              { key: "document", header: "NIT / Documento", cell: (c) => <span className="whitespace-nowrap text-[var(--color-text-muted)]">{c.document || "—"}</span> },
+              { key: "phone", header: "Teléfono", cell: (c) => <span className="whitespace-nowrap text-[var(--color-text-muted)]">{c.phone || "—"}</span> },
+              {
+                key: "balance",
+                header: "Saldo pendiente",
+                align: "right",
+                cell: (c) => {
+                  const b = balanceFor(c);
+                  return b ? (
+                    <span className="whitespace-nowrap">
+                      <span className="font-semibold">{money(b.v)}</span>{" "}
+                      <span className="text-xs text-[var(--color-text-muted)]">{b.label}</span>
+                    </span>
+                  ) : (
+                    <span className="text-xs text-[var(--color-text-muted)]">Al día</span>
+                  );
+                },
+              },
+            ]}
+            renderMobile={(c) => {
               const b = balanceFor(c);
               return (
                 <button
-                  key={c.id}
                   type="button"
                   onClick={() => setDetailId(c.id)}
                   className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
@@ -345,10 +388,12 @@ export default function ContactosPage() {
                   )}
                 </button>
               );
-            })}
-          </div>
+            }}
+          />
         )}
       </section>
+
+      </PageContainer>
 
       {sheet.open ? (
         <ContactSheet

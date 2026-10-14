@@ -5,6 +5,7 @@ import { BarChart3, FileSpreadsheet, Lock, Printer } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/Button";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton, SkeletonList } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
@@ -167,10 +168,13 @@ export default function ReportesPage() {
     <>
       <div className="no-print">
         <AppHeader />
-        <PageHeader title="Reportes" subtitle="Cuánto ganaste y cómo se mueve tu plata." />
+      </div>
+      <PageContainer>
+      <div className="no-print">
+        <PageHeader title="Reportes" subtitle="Cuánto ganaste y cómo se mueve tu plata." className="lg:mx-0 lg:mt-0" />
       </div>
 
-      <div className="no-print mx-4 mt-3">
+      <div className="no-print mx-4 mt-3 lg:mx-0 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-x-6 lg:gap-y-3">
         <div role="group" aria-label="Período" className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
           {PERIOD_OPTIONS.map((o) => (
             <button
@@ -190,7 +194,7 @@ export default function ReportesPage() {
           ))}
         </div>
         {periodKey === "custom" ? (
-          <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="mt-3 grid grid-cols-2 gap-3 lg:col-start-1 lg:mt-0 lg:max-w-md">
             <label className="block">
               <span className={labelClass}>Desde</span>
               <input
@@ -217,7 +221,7 @@ export default function ReportesPage() {
         <div
           role="tablist"
           aria-label="Tipo de reporte"
-          className="mt-3 flex rounded-full bg-[var(--color-surface-2)] p-1"
+          className="mt-3 flex rounded-full bg-[var(--color-surface-2)] p-1 lg:col-start-1 lg:mt-0 lg:max-w-md"
         >
           {(
             [
@@ -241,7 +245,7 @@ export default function ReportesPage() {
           ))}
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="mt-3 grid grid-cols-2 gap-3 lg:col-start-2 lg:row-start-1 lg:mt-0 lg:flex">
           <Button variant="secondary" onClick={exportCsv} className="rounded-2xl bg-[var(--color-surface)]">
             <FileSpreadsheet size={16} className="text-[var(--color-brand-light)]" aria-hidden />
             Descargar Excel (CSV)
@@ -254,7 +258,7 @@ export default function ReportesPage() {
       </div>
 
       {state.transactions.length === 0 ? (
-        <div className="no-print mx-4 mt-4 mb-4">
+        <div className="no-print mx-4 mt-4 mb-4 lg:mx-0">
           <EmptyState
             icon={BarChart3}
             title="Aún no hay movimientos para reportar"
@@ -265,7 +269,7 @@ export default function ReportesPage() {
         <div
           id="print-area"
           key={tab}
-          className="tab-fade report-print mx-4 mt-4 mb-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+          className="tab-fade report-print mx-4 mt-4 mb-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 lg:mx-0 lg:p-6"
         >
           <header className="mb-3">
             <p className="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">{business}</p>
@@ -286,17 +290,23 @@ export default function ReportesPage() {
 
           {tab === "resultados" ? (
             <>
+              <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-10">
+              <div>
               <h3 className="mt-3 px-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                 Ingresos
               </h3>
               {renderLines(statement.income, false)}
               {totalRow("Total ingresos", statement.totalIncome, statement.previous.totalIncome)}
 
-              <h3 className="mt-4 px-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+              </div>
+              <div>
+              <h3 className="mt-4 px-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] lg:mt-3">
                 Gastos
               </h3>
               {renderLines(statement.expenses, true)}
               {totalRow("Total gastos", statement.totalExpenses, statement.previous.totalExpenses, true)}
+              </div>
+              </div>
 
               <div className="mt-4">
                 {totalRow("Ganancia", statement.profit, statement.previous.profit, false, true)}
@@ -379,6 +389,7 @@ export default function ReportesPage() {
           )}
         </div>
       )}
+      </PageContainer>
     </>
   );
 }

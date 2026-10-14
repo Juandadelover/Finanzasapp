@@ -13,7 +13,7 @@ interface ChartCardProps {
 
 export function ChartCard({ icon: Icon, accent, title, subtitle, action, footer, children }: ChartCardProps) {
   return (
-    <section className="mx-4 mt-4 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+    <section className="mx-4 mt-4 rounded-3xl lg:mx-0 lg:mt-0 lg:min-w-0 border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <span

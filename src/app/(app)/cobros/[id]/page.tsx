@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/EmptyState";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
@@ -157,8 +158,9 @@ export default function CobroDetailPage() {
 
   return (
     <div className="pb-28">
+      <PageContainer>
       <PageHeader
-        className="no-print"
+        className="no-print lg:mx-0 lg:mt-0"
         title={`${isQuote ? "Cotización" : "Cuenta de cobro"} ${formatDocNumber(current.number)}`}
         backHref="/cobros"
         backLabel="Cobros"
@@ -169,9 +171,10 @@ export default function CobroDetailPage() {
         }
       />
 
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:items-start lg:gap-6">
       <article
         id="print-area"
-        className="mx-4 mt-3 break-words rounded-2xl border border-[#e5e7eb] bg-white p-5 text-[#111827] shadow-sm"
+        className="mx-4 mt-3 break-words lg:mx-0 lg:w-full lg:max-w-3xl lg:justify-self-center rounded-2xl border border-[#e5e7eb] bg-white p-5 text-[#111827] shadow-sm"
       >
         <header className="border-b border-[#e5e7eb] pb-4">
           <p className="text-lg font-bold">{currentWorkspace?.name}</p>
@@ -241,7 +244,7 @@ export default function CobroDetailPage() {
         </footer>
       </article>
 
-      <div className="no-print mx-4 mt-4 flex flex-col gap-2">
+      <div className="no-print mx-4 mt-4 flex flex-col gap-2 lg:sticky lg:top-[calc(var(--app-header-h)+1rem)] lg:mx-0 lg:mt-3">
         <Button variant="secondary" fullWidth onClick={() => window.print()} className="bg-[var(--color-surface)]">
           <Printer size={18} aria-hidden /> Descargar PDF
         </Button>
@@ -265,6 +268,8 @@ export default function CobroDetailPage() {
           </Button>
         ) : null}
       </div>
+      </div>
+      </PageContainer>
     </div>
   );
 }

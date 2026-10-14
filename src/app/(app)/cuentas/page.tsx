@@ -19,6 +19,8 @@ import { stagger, useEnterOnce } from "@/components/ui/motion";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { PageContainer } from "@/components/ui/PageContainer";
+import { ResponsiveGrid } from "@/components/ui/ResponsiveGrid";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton, SkeletonList } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -275,9 +277,12 @@ export default function CuentasPage() {
   return (
     <>
       <AppHeader />
-      <PageHeader title="Cuentas" subtitle="Cuánta plata tienes en cada lugar." />
+      <PageContainer>
+      <PageHeader title="Cuentas" subtitle="Cuánta plata tienes en cada lugar." className="lg:mx-0 lg:mt-0" />
 
-      <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(138,5,190,0.35)]">
+      <ResponsiveGrid variant="split" className="gap-0 lg:mt-5 lg:items-start lg:gap-5">
+      <div className="lg:col-start-2">
+      <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(138,5,190,0.35)] lg:mx-0 lg:mt-0">
         <span className="text-sm font-medium text-white/80">Saldo total</span>
         <p className="mt-2 truncate text-4xl font-bold tracking-tight tabular-nums">
           <AnimatedValue value={money(total)} className="truncate" />
@@ -287,8 +292,10 @@ export default function CuentasPage() {
         </p>
       </div>
 
+      </div>
+
       {canManage ? (
-        <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
+        <div className="mx-4 mt-4 grid grid-cols-2 gap-3 lg:col-start-2 lg:mx-0 lg:mt-0">
           <Button
             variant="secondary"
             onClick={() => setAccountSheet({ open: true, editing: null })}
@@ -314,7 +321,7 @@ export default function CuentasPage() {
         </div>
       ) : null}
 
-      <section className="mx-4 mt-5">
+      <section className="mx-4 mt-5 lg:col-start-1 lg:row-span-3 lg:row-start-1 lg:mx-0 lg:mt-0">
         <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
           Tus cuentas
         </h2>
@@ -372,7 +379,7 @@ export default function CuentasPage() {
       </section>
 
       {recentTransfers.length > 0 ? (
-        <section className="mx-4 mt-5 mb-4">
+        <section className="mx-4 mt-5 mb-4 lg:col-start-2 lg:mx-0 lg:mb-0 lg:mt-0">
           <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
             Transferencias recientes
           </h2>
@@ -417,6 +424,8 @@ export default function CuentasPage() {
           </div>
         </section>
       ) : null}
+      </ResponsiveGrid>
+      </PageContainer>
 
       {accountSheet.open ? (
         <AccountSheet

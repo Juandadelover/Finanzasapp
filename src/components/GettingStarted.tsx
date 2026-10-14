@@ -76,7 +76,7 @@ export function GettingStarted() {
   return (
     <section
       aria-labelledby="primeros-pasos"
-      className="mx-4 mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5"
+      className="mx-4 mt-4 rounded-2xl lg:mx-0 lg:mt-0 border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5"
     >
       <div className="flex items-center justify-between gap-2 px-2">
         <div className="min-w-0">
