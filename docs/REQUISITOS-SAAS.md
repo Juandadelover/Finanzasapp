@@ -1,12 +1,25 @@
 # Análisis de requerimientos — Finanzas SaaS para emprendedores
 
-> Documento de análisis para evolucionar **Finanzasapp** (hoy: app personal de ingresos/gastos) a un **SaaS multi-empresa con suscripciones**, orientado a emprendedores y microempresas en Latinoamérica (foco inicial: Colombia).
+> Documento de análisis para evolucionar **Finanzasapp** (hoy: app personal de ingresos/gastos) a un **SaaS con suscripciones para emprendedores en Colombia**.
+
+## Decisiones tomadas
+
+| # | Decisión | Consecuencia en el diseño |
+|---|---|---|
+| D1 | **Lanzamiento solo en Colombia** | Precios en COP; cobro en pesos por medios locales (Nequi, transferencia, Bre-B); cumplimiento colombiano (Ley 1581, Estatuto del Consumidor); un solo idioma (es-CO) y una zona horaria por defecto (America/Bogota). Multi-moneda queda como "Could". |
+| D2 | **Se cobra por dueño** | La suscripción pertenece al usuario dueño; su plan define cuántos negocios puede crear y cuántos miembros invitar en cada uno. Los miembros invitados no pagan. |
+| D3 | **Sin facturación electrónica en el producto** | El público son emprendedores que necesitan controlar su plata, no un software contable. Se ofrecen **cotizaciones y cuentas de cobro en PDF** (sin valor fiscal) y el control de "Me deben". Quien deba facturar electrónicamente usa el sistema gratuito de la DIAN u otro proveedor, y registra aquí el cobro. |
+| D4 | **Sin pasarela de pagos al inicio** | El cliente paga por fuera (Nequi, transferencia, llave Bre-B) y sube el comprobante; tú apruebas en un panel `/admin` y la app activa el plan y controla vencimientos. Ver sección 5. |
+
+> Nota: D3 aplica al **producto**. Como operador del SaaS tú sí debes emitir factura electrónica por las suscripciones que cobras (si estás obligado según tu régimen). Eso se resuelve por fuera de la app con un proveedor (p. ej. Alegra o el facturador gratuito DIAN) — confírmalo con tu contador. El export de pagos del panel admin (RF-ADM-09) sirve de insumo.
 
 ---
 
 ## 1. Visión y problema
 
 **Problema.** El emprendedor mezcla dinero personal y del negocio, no sabe cuánto gana realmente, no controla quién le debe ni a quién debe, y se entera de los impuestos cuando ya es tarde. Las herramientas contables (Siigo, Alegra, QuickBooks) están pensadas para el contador, no para el dueño del negocio.
+
+**Lo que NO es:** un software contable ni de facturación electrónica. No compite con Siigo o Alegra; los complementa.
 
 **Propuesta de valor.** *"Sabe en 10 segundos cuánto dinero tienes, cuánto ganaste este mes y cuánto te queda para los próximos 90 días — sin saber contabilidad."*
 
@@ -36,21 +49,21 @@ Modelo **freemium + prueba gratuita de 14 días** del plan pagado, sin tarjeta p
 
 | Característica | Gratis | Emprendedor | Negocio | Pro (futuro) |
 |---|---|---|---|---|
-| Precio sugerido (mensual) | $0 | ~USD 7 / COP 29.900 | ~USD 19 / COP 79.900 | ~USD 39 |
+| Precio sugerido (mensual) | $0 | COP 24.900 | COP 59.900 | COP 129.900 |
 | Descuento anual | — | 2 meses gratis | 2 meses gratis | 2 meses gratis |
-| Espacios de trabajo (negocios) | 1 | 1 | 3 | Ilimitados |
+| Negocios (del dueño) | 1 | 1 | 3 | 10 |
 | Usuarios por espacio | 1 | 2 | 5 | 15 |
 | Movimientos / mes | 100 | Ilimitados | Ilimitados | Ilimitados |
 | Cuentas (banco, efectivo, tarjeta) | 2 | 10 | Ilimitadas | Ilimitadas |
 | Clientes / proveedores | 10 | Ilimitados | Ilimitados | Ilimitados |
 | Cuentas por cobrar / pagar | ✗ | ✓ | ✓ | ✓ |
-| Cotizaciones y cuentas de cobro | ✗ | ✓ | ✓ | ✓ |
-| Factura electrónica (vía proveedor) | ✗ | ✗ | ✓ (cupo) | ✓ |
+| Cotizaciones y cuentas de cobro (PDF) | 3 / mes | ✓ | ✓ con logo | ✓ con logo |
 | Reportes (P&G, flujo de caja) | Básico | Completo | Completo + PDF/Excel | + Consolidado |
 | Proyección de caja | 30 días | 90 días | 12 meses + escenarios | ✓ |
 | Importar extractos (CSV/Excel) | ✗ | ✓ | ✓ | ✓ |
 | Adjuntos (recibos) | ✗ | 500 MB | 5 GB | 20 GB |
 | Acceso contador invitado | ✗ | ✓ | ✓ | ✓ |
+| Alertas de vencimiento por WhatsApp | ✗ | ✗ | ✓ | ✓ |
 | Asistente IA (texto/voz/foto) | ✗ | Cupo bajo | Cupo medio | Cupo alto |
 | Soporte | Comunidad | Email | Prioritario | Prioritario + onboarding |
 
@@ -81,16 +94,16 @@ Prioridad: **M** = Must (MVP SaaS), **S** = Should, **C** = Could (posterior).
 | RF-ORG-03 | Invitar miembros por email con rol | M |
 | RF-ORG-04 | Roles: **Dueño** (todo + facturación), **Admin** (todo menos facturación/borrar), **Editor** (registrar movimientos), **Contador** (solo lectura + exportar), **Solo registro** (solo crear gastos, p. ej. empleado) | M (Dueño/Editor/Contador), S (resto) |
 | RF-ORG-05 | Transferir la propiedad del espacio | S |
-| RF-ORG-06 | Datos del negocio: razón social, NIT/RUT, régimen tributario, moneda base, país, zona horaria, logo | M |
+| RF-ORG-06 | Datos del negocio: nombre comercial, NIT o cédula (opcional), régimen (Simple / Ordinario / No responsable de IVA), logo. Moneda COP y zona horaria America/Bogota por defecto | M |
 | RF-ORG-07 | Espacio "Personal" separado del de negocio; transferencias entre ellos marcadas como "aporte/retiro del dueño" | S |
 
 ### 4.3 Cuentas financieras
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-ACC-01 | Crear cuentas: banco, efectivo/caja, tarjeta de crédito, billetera digital (Nequi, Daviplata, Mercado Pago) | M |
+| RF-ACC-01 | Crear cuentas: banco, efectivo/caja, tarjeta de crédito, billetera digital (Nequi, Daviplata, Dale!, Mercado Pago) | M |
 | RF-ACC-02 | Saldo inicial y saldo actual calculado por cuenta | M |
 | RF-ACC-03 | Transferencias entre cuentas (no cuentan como ingreso ni gasto) | M |
-| RF-ACC-04 | Cuentas en moneda distinta a la base con tasa de cambio por movimiento | S |
+| RF-ACC-04 | Cuentas en USD (freelancers que cobran al exterior) con tasa de cambio por movimiento | C |
 | RF-ACC-05 | Archivar cuentas sin borrar historial | M |
 
 ### 4.4 Movimientos (núcleo — evoluciona lo existente)
@@ -99,7 +112,7 @@ Prioridad: **M** = Must (MVP SaaS), **S** = Should, **C** = Could (posterior).
 | RF-TX-01 | Registrar ingreso/gasto con cuenta, categoría, fecha, monto, descripción (existe; añadir cuenta) | M |
 | RF-TX-02 | Estado: **pagado** / **pendiente** (con fecha de vencimiento) | M |
 | RF-TX-03 | Vincular a cliente o proveedor | M |
-| RF-TX-04 | Impuestos por movimiento: IVA (incluido / adicional), retención en la fuente, ICA | S |
+| RF-TX-04 | Marcar impuestos informativos por movimiento: IVA incluido, retención en la fuente que te practicaron (útil para la declaración de renta) | C |
 | RF-TX-05 | Adjuntar foto/PDF del soporte | S |
 | RF-TX-06 | Movimientos recurrentes (arriendo, nómina, software) con generación automática | M |
 | RF-TX-07 | Etiquetas / centros de costo / proyectos | C |
@@ -115,18 +128,20 @@ Prioridad: **M** = Must (MVP SaaS), **S** = Should, **C** = Could (posterior).
 | RF-CRM-01 | Directorio de clientes y proveedores (nombre, NIT/CC, email, teléfono) | M |
 | RF-CRM-02 | **"Me deben"**: cuentas por cobrar con vencimiento, abonos parciales, antigüedad (0-30, 31-60, 61-90, +90) | M |
 | RF-CRM-03 | **"Debo"**: cuentas por pagar con recordatorios | M |
-| RF-CRM-04 | Recordatorio de cobro al cliente por email/WhatsApp (enlace) | S |
+| RF-CRM-04 | Recordatorio de cobro al cliente: botón que abre WhatsApp con mensaje prellenado y el PDF de la cuenta de cobro | M |
 | RF-CRM-05 | Estado de cuenta por cliente (PDF) | S |
 
-### 4.6 Ventas: cotizaciones, cuentas de cobro y facturación electrónica
+### 4.6 Ventas: cotizaciones y cuentas de cobro (sin facturación electrónica — D3)
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-INV-01 | Catálogo de productos/servicios con precio e impuesto | S |
-| RF-INV-02 | Cotización → cuenta de cobro/factura con un clic | S |
-| RF-INV-03 | **Cuenta de cobro** en PDF (para no obligados a facturar, muy común en Colombia) | M |
-| RF-INV-04 | **Factura electrónica DIAN** a través de un proveedor tecnológico habilitado (Alegra, Siigo API, Facture, The Factory HKA, etc.) — **no construir el motor de facturación propio** | S (plan Negocio) |
-| RF-INV-05 | Al emitir factura se crea automáticamente la cuenta por cobrar | M (si existe RF-INV-02) |
-| RF-INV-06 | Enlace de pago en la factura (Wompi / Mercado Pago / PayU) | C |
+| RF-INV-01 | Catálogo simple de productos/servicios con precio | S |
+| RF-INV-02 | Cotización en PDF con logo, compartible por WhatsApp/email; convertir a cuenta de cobro con un clic | S |
+| RF-INV-03 | **Cuenta de cobro** en PDF (formato colombiano para personas no obligadas a facturar) con numeración consecutiva | M |
+| RF-INV-04 | Al emitir una cuenta de cobro se crea automáticamente el pendiente en "Me deben"; al registrar el pago se marca como cobrada | M |
+| RF-INV-05 | Campo opcional "N.º de factura externa" para quien factura en la DIAN u otro sistema y solo quiere hacer seguimiento del cobro | S |
+| RF-INV-06 | Leyenda visible en los PDF: "Documento sin validez como factura electrónica" | M |
+| RF-INV-07 | Enlace de pago en la cuenta de cobro (llave Bre-B / Nequi / link de pago) | C |
+| — | **Fuera de alcance:** emisión de factura electrónica DIAN, CUFE, notas crédito/débito, nómina electrónica, contabilidad por PUC | — |
 
 ### 4.7 Presupuestos, metas e impuestos
 | ID | Requerimiento | Prioridad |
@@ -134,8 +149,8 @@ Prioridad: **M** = Must (MVP SaaS), **S** = Should, **C** = Could (posterior).
 | RF-BUD-01 | Presupuesto mensual por categoría (existe) con alertas al 80 % y 100 % | M |
 | RF-BUD-02 | Metas de ahorro / reserva (p. ej. "fondo de 3 meses de gastos fijos") | S |
 | RF-TAX-01 | "Apartado para impuestos": % configurable de cada ingreso reservado virtualmente | S |
-| RF-TAX-02 | Calendario tributario según NIT y régimen (IVA, renta, Régimen Simple) con recordatorios | S |
-| RF-TAX-03 | Resumen de IVA generado vs. descontable del periodo | C |
+| RF-TAX-02 | Calendario tributario según los dos últimos dígitos del NIT y el régimen (renta, Régimen Simple, IVA) con recordatorios — solo fechas, no declaraciones | S |
+| RF-TAX-03 | Alerta de topes: "tus ingresos del año se acercan al tope para ser responsable de IVA / declarar renta" (valores en UVT configurables) | S |
 
 ### 4.8 Reportes y análisis
 | ID | Requerimiento | Prioridad |
@@ -152,11 +167,11 @@ Prioridad: **M** = Must (MVP SaaS), **S** = Should, **C** = Could (posterior).
 ### 4.9 Bancos e importación
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-BNK-01 | Importar extractos CSV/Excel con mapeo de columnas guardable por banco | S |
+| RF-BNK-01 | Importar extractos CSV/Excel con plantillas predefinidas para Bancolombia, Davivienda, BBVA, Banco de Bogotá y Nequi, y mapeo manual para los demás | S |
 | RF-BNK-02 | Detección de duplicados al importar | S |
 | RF-BNK-03 | Reglas de categorización automática ("si la descripción contiene 'UBER' → Transporte") | S |
 | RF-BNK-04 | Conciliación: marcar movimientos como conciliados contra el extracto | C |
-| RF-BNK-05 | Conexión bancaria directa (open finance — Belvo, Prometeo) | C |
+| RF-BNK-05 | Conexión bancaria directa (finanzas abiertas en Colombia — Belvo, Prometeo) | C |
 
 ### 4.10 Asistente IA (Fase 2 del roadmap actual)
 | ID | Requerimiento | Prioridad |
@@ -184,57 +199,78 @@ Prioridad: **M** = Must (MVP SaaS), **S** = Should, **C** = Could (posterior).
 
 ---
 
-## 5. Suscripciones y facturación del SaaS (*billing*)
+## 5. Suscripciones y cobro del SaaS (*billing*) — pagos manuales (D4)
 
-Este es el módulo que convierte la app en negocio. Es crítico y **no se debe improvisar**.
+Al inicio **no hay pasarela de pagos**: el emprendedor paga por fuera de la app (transferencia, Nequi, Daviplata, llave Bre-B) y tú activas su plan desde un panel de administración. Esto permite lanzar y validar precios sin afiliarse a una pasarela, a cambio de trabajo operativo manual que es manejable hasta unos ~100–200 clientes pagos.
 
-### 5.1 Elección de pasarela
+La clave es que **la app sí lleva el control de la suscripción** (plan, estado, fecha de vencimiento, límites), aunque el dinero no pase por ella. Así, cuando se integre una pasarela, solo cambia *cómo se registra el pago*, no el resto del sistema.
 
-| Opción | Pros | Contras | Recomendación |
-|---|---|---|---|
-| **Stripe Billing** | Suscripciones, prorrateo, *dunning*, portal de cliente y webhooks maduros | No liquida a cuentas colombianas directamente (requiere entidad en EE. UU. vía Stripe Atlas o similar); cobra en USD | Mejor si el público es internacional o se cobra en USD |
-| **Mercado Pago Suscripciones** | Fuerte en MX, AR, CO, CL; medios locales | API de suscripciones más limitada (prorrateo/cambios de plan manuales) | Buena para LATAM |
-| **Wompi (Bancolombia) / PayU / ePayco** | Pesos colombianos, PSE, Nequi, tarjetas locales | Cobro recurrente más rudimentario: tokenizar tarjeta y cobrar desde nuestro backend | Opción COP-first |
-| **Paddle / Lemon Squeezy** (*Merchant of Record*) | Ellos facturan y gestionan impuestos globales | Comisión más alta, menos medios locales | Si se vende globalmente sin entidad extranjera |
+### 5.1 Flujo de pago manual
 
-**Recomendación:** diseñar una **capa de abstracción de billing propia** (tablas `plans`, `subscriptions`, `entitlements` en nuestra BD) donde la pasarela sea un adaptador. Arrancar con **una sola** pasarela (Stripe si se puede tener entidad en EE. UU.; si no, Mercado Pago o Wompi para COP).
+```
+ Emprendedor (app)                          Tú (panel /admin)
+ ─────────────────                          ─────────────────
+ 1. Elige plan y ciclo (mensual/anual)
+ 2. Ve "Cómo pagar": monto exacto,
+    cuentas/llave Bre-B/QR y una
+    REFERENCIA única (ej. FZ-7K3Q)
+ 3. Paga por fuera (Nequi, transferencia)
+ 4. Sube el comprobante (foto/PDF)  ─────▶  5. Ve la solicitud "En revisión"
+    Estado: "En revisión"                      con comprobante, monto y referencia
+    (acceso provisional 48 h)               6. Verifica contra su extracto/Nequi
+                                            7. Aprueba → plan activo hasta fecha X
+ 8. Recibe email "Pago confirmado"   ◀─────     o Rechaza con motivo
+    + recibo PDF                                (monto incorrecto, no llegó, etc.)
+
+ Antes del vencimiento: recordatorios día −7, −3 y −1 con los datos de pago.
+ Vencido sin pago: 5 días de gracia → baja automática a Gratis (sin borrar datos).
+```
 
 ### 5.2 Requerimientos de suscripción
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-SUB-01 | La suscripción pertenece al **espacio de trabajo (o a la cuenta del dueño)**, no a cada usuario | M |
+| RF-SUB-01 | La suscripción pertenece al **usuario dueño** (D2); todos los negocios que crea heredan su plan; los miembros invitados no pagan | M |
 | RF-SUB-02 | Página pública de precios con mensual/anual | M |
-| RF-SUB-03 | Prueba gratis de 14 días del plan pagado; al terminar baja a Gratis sin borrar datos | M |
-| RF-SUB-04 | Checkout alojado por la pasarela (no tocar datos de tarjeta → alcance PCI mínimo, SAQ-A) | M |
-| RF-SUB-05 | Subir de plan inmediato con prorrateo; bajar de plan al final del periodo | M |
-| RF-SUB-06 | Cancelar en cualquier momento (activo hasta fin del periodo pagado) — exigido por protección al consumidor | M |
-| RF-SUB-07 | Estados: `trialing`, `active`, `past_due`, `canceled`, `paused`, `incomplete` | M |
-| RF-SUB-08 | *Dunning*: reintentos automáticos de cobro + emails (día 0, 3, 7); periodo de gracia de 7 días antes de degradar | M |
-| RF-SUB-09 | **Webhooks idempotentes** como única fuente de verdad del estado (guardar `event_id` procesado) | M |
-| RF-SUB-10 | Portal del cliente: cambiar tarjeta, ver/descargar recibos, cambiar plan | M |
-| RF-SUB-11 | **Factura electrónica DIAN de lo que tú cobras** (si la empresa del SaaS está en Colombia) | M (legal) |
-| RF-SUB-12 | Cupones y descuentos (lanzamiento, referidos, contadores) | S |
-| RF-SUB-13 | Programa de referidos (1 mes gratis por referido que paga) | C |
-| RF-SUB-14 | Precios por país / moneda (COP, MXN, USD) | S |
+| RF-SUB-03 | Prueba gratis de 14 días del plan pagado, sin pedir pago; al terminar baja a Gratis sin borrar datos | M |
+| RF-SUB-04 | Pantalla **"Cómo pagar"**: monto exacto, medios de pago configurables por ti (Nequi, Daviplata, cuenta Bancolombia, llave Bre-B, código QR) y **referencia única** por solicitud para identificar el pago | M |
+| RF-SUB-05 | **Subir comprobante** (imagen/PDF, máx. 5 MB) y crear una solicitud de pago en estado `en_revision`; botón alternativo "Enviar por WhatsApp" con mensaje prellenado (referencia + monto) | M |
+| RF-SUB-06 | Acceso provisional al plan pagado por 48 h tras subir el comprobante, una vez por periodo (reduce fricción mientras revisas) | S |
+| RF-SUB-07 | Estados de suscripción: `trial`, `active`, `pending_review`, `grace` (vencida, en gracia), `expired` (bajó a Gratis), `canceled` | M |
+| RF-SUB-08 | Recordatorios de renovación por email (y enlace de WhatsApp) los días −7, −3 y −1, y aviso al entrar en gracia | M |
+| RF-SUB-09 | Job diario que vence suscripciones, pasa a `grace` y luego a `expired`; idempotente | M |
+| RF-SUB-10 | Página **"Mi suscripción"**: plan actual, fecha de vencimiento, historial de pagos con comprobantes y recibos, cambiar de plan, cancelar renovación | M |
+| RF-SUB-11 | Recibo de pago en PDF (no es factura electrónica — ver nota en D3) | M |
+| RF-SUB-12 | Subir de plan: la app calcula la diferencia proporcional a pagar por los días restantes; bajar de plan: aplica al siguiente vencimiento | S |
+| RF-SUB-13 | Cupones / descuentos (lanzamiento, referidos, incubadoras) aplicados al monto mostrado | S |
+| RF-SUB-14 | Precios en COP; mostrar IVA solo si tu régimen lo exige (ver pregunta abierta 1) | M |
+| RF-SUB-15 | Plan anual con descuento destacado (menos renovaciones manuales para ti y menos fricción para el cliente) | M |
 
-### 5.3 *Entitlements* (control de acceso por plan)
-- Tabla `plan_limits` con claves como `max_workspaces`, `max_members`, `max_tx_per_month`, `feature.invoicing`, `feature.ai`, `ai_credits_per_month`.
-- Verificación **en el servidor y en la BD** (políticas RLS / funciones Postgres o *Server Actions*), nunca solo ocultando botones en el frontend.
-- Al exceder un límite: bloquear **la creación**, nunca la lectura ni la exportación de datos existentes.
-- *Downgrade*: si el usuario tiene 5 miembros y baja a un plan de 2, los extra quedan en solo lectura; no se borra nada.
+### 5.3 Panel de administración (operación del cobro)
+| ID | Requerimiento | Prioridad |
+|---|---|---|
+| RF-ADM-01 | Ruta `/admin` solo para administradores de la plataforma (tabla `platform_admins`, verificado en servidor y RLS) | M |
+| RF-ADM-02 | Bandeja de **pagos en revisión**: comprobante, monto esperado vs. declarado, referencia, dueño, plan; acciones **Aprobar** / **Rechazar con motivo** | M |
+| RF-ADM-03 | Al aprobar: extiende `current_period_end` (1 o 12 meses desde el vencimiento anterior, o desde hoy si ya expiró), registra el pago y envía confirmación + recibo | M |
+| RF-ADM-04 | Buscar clientes; ver plan, estado, vencimiento e historial; activar/extender manualmente (cortesías, soporte) con motivo obligatorio | M |
+| RF-ADM-05 | Configurar los medios de pago mostrados (números, llave Bre-B, QR) y los precios de los planes sin desplegar | M |
+| RF-ADM-06 | Alerta (email/push) cuando entra un comprobante nuevo | S |
+| RF-ADM-07 | Detección de comprobantes duplicados (mismo archivo/hash o misma referencia usada dos veces) | S |
+| RF-ADM-08 | Métricas: MRR, clientes pagos por plan, vencimientos próximos, pagos pendientes de revisión | S |
+| RF-ADM-09 | Exportar pagos del mes (CSV) para tu contabilidad y facturación | M |
+| RF-ADM-10 | Toda acción del admin queda en `audit_log` | M |
+
+### 5.4 Control de acceso por plan (*entitlements*)
+- Tabla `plan_limits` con claves como `max_workspaces_owned`, `max_members`, `max_tx_per_month`, `feature.collection_docs`, `feature.ai`, `ai_credits_per_month`.
+- El plan efectivo se calcula de la suscripción: `active`, `trial`, `grace` y `pending_review` (dentro de las 48 h) → plan pagado; el resto → Gratis.
+- Verificación **en el servidor y en la BD** (funciones Postgres / *Server Actions*), nunca solo ocultando botones.
+- Al exceder un límite: bloquear **la creación**, nunca la lectura ni la exportación.
+- Al bajar a Gratis: los negocios y miembros extra quedan en solo lectura; no se borra nada.
 - Medidores de uso visibles ("78 de 100 movimientos este mes").
 
-### 5.4 Flujo de webhooks (resumen)
-
-```
-Pasarela ──webhook──▶ /api/billing/webhook (verifica firma)
-                         │
-                         ├─ ¿event_id ya procesado? → 200 y salir
-                         ├─ upsert subscriptions (status, plan, period_end)
-                         ├─ recalcula entitlements del workspace
-                         ├─ registra en billing_events (auditoría)
-                         └─ dispara email transaccional si aplica
-```
+### 5.5 Preparado para una pasarela después
+- `payments.method` admite `manual` hoy y `wompi` / `mercadopago` mañana; la suscripción, los estados y los límites no cambian.
+- Cuándo integrarla: cuando revisar comprobantes tome más de ~30 min/día, o cuando muchas no renovaciones sean por "se me olvidó pagar". Opciones para Colombia: **Wompi** (tarjeta, PSE, Nequi; tokenización para cobro recurrente) o **Mercado Pago** (suscripciones nativas). Stripe no aplica sin una entidad en el exterior.
+- Paso intermedio sin integración técnica: **links de pago** (Wompi, Bold, Nequi Negocios) generados a mano y pegados en "Cómo pagar".
 
 ---
 
@@ -244,13 +280,13 @@ Pasarela ──webhook──▶ /api/billing/webhook (verifica firma)
 | ID | Requerimiento |
 |---|---|
 | RNF-SEC-01 | **Aislamiento por inquilino**: toda tabla de negocio lleva `workspace_id`; RLS basada en membresía (`is_member(workspace_id)`), con pruebas automatizadas que intenten leer datos de otro inquilino |
-| RNF-SEC-02 | La `service_role` key solo en servidor (webhooks, jobs); nunca en el cliente |
+| RNF-SEC-02 | La `service_role` key solo en servidor (panel admin, jobs); nunca en el cliente |
 | RNF-SEC-03 | Bitácora de auditoría inmutable: login, cambios de rol, borrados, exportaciones, cambios de plan |
 | RNF-SEC-04 | Cifrado en tránsito (TLS) y en reposo (Supabase lo provee); datos sensibles (NIT, tokens de integraciones) cifrados a nivel de columna o en Vault |
-| RNF-SEC-05 | Límite de peticiones (*rate limiting*) en login, invitaciones, IA y webhooks |
+| RNF-SEC-05 | Límite de peticiones (*rate limiting*) en login, invitaciones, IA y subida de comprobantes |
 | RNF-SEC-06 | Validación de entrada en servidor (p. ej. Zod) para todas las *Server Actions*/API |
 | RNF-SEC-07 | Escaneo de dependencias y revisión de seguridad en CI |
-| RNF-SEC-08 | No almacenar datos de tarjeta (checkout alojado) |
+| RNF-SEC-08 | Comprobantes de pago en bucket privado con URLs firmadas de corta duración; solo visibles para el dueño y los admins |
 
 ### 6.2 Integridad financiera
 | ID | Requerimiento |
@@ -267,10 +303,10 @@ Pasarela ──webhook──▶ /api/billing/webhook (verifica firma)
 | RNF-OPS-01 | Dashboard carga en < 2 s (p95) en 4G con 10.000 movimientos por espacio |
 | RNF-OPS-02 | Disponibilidad objetivo 99,5 % mensual |
 | RNF-OPS-03 | Respaldos diarios con PITR (plan Pro de Supabase); prueba de restauración trimestral |
-| RNF-OPS-04 | Entornos separados: desarrollo, *staging* (con pasarela en modo prueba) y producción |
+| RNF-OPS-04 | Entornos separados: desarrollo, *staging* y producción |
 | RNF-OPS-05 | Migraciones versionadas en el repo (`supabase/migrations`) — hoy el esquema no está versionado |
-| RNF-OPS-06 | Observabilidad: errores (Sentry), logs estructurados, alertas en fallos de webhooks y jobs |
-| RNF-OPS-07 | Jobs programados (recurrentes, recordatorios, *dunning*, resumen semanal) con `pg_cron` o Edge Functions programadas, idempotentes |
+| RNF-OPS-06 | Observabilidad: errores (Sentry), logs estructurados, alertas en fallos de jobs |
+| RNF-OPS-07 | Jobs programados (recurrentes, vencimientos, recordatorios, resumen semanal) con `pg_cron` o Edge Functions programadas, idempotentes |
 
 ### 6.4 Legal y cumplimiento (Colombia como base)
 | ID | Requerimiento |
@@ -278,15 +314,15 @@ Pasarela ──webhook──▶ /api/billing/webhook (verifica firma)
 | RNF-LEG-01 | **Ley 1581 de 2012 (Habeas Data)**: política de tratamiento de datos, autorización expresa en el registro, canal para consultas/reclamos; registro en el RNBD de la SIC si aplica |
 | RNF-LEG-02 | Términos y condiciones, política de privacidad, política de reembolsos y de cancelación visibles antes de pagar |
 | RNF-LEG-03 | Estatuto del Consumidor (Ley 1480): información clara de precio, renovación automática y cancelación |
-| RNF-LEG-04 | Facturación electrónica DIAN de los cobros de suscripción |
-| RNF-LEG-05 | Si se vende a la UE: GDPR (DPA, subprocesadores listados) |
+| RNF-LEG-04 | Facturación electrónica del operador por los cobros de suscripción (fuera de la app, ver D3) |
+| RNF-LEG-05 | Transferencia internacional de datos: Supabase (región sa-east-1, Brasil) y Vercel almacenan datos fuera de Colombia → declararlo en la política de tratamiento |
 | RNF-LEG-06 | Aviso claro de que la app **no reemplaza asesoría contable/tributaria** |
 
 ### 6.5 Usabilidad
 - Mobile-first, PWA instalable (ya existe), modo claro/oscuro (ya existe).
 - Accesibilidad WCAG 2.1 AA.
 - Onboarding guiado: crear negocio → elegir cuentas → importar o registrar 3 movimientos → ver dashboard ("momento ajá" en < 3 min).
-- Internacionalización preparada (textos en archivos de traducción, formatos de moneda por *locale*).
+- Un solo idioma (es-CO), pesos sin decimales en pantalla (`$ 1.250.000`), fechas `dd/mm/aaaa`. Textos en archivos separados por si luego se expande a otros países.
 
 ---
 
@@ -296,7 +332,7 @@ Pasarela ──webhook──▶ /api/billing/webhook (verifica firma)
 auth.users ─┐
             └─ profiles (nombre, avatar, locale)
 
-workspaces (id, nombre, nit, regimen, pais, moneda_base, zona_horaria, logo, owner_id)
+workspaces (id, nombre, documento, regimen, logo, owner_id)   -- COP y America/Bogota fijos en MVP
 memberships (workspace_id, user_id, role, status)          ← base de toda la RLS
 invitations (workspace_id, email, role, token, expires_at)
 
@@ -309,19 +345,25 @@ transactions (workspace_id, account_id, category_id, contact_id, tipo,
 transfers (workspace_id, from_account_id, to_account_id, monto, fecha)
 recurrences (workspace_id, plantilla jsonb, frecuencia, proxima_fecha)
 attachments (workspace_id, transaction_id, storage_path, mime, tamaño)
-invoices / invoice_items (workspace_id, contact_id, numero, estado, cufe, total, impuestos)
-products (workspace_id, nombre, precio, iva)
+documents / document_items (workspace_id, contact_id, tipo[cotizacion|cuenta_cobro],
+              consecutivo, estado, total, factura_externa, transaction_id)
+products (workspace_id, nombre, precio)
 rules (workspace_id, condicion, categoria_destino)
 audit_log (workspace_id, actor_id, accion, entidad, entidad_id, diff jsonb, created_at)
 
 -- Billing
 plans (codigo, nombre, precio_mensual, precio_anual, moneda, activo)
 plan_limits (plan_codigo, clave, valor)
-subscriptions (workspace_id | owner_id, plan_codigo, status, provider,
-               provider_customer_id, provider_subscription_id,
-               current_period_end, cancel_at_period_end, trial_end)
-billing_events (provider_event_id UNIQUE, tipo, payload jsonb, procesado_at)
-usage_counters (workspace_id, clave, periodo, valor)        ← tx/mes, créditos IA
+subscriptions (owner_id UNIQUE, plan_codigo, ciclo[mensual|anual], status,
+               current_period_end, grace_until, provisional_until,
+               cancel_at_period_end, trial_end)
+payments (subscription_id, plan_codigo, ciclo, monto_esperado, monto_declarado,
+          referencia UNIQUE, method[manual|wompi|...], status[en_revision|aprobado|rechazado],
+          comprobante_path, comprobante_hash, motivo_rechazo,
+          reviewed_by, reviewed_at, provider_transaction_id NULL)
+payment_methods_config (tipo[nequi|daviplata|bancolombia|breb|qr], titular, valor, activo)
+platform_admins (user_id)
+usage_counters (owner_id | workspace_id, clave, periodo, valor)   ← tx/mes, créditos IA
 ```
 
 ---
@@ -335,10 +377,9 @@ Mantener el stack actual — es adecuado para un SaaS de esta escala:
 | Frontend | Next.js 16 (App Router) + Tailwind v4 + PWA | Ya existe |
 | Lógica de servidor | *Server Actions* / Route Handlers de Next.js | Mover escrituras sensibles del cliente al servidor |
 | BD + Auth + Storage | Supabase (Postgres, RLS, Storage para adjuntos) | Pasar a plan Pro para PITR y sin pausas |
-| Jobs | `pg_cron` + Supabase Edge Functions | Recurrentes, *dunning*, resúmenes |
-| Pagos | Stripe / Mercado Pago / Wompi vía adaptador | Webhooks a Route Handler |
-| Email | Resend (plantillas transaccionales) | |
-| Factura electrónica | API de proveedor tecnológico DIAN | Solo plan Negocio |
+| Jobs | `pg_cron` + Supabase Edge Functions | Recurrentes, vencimientos de suscripción, recordatorios, resúmenes |
+| Pagos | Manual: comprobante en Supabase Storage (bucket privado) + aprobación en `/admin` | Pasarela (Wompi/Mercado Pago) en una fase posterior |
+| Email / WhatsApp | Resend (emails transaccionales); enlaces `wa.me` en MVP, WhatsApp Business API después | |
 | IA | API de Claude (extracción de recibos, texto natural) | Medido por créditos |
 | Observabilidad | Sentry + logs de Vercel/Supabase | |
 | Hosting | Vercel | Ya previsto |
@@ -356,9 +397,9 @@ Mantener el stack actual — es adecuado para un SaaS de esta escala:
 | Login | Google desactivado; invitado anónimo | Google + email; conversión de invitado; verificación de email | Medio |
 | Esquema | Aplicado directo en Supabase, no versionado | `supabase/migrations` en el repo | Bajo |
 | Lógica de datos | Toda desde el cliente (`FinanceContext`) | Escrituras críticas y límites de plan en servidor | Medio |
-| Billing | No existe | Planes, suscripciones, webhooks, entitlements, portal | **Alto** |
+| Billing | No existe | Planes, suscripciones por dueño, pagos manuales con comprobante, panel admin, vencimientos, límites de plan | Medio |
 | Reportes | Estadísticas personales | P&G, flujo de caja, exportes PDF/Excel | Medio |
-| Legal | — | Términos, privacidad, Habeas Data, facturación DIAN | Medio (no técnico) |
+| Legal | — | Términos, privacidad, Habeas Data, reembolsos | Medio (no técnico) |
 | Pruebas | Ninguna | Pruebas de RLS, billing y cálculos financieros | Medio |
 
 **Lo que ya se puede reutilizar:** UI mobile-first, categorías con presupuestos, estadísticas y proyección, filtros de movimientos, tema claro/oscuro, privacidad de montos, bloqueo biométrico, PWA, exportar/importar JSON.
@@ -372,9 +413,9 @@ Mantener el stack actual — es adecuado para un SaaS de esta escala:
 - **Conversión:** prueba → pago (meta 15–25 %), gratis → pago (meta 3–5 %).
 - **Ingresos:** MRR, ARR, ARPA, expansión (upgrades).
 - **Retención:** churn mensual de logos e ingresos (meta < 5 % logos), retención de cohortes.
-- **Salud:** NPS, tickets de soporte por cliente, pagos fallidos recuperados por *dunning*.
+- **Salud:** NPS, tickets de soporte por cliente, renovaciones a tiempo vs. en gracia vs. vencidas, tiempo medio de revisión de comprobantes.
 
-Panel interno de administración (RF-ADM): buscar cliente, ver plan/estado, extender prueba, aplicar cupón, impersonar en modo lectura (con registro en auditoría).
+El panel interno de administración está especificado en la sección 5.3 (RF-ADM).
 
 ---
 
@@ -383,11 +424,11 @@ Panel interno de administración (RF-ADM): buscar cliente, ver plan/estado, exte
 | Fase | Duración estimada* | Alcance |
 |---|---|---|
 | **0. Fundaciones** | 2–3 semanas | Migraciones versionadas, `workspaces` + `memberships` + RLS nueva, migración de datos existentes, login Google/email, pruebas de aislamiento |
-| **1. MVP negocio** | 4–6 semanas | Cuentas, pendientes/vencimientos, clientes/proveedores, "Me deben / Debo", recurrentes, dashboard de negocio, P&G y flujo de caja, exporte Excel/PDF |
-| **2. Monetización** | 3–4 semanas | Planes, checkout, webhooks, entitlements, prueba de 14 días, *dunning*, portal, emails, página de precios, legales → **lanzamiento beta pagada** |
+| **1. MVP negocio** | 4–6 semanas | Cuentas, pendientes/vencimientos, clientes/proveedores, "Me deben / Debo", cuentas de cobro PDF + recordatorio por WhatsApp, recurrentes, dashboard de negocio, P&G y flujo de caja, exporte Excel/PDF |
+| **2. Monetización** | 2–3 semanas | Planes, límites de plan, prueba de 14 días, "Cómo pagar" + subida de comprobante, panel `/admin` de aprobación, job de vencimientos, recordatorios, "Mi suscripción", página de precios, legales → **lanzamiento beta pagada** |
 | **3. Equipo y contador** | 2–3 semanas | Invitaciones, roles, acceso contador, auditoría |
-| **4. Productividad** | 4–6 semanas | Importar extractos, reglas, adjuntos, cuentas de cobro PDF, calendario tributario, notificaciones push |
-| **5. Diferenciación** | continuo | Asistente IA, factura electrónica DIAN, conexión bancaria, multi-moneda, consolidado |
+| **4. Productividad** | 4–6 semanas | Importar extractos de bancos colombianos, reglas, adjuntos, cotizaciones, calendario tributario y topes UVT, notificaciones push |
+| **5. Pasarela y diferenciación** | continuo | Integrar Wompi o Mercado Pago (cobro automático) cuando el volumen lo pida; asistente IA (registro por WhatsApp/voz/foto), conexión bancaria, cuentas en USD, consolidado |
 
 \* Estimaciones para 1–2 desarrolladores full-stack.
 
@@ -400,20 +441,23 @@ Panel interno de administración (RF-ADM): buscar cliente, ver plan/estado, exte
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
 | Fuga de datos entre inquilinos por error en RLS | Crítico | Pruebas automatizadas de RLS en CI; revisión de cada política nueva |
-| Estado de suscripción desincronizado con la pasarela | Alto | Webhooks idempotentes + job diario de reconciliación |
-| Pasarela no disponible para la entidad legal del negocio | Alto | Validar elegibilidad **antes** de construir; capa de adaptador |
-| Competir con Alegra/Siigo en contabilidad formal | Medio | Posicionarse en gestión para el dueño, integrar (no reemplazar) facturación |
+| Clientes que olvidan renovar (churn involuntario) | Alto | Recordatorios −7/−3/−1, periodo de gracia, plan anual, enlace de WhatsApp con los datos de pago |
+| Comprobantes falsos o editados | Medio | Verificar siempre contra tu extracto antes de aprobar; acceso provisional limitado a 48 h y una vez por periodo; detección de duplicados |
+| La revisión manual no escala | Medio | Plan anual incentivado; alerta de comprobantes nuevos; integrar pasarela al superar ~30 min/día de revisión |
+| Clientes que piden factura electrónica y se van a Alegra/Siigo | Medio | Mensaje claro de posicionamiento (D3); campo de factura externa; evaluar integración solo si la demanda lo justifica |
 | Errores de redondeo en montos | Medio | Decimal/centavos + pruebas de cálculo |
 | Obligaciones tributarias cambiantes | Medio | Reglas tributarias como configuración, no código |
 
 ---
 
-## 13. Preguntas abiertas (decisiones de negocio)
+## 13. Preguntas abiertas
 
-1. **¿País y moneda de lanzamiento?** ¿Solo Colombia (COP) o LATAM desde el inicio? Define pasarela, impuestos y facturación.
-2. **¿Existe ya una entidad legal** (SAS en Colombia / LLC en EE. UU.)? Define si Stripe es viable.
-3. **¿La suscripción se cobra por espacio de trabajo o por usuario dueño?** (Recomendado: por dueño, con N espacios según plan.)
-4. **¿La factura electrónica DIAN entra en el MVP** o se deja para después? (Recomendado: después; cuentas de cobro PDF primero.)
-5. **¿Los usuarios actuales de la app personal** se migran a un espacio "Personal" gratis o se mantiene una app separada?
-6. **¿El contador es un canal de venta?** (Plan especial para contadores que gestionan varios clientes.)
-7. **¿Presupuesto mensual de infraestructura?** (Supabase Pro + Vercel Pro + Resend + Sentry ≈ USD 70–100/mes al inicio.)
+Resueltas: país (Colombia — D1), modelo de cobro (por dueño — D2), facturación electrónica (fuera del producto — D3), pagos manuales sin pasarela (D4).
+
+Pendientes:
+1. **¿Con qué figura vas a cobrar** (persona natural o SAS)? Define a nombre de quién están las cuentas que reciben los pagos, tu régimen de IVA y si debes facturar electrónicamente las suscripciones.
+2. **¿Qué medios de pago vas a publicar?** (Nequi, Daviplata, cuenta Bancolombia, llave Bre-B) — idealmente a nombre de quien declara esos ingresos.
+3. **¿Los usuarios actuales de la app personal** se migran a un negocio "Personal" gratis o se mantiene una app separada?
+4. **¿El contador es un canal de venta?** (p. ej. cupón o plan gratis para contadores que recomiendan la app a sus clientes.)
+5. **Validar precios** (COP 24.900 / 59.900) con 10–15 entrevistas a emprendedores antes de fijarlos.
+6. **¿Presupuesto mensual de infraestructura?** (Supabase Pro + Vercel Pro + Resend + Sentry ≈ USD 70–100/mes al inicio.)
