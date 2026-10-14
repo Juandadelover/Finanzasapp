@@ -85,7 +85,7 @@ export function SegmentedControl<T extends string>({
             aria-pressed={selected}
             onClick={() => onChange(o.value)}
             className={cn(
-              "relative z-10 flex min-h-11 flex-1 items-center justify-center gap-1.5 py-2 text-sm font-medium transition-[color,transform] duration-150 active:scale-[0.97]",
+              "relative z-(--z-raised) flex min-h-11 flex-1 items-center justify-center gap-1.5 py-2 text-sm font-medium transition-[color,transform] duration-(--duration-fast) active:scale-[0.97]",
               radius,
               selected ? (o.activeClass ?? "text-[var(--color-text)]") : "text-[var(--color-text-muted)]",
               buttonClassName

@@ -8,7 +8,7 @@ import { useUI } from "@/context/UIContext";
 import { SPRINGS, createSpring, haptic, type Spring } from "@/components/ui/motion";
 
 const ITEM_CLASS =
-  "spring-pop flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] min-h-11 py-2 pl-4 pr-3 text-sm font-medium text-[var(--color-text)] shadow-lg transition-colors hover:bg-[var(--color-surface-3)] active:scale-[0.97] active:bg-[var(--color-surface-3)]";
+  "spring-pop flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] min-h-11 py-2 pl-4 pr-3 text-sm font-medium text-[var(--color-text)] shadow-lg transition-[background-color,scale] hover:bg-[var(--color-surface-3)] active:scale-[0.97] active:bg-[var(--color-surface-3)]";
 
 export function FloatingActionButton() {
   const [open, setOpen] = useState(false);
@@ -69,8 +69,16 @@ export function FloatingActionButton() {
   return (
     <div
       ref={rootRef}
-      className="fixed bottom-[calc(env(safe-area-inset-bottom)+92px)] right-4 z-40 flex flex-col items-end gap-3"
+      className="fixed bottom-[calc(env(safe-area-inset-bottom)+92px)] right-4 z-(--z-fab) flex flex-col items-end gap-3"
     >
+      {visible ? (
+        <div
+          aria-hidden
+          onClick={() => setOpen(false)}
+          className={`fixed inset-0 -z-10 bg-black/40 ${open ? "" : "pointer-events-none"}`}
+          style={{ opacity: "var(--p, 0)" }}
+        />
+      ) : null}
       {visible ? (
         <div className={`flex flex-col items-end gap-2 ${open ? "" : "pointer-events-none"}`}>
           {canCreateIncome ? (
@@ -97,7 +105,7 @@ export function FloatingActionButton() {
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Cerrar menú" : "Agregar movimiento"}
         aria-expanded={open}
-        className="gradient-brand relative flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[var(--shadow-brand-fab)] transition-transform duration-100 active:scale-[0.94]"
+        className="gradient-brand relative flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[var(--shadow-brand-fab)] transition-transform duration-(--duration-fast) active:scale-[0.95]"
       >
         <span
           className="fab-glyph absolute"

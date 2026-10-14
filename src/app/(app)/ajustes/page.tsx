@@ -47,7 +47,7 @@ import type { Category, CurrencyCode, TransactionType } from "@/types/finance";
 const groupTitleClass = "mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]";
 const groupCardClass = "rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5";
 const rowClass =
-  "flex min-h-14 w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-sm transition hover:bg-[var(--color-surface-2)] disabled:opacity-60";
+  "flex min-h-14 w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-sm transition active:scale-[0.97] hover:bg-[var(--color-surface-2)] disabled:opacity-60";
 const wellClass =
   "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]";
 
@@ -351,7 +351,7 @@ export default function AjustesPage() {
               <span
                 aria-hidden
                 className={cn(
-                  "flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition",
+                  "flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition active:scale-[0.97]",
                   lockEnabled
                     ? "justify-end bg-[var(--color-brand)]"
                     : "justify-start border border-[var(--color-text-faint)] bg-[var(--color-surface-3)]",
@@ -481,7 +481,7 @@ export default function AjustesPage() {
               aria-pressed={catType === value}
               onClick={() => setCatType(value)}
               className={cn(
-                "min-h-11 rounded-lg text-sm font-medium transition",
+                "min-h-11 rounded-lg text-sm font-medium transition active:scale-[0.97]",
                 catType === value
                   ? "bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm"
                   : "text-[var(--color-text-muted)]",

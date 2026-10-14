@@ -255,7 +255,7 @@ export default function AdminClientesPage() {
                   type="button"
                   onClick={() => setSelected(c)}
                   aria-label={`Activar o extender plan de ${c.full_name || c.email}`}
-                  className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-left transition hover:bg-[var(--color-surface-2)]"
+                  className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-left transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
                 >
                   <p className="truncate text-sm font-semibold">{c.full_name || c.email}</p>
                   {c.full_name ? <p className="truncate text-xs text-[var(--color-text-muted)]">{c.email}</p> : null}

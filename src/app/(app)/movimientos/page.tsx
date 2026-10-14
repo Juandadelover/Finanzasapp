@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Receipt, Search, SlidersHorizontal, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
+import { useEnterOnce } from "@/components/ui/motion";
 import { TransactionItem } from "@/components/TransactionItem";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SkeletonList } from "@/components/ui/Skeleton";
@@ -63,6 +64,10 @@ export default function MovimientosPage() {
     return Array.from(map.entries());
   }, [filtered]);
 
+  const enter = useEnterOnce(hydrated);
+  // Running index across date groups so the stagger reads as one list.
+  const offsets = groups.reduce<number[]>((acc, _g, i) => [...acc, i === 0 ? 0 : acc[i - 1] + groups[i - 1][1].length], []);
+
   const incomeCount = baseTransactions.filter((t) => t.type === "income").length;
   const expenseCount = baseTransactions.filter((t) => t.type === "expense").length;
   const hasActiveFilters = categoryFilter.size > 0 || dateRange !== null;
@@ -107,7 +112,7 @@ export default function MovimientosPage() {
             type="button"
             onClick={() => setDateRange(null)}
             aria-label="Quitar rango de fechas"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
           >
             <X size={14} />
           </button>
@@ -133,7 +138,7 @@ export default function MovimientosPage() {
           onClick={() => setFilterSheetOpen(true)}
           aria-label={hasActiveFilters ? "Filtros (activos)" : "Filtros"}
           className={cn(
-            "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition",
+            "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition active:scale-[0.97]",
             hasActiveFilters
               ? "border-[var(--color-brand)] bg-[var(--color-brand)]/10 text-[var(--color-brand-light)]"
               : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]"
@@ -160,7 +165,7 @@ export default function MovimientosPage() {
             onClick={() => setFilter(key)}
             aria-pressed={filter === key}
             className={cn(
-              "min-h-11 rounded-full px-4 text-xs font-medium transition",
+              "min-h-11 rounded-full px-4 text-xs font-medium transition active:scale-[0.97]",
               filter === key
                 ? "bg-[var(--color-brand)] text-white"
                 : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
@@ -195,18 +200,19 @@ export default function MovimientosPage() {
             />
           )
         ) : (
-          groups.map(([date, items]) => (
+          groups.map(([date, items], gi) => (
             <div key={date}>
               <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-faint)]">
                 {formatDayLabel(date)}
               </p>
               <div className="flex flex-col gap-1">
-                {items.map((t) => (
+                {items.map((t, ti) => (
                   <TransactionItem
                     key={t.id}
                     transaction={t}
                     category={state.categories.find((c) => c.id === t.categoryId)}
                     currency={state.settings.currency}
+                    enterIndex={enter ? offsets[gi] + ti : undefined}
                   />
                 ))}
               </div>

@@ -103,7 +103,7 @@ function ContactSheet({
                 onClick={() => setKind(k.value)}
                 aria-pressed={kind === k.value}
                 className={cn(
-                  "min-h-11 rounded-xl border py-2.5 text-xs font-medium transition",
+                  "min-h-11 rounded-xl border py-2.5 text-xs font-medium transition active:scale-[0.97]",
                   kind === k.value
                     ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
                     : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
@@ -267,7 +267,7 @@ export default function ContactosPage() {
             aria-selected={tab === k}
             onClick={() => setTab(k)}
             className={cn(
-              "min-h-11 rounded-xl py-2 text-sm font-medium transition",
+              "min-h-11 rounded-xl py-2 text-sm font-medium transition active:scale-[0.97]",
               tab === k
                 ? "bg-[var(--color-surface-3)] text-[var(--color-brand-light)]"
                 : "text-[var(--color-text-muted)]",
@@ -324,7 +324,7 @@ export default function ContactosPage() {
                   key={c.id}
                   type="button"
                   onClick={() => setDetailId(c.id)}
-                  className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
+                  className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand)]/15 text-sm font-semibold text-[var(--color-brand-light)]">
                     {c.name.charAt(0).toUpperCase()}

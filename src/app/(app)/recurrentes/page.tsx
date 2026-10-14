@@ -221,7 +221,7 @@ export default function RecurrentesPage() {
             type="button"
             aria-label={`${r.active ? "Pausar" : "Reanudar"} ${r.description || categoryName(r.categoryId)}`}
             onClick={() => toggleActive(r)}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
           >
             {r.active ? <Pause size={16} aria-hidden /> : <Play size={16} aria-hidden />}
           </button>
@@ -229,7 +229,7 @@ export default function RecurrentesPage() {
             type="button"
             aria-label={`Editar ${r.description || categoryName(r.categoryId)}`}
             onClick={() => setEditing(r)}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
           >
             <Pencil size={16} aria-hidden />
           </button>
@@ -237,7 +237,7 @@ export default function RecurrentesPage() {
             type="button"
             aria-label={`Eliminar ${r.description || categoryName(r.categoryId)}`}
             onClick={() => remove(r)}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-expense)]"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-expense)]"
           >
             <Trash2 size={16} aria-hidden />
           </button>

@@ -85,7 +85,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       type="button"
       onClick={() => copy(text)}
       aria-label={label}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)]"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)]"
     >
       <Copy size={16} aria-hidden />
     </button>
@@ -110,7 +110,7 @@ function Meter({ label, used, limit }: { label: string; used: number; limit: num
         className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-2)]"
       >
         <div
-          className={cn("h-full rounded-full", pct >= 100 ? "bg-[var(--color-expense)]" : "gradient-brand")}
+          className={cn("progress-fill h-full rounded-full", pct >= 100 ? "bg-[var(--color-expense)]" : "gradient-brand")}
           style={{ width: `${unlimited ? 0 : pct}%` }}
         />
       </div>
@@ -237,7 +237,7 @@ function PaySheet({
                   onClick={() => setChannel(c.value)}
                   aria-pressed={channel === c.value}
                   className={cn(
-                    "min-h-11 rounded-xl border px-1 py-2.5 text-sm font-medium transition",
+                    "min-h-11 rounded-xl border px-1 py-2.5 text-sm font-medium transition active:scale-[0.97]",
                     channel === c.value
                       ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
                       : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
@@ -474,7 +474,7 @@ export default function SuscripcionPage() {
                       onClick={() => setCycle(c)}
                       aria-pressed={cycle === c}
                       className={cn(
-                        "min-h-11 rounded-xl px-4 transition",
+                        "min-h-11 rounded-xl px-4 transition active:scale-[0.97]",
                         cycle === c ? "gradient-brand text-white" : "text-[var(--color-text-muted)]"
                       )}
                     >

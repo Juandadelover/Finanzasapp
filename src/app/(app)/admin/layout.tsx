@@ -88,7 +88,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 href={t.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 text-sm font-medium transition",
+                  "inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 text-sm font-medium transition active:scale-[0.97]",
                   active
                     ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
                     : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]",

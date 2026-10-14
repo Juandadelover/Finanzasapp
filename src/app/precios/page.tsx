@@ -197,7 +197,7 @@ export default function PreciosPage() {
                   aria-pressed={annual === val}
                   onClick={() => setAnnual(val)}
                   className={cn(
-                    "min-h-11 rounded-full text-sm font-semibold transition",
+                    "min-h-11 rounded-full text-sm font-semibold transition active:scale-[0.97]",
                     annual === val ? "gradient-brand text-white" : "text-[var(--color-text-muted)]",
                   )}
                 >

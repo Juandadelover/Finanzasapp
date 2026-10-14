@@ -13,7 +13,7 @@ export function MonthSelector() {
         type="button"
         onClick={goToPreviousMonth}
         aria-label="Mes anterior"
-        className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.92] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.95] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
       >
         <ChevronLeft size={20} />
       </button>
@@ -24,7 +24,7 @@ export function MonthSelector() {
         type="button"
         onClick={goToNextMonth}
         aria-label="Mes siguiente"
-        className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.92] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.95] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
       >
         <ChevronRight size={20} />
       </button>

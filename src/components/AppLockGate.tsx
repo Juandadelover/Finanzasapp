@@ -50,7 +50,7 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
   if (status === "locked" || status === "verifying") {
     const verifying = status === "verifying";
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-6 animate-[fadeIn_0.3s_ease-out]">
+      <div className="flex min-h-screen flex-col items-center justify-center px-6 anim-fade-in">
         <div className="gradient-brand flex h-16 w-16 items-center justify-center rounded-3xl shadow-[0_8px_24px_rgba(138,5,190,0.4)]">
           <TrendingUp size={30} className="text-white" strokeWidth={2.5} />
         </div>
@@ -69,13 +69,12 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
           {!verifying ? (
             <>
               <span className="absolute inset-0 animate-ping rounded-full bg-[var(--color-brand)]/30" />
-              <span className="absolute -inset-2 animate-pulse rounded-full bg-[var(--color-brand)]/15" />
             </>
           ) : null}
           <span
             className={cn(
               "gradient-brand relative flex h-16 w-16 items-center justify-center rounded-full text-white shadow-[0_8px_24px_rgba(138,5,190,0.45)] transition-transform",
-              verifying ? "animate-pulse" : "active:scale-90"
+              verifying ? "animate-pulse" : "active:scale-[0.95]"
             )}
           >
             <Fingerprint size={28} />
@@ -83,7 +82,7 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
         </button>
 
         {error ? (
-          <p className="mt-4 max-w-xs text-center text-sm text-[var(--color-expense)] animate-[slideDown_0.25s_ease-out]">
+          <p className="mt-4 max-w-xs text-center text-sm text-[var(--color-expense)] anim-slide-down">
             {error}
           </p>
         ) : null}
@@ -91,5 +90,5 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <div className="animate-[fadeIn_0.3s_ease-out]">{children}</div>;
+  return <div className="anim-fade-in">{children}</div>;
 }

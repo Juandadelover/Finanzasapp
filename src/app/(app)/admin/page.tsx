@@ -27,7 +27,7 @@ function Tile({
     highlight
       ? "border-[var(--color-warning)] bg-[var(--color-warning)]/10"
       : "border-[var(--color-border)] bg-[var(--color-surface)]",
-    href && "transition hover:bg-[var(--color-surface-2)]",
+    href && "transition active:scale-[0.97] hover:bg-[var(--color-surface-2)]",
     className,
   );
   const inner = (

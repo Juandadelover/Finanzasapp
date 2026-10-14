@@ -57,7 +57,7 @@ export function BudgetSection({ items, currency, hidden }: BudgetSectionProps) {
                 </div>
                 <div role="progressbar" aria-label={`Presupuesto ${category.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={barWidth} className="mt-1.5 h-1.5 w-full rounded-full bg-[var(--color-surface-2)]">
                   <div
-                    className="h-1.5 rounded-full transition-all"
+                    className="progress-fill h-1.5 rounded-full"
                     style={{ width: `${barWidth}%`, backgroundColor: color }}
                   />
                 </div>

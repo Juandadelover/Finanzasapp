@@ -137,6 +137,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
       addTransaction(input);
     }
     haptic();
+    toast.success(editing ? "Movimiento actualizado." : "Movimiento guardado.");
     onClose();
   }
 
@@ -360,7 +361,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
               type="button"
               onClick={handleDelete}
               aria-label="Eliminar movimiento"
-              className="flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-expense)] transition hover:bg-[var(--color-surface-2)]"
+              className="flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-expense)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)]"
             >
               <Trash2 size={18} />
             </button>

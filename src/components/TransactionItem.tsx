@@ -1,5 +1,7 @@
 "use client";
 
+import { stagger } from "@/components/ui/motion";
+import { cn } from "@/lib/cn";
 import { ICONS } from "@/lib/icons";
 import { formatAmount, formatDayLabel } from "@/lib/format";
 import { useFinance } from "@/context/FinanceContext";
@@ -11,15 +13,19 @@ interface TransactionItemProps {
   transaction: Transaction;
   category: Category | undefined;
   currency: CurrencyCode;
+  /** Position in the list when it should enter with the staggered first-load animation. */
+  enterIndex?: number;
 }
 
-export function TransactionItem({ transaction, category, currency }: TransactionItemProps) {
+export function TransactionItem({ transaction, category, currency, enterIndex }: TransactionItemProps) {
   const { openEditTransaction } = useUI();
   const { hidden } = usePrivacy();
   const { permissions } = useFinance();
   const color = category?.color ?? "var(--color-text-faint)";
   const isExpense = transaction.type === "expense";
   const isPending = transaction.status === "pending";
+
+  const enter = enterIndex === undefined ? {} : stagger(true, enterIndex);
 
   const content = (
     <>
@@ -59,14 +65,19 @@ export function TransactionItem({ transaction, category, currency }: Transaction
   );
 
   if (!permissions.canEditTransactions) {
-    return <div className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left">{content}</div>;
+    return (
+      <div className={cn("flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left", enter.className)} style={enter.style}>
+        {content}
+      </div>
+    );
   }
 
   return (
     <button
       type="button"
       onClick={() => openEditTransaction(transaction)}
-      className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition duration-150 hover:bg-[var(--color-surface-2)] active:scale-[0.98] active:bg-[var(--color-surface-2)] active:duration-75"
+      style={enter.style}
+      className={cn(enter.className, "flex min-h-[60px] w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition duration-(--duration-fast) hover:bg-[var(--color-surface-2)] active:scale-[0.98] active:bg-[var(--color-surface-2)] active:duration-(--duration-instant)")}
     >
       {content}
     </button>

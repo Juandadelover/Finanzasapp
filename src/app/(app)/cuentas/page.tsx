@@ -14,6 +14,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
+import { stagger, useEnterOnce } from "@/components/ui/motion";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -97,7 +99,7 @@ function AccountSheet({ editing, onClose }: { editing: Account | null; onClose: 
                 onClick={() => setKind(value)}
                 aria-pressed={kind === value}
                 className={cn(
-                  "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl border py-2 text-xs font-medium transition",
+                  "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl border py-2 text-xs font-medium transition active:scale-[0.97]",
                   kind === value
                     ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
                     : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
@@ -257,6 +259,8 @@ export default function CuentasPage() {
 
   const money = (value: number) => (hidden ? MASKED_AMOUNT : formatAmount(value, currency));
 
+  const enter = useEnterOnce(hydrated);
+
   if (!hydrated) {
     return (
       <>
@@ -275,7 +279,9 @@ export default function CuentasPage() {
 
       <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(138,5,190,0.35)]">
         <span className="text-sm font-medium text-white/80">Saldo total</span>
-        <p className="mt-2 truncate text-4xl font-bold tracking-tight tabular-nums">{money(total)}</p>
+        <p className="mt-2 truncate text-4xl font-bold tracking-tight tabular-nums">
+          <AnimatedValue value={money(total)} className="truncate" />
+        </p>
         <p className="mt-1 text-xs text-white/70">
           {balances.length} {balances.length === 1 ? "cuenta" : "cuentas"} · solo cuenta lo que ya está pagado
         </p>
@@ -320,7 +326,8 @@ export default function CuentasPage() {
           />
         ) : (
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5">
-            {balances.map(({ account, balance }) => {
+            {balances.map(({ account, balance }, i) => {
+              const st = stagger(enter, i);
               const Icon = KINDS.find((k) => k.value === account.kind)?.icon ?? Landmark;
               const content = (
                 <>
@@ -349,12 +356,13 @@ export default function CuentasPage() {
                   key={account.id}
                   type="button"
                   onClick={() => setAccountSheet({ open: true, editing: account })}
-                  className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
+                  style={st.style}
+                  className={cn("flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]", st.className)}
                 >
                   {content}
                 </button>
               ) : (
-                <div key={account.id} className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5">
+                <div key={account.id} style={st.style} className={cn("flex w-full items-center gap-3 rounded-2xl px-2 py-2.5", st.className)}>
                   {content}
                 </div>
               );
@@ -399,7 +407,7 @@ export default function CuentasPage() {
                       });
                       if (ok) deleteTransfer(t.id);
                     }}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-expense)]"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-expense)]"
                   >
                     <Trash2 size={16} aria-hidden />
                   </button>

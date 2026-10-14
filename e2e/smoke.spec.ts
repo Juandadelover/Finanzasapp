@@ -32,7 +32,8 @@ test.describe("dueño", () => {
     const description = `E2E gasto ${Date.now()}`;
     await login(page, "dueno@finanzasapp.test");
     await page.getByRole("button", { name: "Agregar movimiento" }).click();
-    await page.getByRole("button", { name: "Gasto" }).first().click();
+    // La opción del menú del +; "Gasto Manual" es el acceso rápido de Inicio, que queda bajo el fondo atenuado.
+    await page.getByRole("button", { name: "Gasto", exact: true }).click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("Monto").fill("12345");
     await dialog.getByRole("button", { name: "Otros gastos" }).click();

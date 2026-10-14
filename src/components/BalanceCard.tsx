@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { formatAmount } from "@/lib/format";
 import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import type { CurrencyCode } from "@/types/finance";
@@ -39,14 +40,14 @@ export function BalanceCard({ accountsTotal, monthResult, income, expense, curre
       <p
         className={`tabular amount-display mt-2 break-words font-bold ${balanceText.length > 14 ? "text-2xl" : balanceText.length > 11 ? "text-3xl" : "text-4xl"}`}
       >
-        {balanceText}
+        <AnimatedValue value={balanceText} />
       </p>
 
       {accountsTotal !== null ? (
         <p className="mt-1 text-sm text-white/85">
           {monthResult >= 0 ? "Ganancia" : "Pérdida"} del mes:{" "}
           <span className="tabular font-semibold text-white">
-            {hidden ? MASKED_AMOUNT : formatAmount(monthResult, currency, { signed: true })}
+            <AnimatedValue value={hidden ? MASKED_AMOUNT : formatAmount(monthResult, currency, { signed: true })} />
           </span>
         </p>
       ) : null}
@@ -58,7 +59,7 @@ export function BalanceCard({ accountsTotal, monthResult, income, expense, curre
             Ingresos
           </div>
           <p className="tabular mt-1 truncate text-lg font-semibold">
-            {hidden ? MASKED_AMOUNT : formatAmount(income, currency, { signed: true })}
+            <AnimatedValue value={hidden ? MASKED_AMOUNT : formatAmount(income, currency, { signed: true })} className="truncate" />
           </p>
         </div>
         <div className="min-w-0 rounded-2xl bg-black/10 p-3">
@@ -67,7 +68,7 @@ export function BalanceCard({ accountsTotal, monthResult, income, expense, curre
             Gastos
           </div>
           <p className="tabular mt-1 truncate text-lg font-semibold">
-            {hidden ? MASKED_AMOUNT : formatAmount(-expense, currency)}
+            <AnimatedValue value={hidden ? MASKED_AMOUNT : formatAmount(-expense, currency)} className="truncate" />
           </p>
         </div>
       </div>

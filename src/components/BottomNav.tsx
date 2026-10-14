@@ -41,12 +41,12 @@ export function BottomNav() {
   }, [activeIndex, reduced]);
 
   return (
-    <nav aria-label="Principal" className="fixed bottom-0 left-0 right-0 z-40 flex justify-center px-2 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
+    <nav aria-label="Principal" className="fixed bottom-0 left-0 right-0 z-(--z-nav) flex justify-center px-2 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
       <div className="material relative flex items-center gap-0.5 rounded-full px-1.5 py-2">
         <span
           ref={pill}
           aria-hidden
-          className="pointer-events-none absolute left-1.5 top-2 h-12 w-14 rounded-full bg-[var(--color-surface-3)] transition-opacity duration-150"
+          className="pointer-events-none absolute left-1.5 top-2 h-12 w-14 rounded-full bg-[var(--color-surface-3)] transition-opacity duration-(--duration-fast)"
         />
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -58,7 +58,7 @@ export function BottomNav() {
               aria-current={isActive ? "page" : undefined}
               title={label}
               className={cn(
-                "relative flex h-12 w-14 flex-col items-center justify-center gap-0.5 rounded-full text-xs transition duration-150 active:scale-[0.92] active:duration-75",
+                "relative flex h-12 w-14 flex-col items-center justify-center gap-0.5 rounded-full text-xs transition duration-(--duration-fast) active:scale-[0.95] active:duration-(--duration-instant)",
                 isActive
                   ? "text-[var(--color-brand-light)]"
                   : "text-[var(--color-text-faint)] hover:text-[var(--color-text-muted)]"

@@ -34,9 +34,9 @@ export function buttonClass({
   className?: string;
 } = {}) {
   return cn(
-    "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition duration-150 ease-out",
+    "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition duration-(--duration-fast) ease-out",
     // Feedback on press-down, not on release.
-    "active:scale-[0.97] active:duration-75",
+    "active:scale-[0.97] active:duration-(--duration-instant)",
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-light)]",
     "disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100",
     VARIANTS[variant],

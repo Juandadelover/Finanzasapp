@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, FileText, HandCoins, MessageCircle, Users } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
+import { stagger, useEnterOnce } from "@/components/ui/motion";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -70,7 +72,7 @@ function PaySheet({ transaction, onClose }: { transaction: Transaction; onClose:
                 onClick={() => setAccountId(a.id)}
                 aria-pressed={accountId === a.id}
                 className={cn(
-                  "min-h-11 max-w-full truncate rounded-full border px-4 py-2 text-sm transition",
+                  "min-h-11 max-w-full truncate rounded-full border px-4 py-2 text-sm transition active:scale-[0.97]",
                   accountId === a.id
                     ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
                     : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
@@ -128,6 +130,8 @@ export default function CarteraPage() {
     return acc;
   }, [list, today]);
 
+  const enter = useEnterOnce(hydrated);
+
   if (!hydrated) {
     return (
       <>
@@ -184,7 +188,7 @@ export default function CarteraPage() {
             aria-selected={tab === k}
             onClick={() => setTab(k)}
             className={cn(
-              "min-h-11 rounded-xl py-2 text-sm font-medium transition",
+              "min-h-11 rounded-xl py-2 text-sm font-medium transition active:scale-[0.97]",
               tab === k
                 ? "bg-[var(--color-surface-3)] text-[var(--color-brand-light)]"
                 : "text-[var(--color-text-muted)]",
@@ -195,11 +199,14 @@ export default function CarteraPage() {
         ))}
       </div>
 
+      <div key={tab} className="tab-fade">
       <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(138,5,190,0.35)]">
         <span className="text-sm font-medium text-white/80">
           {tab === "income" ? "Te deben en total" : "Debes en total"}
         </span>
-        <p className="mt-2 truncate text-3xl font-bold tracking-tight tabular-nums">{money(total)}</p>
+        <p className="mt-2 truncate text-3xl font-bold tracking-tight tabular-nums">
+          <AnimatedValue value={money(total)} className="truncate" />
+        </p>
         <p className="mt-1 text-xs text-white/70">
           {list.length} {list.length === 1 ? "pendiente" : "pendientes"}
         </p>
@@ -243,7 +250,8 @@ export default function CarteraPage() {
           </>
         ) : (
           <div className="flex flex-col gap-2">
-            {list.map((t) => {
+            {list.map((t, i) => {
+              const st = stagger(enter, i);
               const contact = contactOf(t.contactId);
               const overdue = daysOverdue(t.dueDate, today) > 0;
               const wa =
@@ -259,7 +267,8 @@ export default function CarteraPage() {
               return (
                 <div
                   key={t.id}
-                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3"
+                  style={st.style}
+                  className={cn("rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3", st.className)}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -305,6 +314,7 @@ export default function CarteraPage() {
           </div>
         )}
       </section>
+      </div>
 
       {paying ? <PaySheet key={paying.id} transaction={paying} onClose={() => setPaying(null)} /> : null}
     </>

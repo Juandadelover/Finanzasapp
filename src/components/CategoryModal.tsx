@@ -136,7 +136,7 @@ export function CategoryModal({
                 onClick={() => setColor(c)}
                 aria-label={`Color ${c}`}
                 className={cn(
-                  "h-11 w-11 rounded-full border-2 transition active:scale-[0.92]",
+                  "h-11 w-11 rounded-full border-2 transition active:scale-[0.95]",
                   color === c ? "border-white" : "border-transparent"
                 )}
                 style={{ backgroundColor: c }}
@@ -159,7 +159,7 @@ export function CategoryModal({
                   type="button"
                   onClick={() => setIcon(key)}
                   className={cn(
-                    "flex h-11 w-11 items-center justify-center rounded-xl border-2 text-[var(--color-text-muted)] transition active:scale-[0.92]",
+                    "flex h-11 w-11 items-center justify-center rounded-xl border-2 text-[var(--color-text-muted)] transition active:scale-[0.95]",
                     isSelected ? "border-[var(--color-brand)] text-[var(--color-brand-light)]" : "border-transparent bg-[var(--color-surface-2)]"
                   )}
                 >
@@ -186,7 +186,7 @@ export function CategoryModal({
                 onClose();
               }}
               aria-label="Eliminar categoría"
-              className="flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-expense)] transition hover:bg-[var(--color-surface-2)]"
+              className="flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-expense)] transition active:scale-[0.97] hover:bg-[var(--color-surface-2)]"
             >
               <Trash2 size={18} />
             </button>

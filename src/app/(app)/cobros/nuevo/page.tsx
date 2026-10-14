@@ -245,7 +245,7 @@ function NuevoForm() {
           />
         </label>
 
-        <div className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+        <div className="fixed inset-x-0 bottom-0 z-(--z-bar) flex items-center justify-between gap-3 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
           <div className="min-w-0">
             <p className="text-xs text-[var(--color-text-muted)]">Total</p>
             <p className="truncate text-lg font-bold tabular-nums">{formatAmount(total, currency)}</p>

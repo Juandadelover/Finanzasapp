@@ -1,5 +1,6 @@
 "use client";
 
+import { useReducedMotion } from "@/components/ui/motion";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { formatAmount } from "@/lib/format";
 import type { CurrencyCode } from "@/types/finance";
@@ -15,6 +16,7 @@ interface TrendLineChartProps {
 }
 
 export function TrendLineChart({ data, currency }: TrendLineChartProps) {
+  const reduced = useReducedMotion();
   return (
     <div className="h-52 w-full" role="img" aria-label="Tendencia de gastos de los últimos meses">
       <ResponsiveContainer width="100%" height="100%">
@@ -38,6 +40,9 @@ export function TrendLineChart({ data, currency }: TrendLineChartProps) {
             }}
           />
           <Line
+            isAnimationActive={!reduced}
+            animationDuration={300}
+            animationEasing="ease-out"
             type="monotone"
             dataKey="expense"
             stroke="var(--color-expense)"

@@ -2,8 +2,9 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
-import { haptic } from "@/components/ui/motion";
+import { DURATIONS, haptic } from "@/components/ui/motion";
 
 /**
  * Accessible replacement for window.confirm. <ConfirmProvider> is mounted in AppShell.
@@ -36,11 +37,18 @@ export function useConfirm(): ConfirmFn {
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<{ options: ConfirmOptions; resolve: (v: boolean) => void } | null>(null);
+  // Last options stay on screen while the exit (ease-in, shorter than the entrance) plays.
+  const [leaving, setLeaving] = useState<ConfirmOptions | null>(null);
+  const lastOptions = useRef<ConfirmOptions | null>(null);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const panelRef = useRef<HTMLDivElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
 
   const confirm = useCallback<ConfirmFn>((options) => {
     return new Promise<boolean>((resolve) => {
+      clearTimeout(leaveTimer.current);
+      setLeaving(null);
+      lastOptions.current = options;
       returnFocus.current = document.activeElement as HTMLElement | null;
       setState({ options, resolve });
     });
@@ -53,6 +61,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         return null;
       });
       returnFocus.current?.focus?.();
+      clearTimeout(leaveTimer.current);
+      setLeaving(lastOptions.current);
+      leaveTimer.current = setTimeout(() => setLeaving(null), DURATIONS.fast);
     },
     []
   );
@@ -91,25 +102,27 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     };
   }, [state, close]);
 
-  const o = state?.options;
+  const o = state?.options ?? leaving;
+  const exiting = !state && !!leaving;
 
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
       {o && typeof document !== "undefined"
         ? createPortal(
-            <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+            <div className={cn("fixed inset-0 z-(--z-dialog) flex items-center justify-center px-4", exiting && "pointer-events-none")}>
               <div
-                className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
+                className={cn("absolute inset-0 bg-black/70 backdrop-blur-sm", exiting ? "anim-fade-out" : "anim-fade-in")}
                 onClick={() => close(false)}
               />
               <div
                 ref={panelRef}
-                role="alertdialog"
+                role={exiting ? undefined : "alertdialog"}
+                aria-hidden={exiting || undefined}
                 aria-modal="true"
                 aria-labelledby="confirm-title"
                 aria-describedby={o.description ? "confirm-desc" : undefined}
-                className="relative w-full max-w-sm animate-[popIn_0.24s_cubic-bezier(0.16,1,0.3,1)] rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 shadow-[var(--shadow-sheet)]"
+                className={cn("relative w-full max-w-sm rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 shadow-[var(--shadow-sheet)]", exiting ? "anim-pop-out" : "anim-pop-in")}
               >
                 <h2 id="confirm-title" className="text-base font-semibold">
                   {o.title}

@@ -8,17 +8,24 @@
  * overshoot). They always start from the live value and velocity, so a new
  * `to()` call re-targets mid-flight without a visible seam.
  */
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
 
 export interface SpringConfig {
   response: number;
   damping: number;
 }
 
-/** Critically damped by default: overshoot only where a flick carried momentum. */
+/** Mirrors the CSS tokens in globals.css (--duration-*), for timers that must match a CSS animation. */
+export const DURATIONS = { instant: 75, fast: 150, base: 200, slow: 300 } as const;
+
+/**
+ * Critically damped by default: overshoot only where a flick carried momentum.
+ * `response` of 0.3s keeps the visible movement inside the 300ms budget for user-initiated motion
+ * (a critically damped spring is within 5% of its target at ~0.75 * response).
+ */
 export const SPRINGS = {
   /** Sheet open / close / snap back. */
-  sheet: { response: 0.34, damping: 1 },
+  sheet: { response: 0.3, damping: 1 },
   /** Small UI state: menus, tab indicators. */
   ui: { response: 0.3, damping: 1 },
 } as const satisfies Record<string, SpringConfig>;
@@ -155,4 +162,24 @@ export function useMediaQuery(query: string): boolean {
 
 export function useReducedMotion(): boolean {
   return useMediaQuery("(prefers-reduced-motion: reduce)");
+}
+
+/**
+ * True only for the first load of a list: becomes true when `ready` first turns true and goes back to
+ * false once the staggered entrance has finished, so filters, edits and new items never re-animate.
+ */
+export function useEnterOnce(ready = true): boolean {
+  const [phase, setPhase] = useState<"idle" | "enter" | "done">("idle");
+  if (ready && phase === "idle") setPhase("enter");
+  useEffect(() => {
+    if (phase !== "enter") return;
+    const t = setTimeout(() => setPhase("done"), DURATIONS.base + DURATIONS.slow + 100);
+    return () => clearTimeout(t);
+  }, [phase]);
+  return phase === "enter";
+}
+
+/** Props for a list item entering with the `.stagger-in` class (index capped by --stagger-max in CSS). */
+export function stagger(enter: boolean, index: number): { className?: string; style?: CSSProperties } {
+  return enter ? { className: "stagger-in", style: { "--i": index } as CSSProperties } : {};
 }

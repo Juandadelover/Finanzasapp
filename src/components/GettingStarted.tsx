@@ -91,7 +91,7 @@ export function GettingStarted() {
           type="button"
           onClick={dismiss}
           aria-label="Ocultar primeros pasos"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.92] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.95] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
         >
           <X size={18} />
         </button>

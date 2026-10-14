@@ -83,7 +83,7 @@ export default function HomePage() {
           <Link
             key={tile.label}
             href="/cartera"
-            className="min-w-0 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3 transition hover:bg-[var(--color-surface-2)]"
+            className="min-w-0 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3 transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
           >
             <p className="text-xs text-[var(--color-text-faint)]">{tile.label}</p>
             <p title={money(tile.value)} className="tabular truncate text-base font-semibold" style={{ color: tile.color }}>

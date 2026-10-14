@@ -81,7 +81,7 @@ export default function CobrosPage() {
               aria-selected={tab === k}
               onClick={() => setTab(k)}
               className={cn(
-                "min-h-11 rounded-xl py-2 text-sm font-medium transition",
+                "min-h-11 rounded-xl py-2 text-sm font-medium transition active:scale-[0.97]",
                 tab === k
                   ? "bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm"
                   : "text-[var(--color-text-muted)]",
@@ -92,7 +92,7 @@ export default function CobrosPage() {
           ))}
         </div>
 
-        <div className="mt-4 flex flex-col gap-2">
+        <div key={tab} className="tab-fade mt-4 flex flex-col gap-2">
           {docs === null ? (
             <SkeletonList count={4} />
           ) : visible.length === 0 ? (
@@ -117,7 +117,7 @@ export default function CobrosPage() {
               <Link
                 key={d.id}
                 href={`/cobros/${d.id}`}
-                className="flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 transition hover:bg-[var(--color-surface-2)]"
+                className="flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">{formatDocNumber(d.number)}</p>

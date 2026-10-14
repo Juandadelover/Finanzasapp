@@ -179,7 +179,7 @@ export default function ReportesPage() {
               onClick={() => setPeriodKey(o.key)}
               aria-pressed={periodKey === o.key}
               className={cn(
-                "min-h-11 shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition",
+                "min-h-11 shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition active:scale-[0.97]",
                 periodKey === o.key
                   ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
                   : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
@@ -232,7 +232,7 @@ export default function ReportesPage() {
               aria-selected={tab === value}
               onClick={() => setTab(value)}
               className={cn(
-                "min-h-11 flex-1 rounded-full px-2 py-2 text-sm font-medium transition",
+                "min-h-11 flex-1 rounded-full px-2 py-2 text-sm font-medium transition active:scale-[0.97]",
                 tab === value ? "gradient-brand text-white" : "text-[var(--color-text-muted)]",
               )}
             >
@@ -264,7 +264,8 @@ export default function ReportesPage() {
       ) : (
         <div
           id="print-area"
-          className="report-print mx-4 mt-4 mb-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+          key={tab}
+          className="tab-fade report-print mx-4 mt-4 mb-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
         >
           <header className="mb-3">
             <p className="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">{business}</p>

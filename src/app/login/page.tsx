@@ -180,7 +180,7 @@ function LoginContent() {
               onClick={() => switchMode(key)}
               disabled={loading}
               aria-pressed={mode === key}
-              className={`min-h-11 rounded-full py-2 text-sm font-semibold transition disabled:opacity-60 ${
+              className={`min-h-11 rounded-full py-2 text-sm font-semibold transition active:scale-[0.97] disabled:opacity-60 ${
                 mode === key
                   ? "gradient-brand text-white"
                   : "text-[var(--color-text-muted)]"

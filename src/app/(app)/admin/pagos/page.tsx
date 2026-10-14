@@ -289,7 +289,7 @@ export default function AdminPagosPage() {
               aria-pressed={filter === f.value}
               onClick={() => setFilter(f.value)}
               className={cn(
-                "min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition",
+                "min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition active:scale-[0.97]",
                 filter === f.value
                   ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
                   : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]",

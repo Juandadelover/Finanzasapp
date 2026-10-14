@@ -277,7 +277,7 @@ export function BottomSheet({ isOpen, onClose, title, children, className }: Bot
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      className="fixed inset-0 z-(--z-sheet) flex items-end justify-center sm:items-center"
     >
       <div
         data-sheet-backdrop
@@ -289,7 +289,7 @@ export function BottomSheet({ isOpen, onClose, title, children, className }: Bot
         data-sheet-panel
         tabIndex={-1}
         className={cn(
-          "relative z-10 max-h-[92dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] pb-[calc(env(safe-area-inset-bottom)+16px)] shadow-[var(--shadow-sheet)] outline-none sm:max-w-md sm:rounded-3xl",
+          "relative z-(--z-raised) max-h-[92dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] pb-[calc(env(safe-area-inset-bottom)+16px)] shadow-[var(--shadow-sheet)] outline-none sm:max-w-md sm:rounded-3xl",
           className
         )}
       >
@@ -298,7 +298,7 @@ export function BottomSheet({ isOpen, onClose, title, children, className }: Bot
           onPointerMove={onPointerMove}
           onPointerUp={(e) => endDrag(e, false)}
           onPointerCancel={(e) => endDrag(e, true)}
-          className="material-bar sticky top-0 z-10 flex touch-none items-center justify-between border-b border-[var(--color-border)] px-5 py-2.5 sm:touch-auto"
+          className="material-bar sticky top-0 z-(--z-raised) flex touch-none items-center justify-between border-b border-[var(--color-border)] px-5 py-2.5 sm:touch-auto"
         >
           <span
             aria-hidden
@@ -309,7 +309,7 @@ export function BottomSheet({ isOpen, onClose, title, children, className }: Bot
             type="button"
             onClick={() => requestClose()}
             aria-label="Cerrar"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] active:scale-[0.92] active:bg-[var(--color-surface-2)]"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] active:scale-[0.95] active:bg-[var(--color-surface-2)]"
           >
             <X size={18} />
           </button>

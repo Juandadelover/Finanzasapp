@@ -25,7 +25,7 @@ export function PageHeader({ title, subtitle, backHref, backLabel = "Volver", ac
       {backHref ? (
         <Link
           href={backHref}
-          className="-ml-2 mb-1 inline-flex min-h-11 items-center gap-1 rounded-xl px-2 text-sm text-[var(--color-text-muted)] transition hover:text-[var(--color-text)]"
+          className="-ml-2 mb-1 inline-flex min-h-11 items-center gap-1 rounded-xl px-2 text-sm text-[var(--color-text-muted)] transition active:scale-[0.97] hover:text-[var(--color-text)]"
         >
           <ChevronLeft size={18} aria-hidden />
           {backLabel}

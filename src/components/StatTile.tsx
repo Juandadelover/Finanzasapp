@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { cn } from "@/lib/cn";
 
 interface StatTileProps {
@@ -25,7 +26,7 @@ export function StatTile({ label, value, icon: Icon, accent, deltaPct, goodDirec
       </span>
       <div>
         <p className="text-xs text-[var(--color-text-faint)]">{label}</p>
-        <p title={value} className="tabular mt-0.5 truncate text-lg font-semibold text-[var(--color-text)]">{value}</p>
+        <p title={value} className="tabular mt-0.5 truncate text-lg font-semibold text-[var(--color-text)]"><AnimatedValue value={value} className="truncate" /></p>
       </div>
       {deltaPct === null ? (
         <span className="text-xs font-medium text-[var(--color-text-faint)]">Sin datos el mes pasado</span>
