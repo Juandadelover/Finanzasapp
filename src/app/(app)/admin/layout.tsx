@@ -8,19 +8,15 @@ import { AppHeader } from "@/components/AppHeader";
 import { buttonClass } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { cn } from "@/lib/cn";
 import { checkIsAdmin } from "@/lib/admin";
 
-const TABS = [
-  { href: "/admin", label: "Resumen" },
-  { href: "/admin/pagos", label: "Pagos" },
-  { href: "/admin/clientes", label: "Clientes" },
-  { href: "/admin/configuracion", label: "Configuración" },
-];
-
-// The app shell is a 512px column; admin screens (tables) break out of it on wide viewports.
-// AppShell ya ensancha /admin; se conserva la constante para no tocar el marcado.
-const WIDE = "w-full";
+const SECTIONS: Record<string, { title: string; subtitle: string }> = {
+  "/admin": { title: "Resumen", subtitle: "Cómo va la plataforma hoy" },
+  "/admin/pagos": { title: "Pagos", subtitle: "Revisa y aprueba los comprobantes" },
+  "/admin/clientes": { title: "Clientes", subtitle: "Planes, suscripciones y negocios" },
+  "/admin/ingresos": { title: "Ingresos", subtitle: "Pagos aprobados, altas y conversión" },
+  "/admin/configuracion": { title: "Configuración", subtitle: "Planes, medios de pago y auditoría" },
+};
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -40,7 +36,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="pb-8">
         <AppHeader />
-        <PageHeader title="Administración" backHref="/ajustes" backLabel="Ajustes" />
+        <PageHeader title="Administración" />
         <div role="status" className="mx-4 mt-4 flex flex-col gap-3">
           <span className="sr-only">Verificando acceso...</span>
           <Skeleton className="h-11 rounded-full" />
@@ -68,38 +64,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  const section = SECTIONS[pathname.replace(/\/$/, "")];
+
   return (
     <div className="pb-8">
       <AppHeader />
-      <div className={WIDE}>
-        <PageHeader
-          title="Administración"
-          subtitle="Pagos, clientes y configuración de la plataforma"
-          backHref="/ajustes"
-          backLabel="Ajustes"
-          className="mx-0"
-        />
-        <nav className="no-scrollbar mt-3 flex gap-2 overflow-x-auto" aria-label="Secciones de administración">
-          {TABS.map((t) => {
-            const active = t.href === "/admin" ? pathname === "/admin" : pathname.startsWith(t.href);
-            return (
-              <Link
-                key={t.href}
-                href={t.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 text-sm font-medium transition active:scale-[0.97]",
-                  active
-                    ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
-                    : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]",
-                )}
-              >
-                {t.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="mt-4">{children}</div>
+      <div className="w-full">
+        {section ? <PageHeader title={section.title} subtitle={section.subtitle} className="mx-4 lg:mx-0" /> : null}
+        <div className="mx-4 mt-4 lg:mx-0">{children}</div>
       </div>
     </div>
   );

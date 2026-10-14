@@ -1,13 +1,16 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
+import { isTenantPath } from "@/components/nav";
 import { Sidebar } from "@/components/Sidebar";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { TransactionModal } from "@/components/TransactionModal";
 import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { useFinance } from "@/context/FinanceContext";
 import { cn } from "@/lib/cn";
 
 /**
@@ -18,7 +21,18 @@ import { cn } from "@/lib/cn";
  */
 export function AppShell({ children }: { children: ReactNode }) {
   // El panel de administración se usa sobre todo en escritorio: usa todo el ancho.
-  const wide = usePathname().startsWith("/admin");
+  const pathname = usePathname();
+  const router = useRouter();
+  const { isPlatformAdmin, adminResolved } = useFinance();
+  const wide = pathname.startsWith("/admin");
+  // El admin de la plataforma no usa la app de clientes: sus rutas lo llevan a la consola.
+  const tenantRoute = isTenantPath(pathname);
+  const redirecting = tenantRoute && isPlatformAdmin;
+  const holding = tenantRoute && (!adminResolved || isPlatformAdmin);
+  useEffect(() => {
+    if (redirecting) router.replace("/admin");
+  }, [redirecting, router]);
+  const showTenantChrome = adminResolved && !isPlatformAdmin;
   return (
     <ConfirmProvider>
       <a
@@ -36,11 +50,20 @@ export function AppShell({ children }: { children: ReactNode }) {
             wide ? "lg:max-w-none" : "lg:max-w-6xl"
           )}
         >
-          <SubscriptionBanner />
-          {children}
-          <FloatingActionButton />
-          <BottomNav />
-          <TransactionModal />
+          {showTenantChrome ? <SubscriptionBanner /> : null}
+          {holding ? (
+            <div role="status" className="mx-4 mt-6 flex flex-col gap-3 lg:mx-0">
+              <span className="sr-only">Cargando...</span>
+              <Skeleton className="h-8 w-48 rounded-xl" />
+              <Skeleton className="h-32 rounded-3xl" />
+              <Skeleton className="h-24 rounded-2xl" />
+            </div>
+          ) : (
+            children
+          )}
+          {showTenantChrome ? <FloatingActionButton /> : null}
+          {adminResolved ? <BottomNav /> : null}
+          {showTenantChrome ? <TransactionModal /> : null}
         </div>
       </div>
     </ConfirmProvider>

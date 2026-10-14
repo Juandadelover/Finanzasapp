@@ -1,146 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw, Search, Users } from "lucide-react";
-import { toast } from "sonner";
-import { BottomSheet } from "@/components/ui/BottomSheet";
+import { SubscriptionSheet } from "@/components/admin/SubscriptionSheet";
+import { adminInputClass as inputClass, fmtDay, STATUS_LABEL } from "@/components/admin/shared";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   fetchAdminCustomers,
   fetchPlans,
-  setSubscription,
   type AdminCustomer,
   type PlanRow,
 } from "@/lib/admin";
-
-const inputClass =
-  "w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-base outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40";
-const labelClass =
-  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]";
-
-const STATUS_LABEL: Record<string, string> = {
-  active: "Activo",
-  grace: "En gracia",
-  provisional: "Provisional",
-  trial: "En prueba",
-  free: "Gratis",
-  expired: "Vencido",
-};
-
-function fmtDay(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("es-CO", { dateStyle: "medium" });
-}
-
-function toInputDate(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-function defaultEnd(current: string | null, cycle: string): string {
-  const now = new Date();
-  const base = current && new Date(current) > now ? new Date(current) : now;
-  const d = new Date(base);
-  if (cycle === "annual") d.setFullYear(d.getFullYear() + 1);
-  else d.setMonth(d.getMonth() + 1);
-  return toInputDate(d);
-}
-
-function CustomerSheet({
-  customer,
-  plans,
-  onClose,
-  onDone,
-}: {
-  customer: AdminCustomer;
-  plans: PlanRow[];
-  onClose: () => void;
-  onDone: () => void;
-}) {
-  const initialCycle = customer.billing_cycle === "annual" ? "annual" : "monthly";
-  const [plan, setPlan] = useState(customer.plan_code ?? plans[0]?.code ?? "");
-  const [cycle, setCycle] = useState(initialCycle);
-  const [end, setEnd] = useState(defaultEnd(customer.current_period_end, initialCycle));
-  const [reason, setReason] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  function changeCycle(c: string) {
-    setCycle(c);
-    setEnd(defaultEnd(customer.current_period_end, c));
-  }
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!plan || !end) {
-      toast.error("Completa plan y fecha.");
-      return;
-    }
-    if (!reason.trim()) {
-      toast.error("Indica el motivo.");
-      return;
-    }
-    setBusy(true);
-    const ok = await setSubscription({
-      owner: customer.owner_id,
-      plan,
-      cycle,
-      periodEnd: new Date(`${end}T23:59:59`).toISOString(),
-      reason: reason.trim(),
-    });
-    setBusy(false);
-    if (ok) onDone();
-  }
-
-  return (
-    <BottomSheet isOpen onClose={onClose} title="Activar o extender">
-      <form onSubmit={submit} className="flex flex-col gap-4">
-        <div>
-          <p className="text-sm font-semibold">{customer.full_name || customer.email}</p>
-          {customer.full_name ? (
-            <p className="text-xs text-[var(--color-text-muted)]">{customer.email}</p>
-          ) : null}
-        </div>
-        <label className="block">
-          <span className={labelClass}>Plan</span>
-          <select value={plan} onChange={(e) => setPlan(e.target.value)} className={inputClass}>
-            {plans.map((p) => (
-              <option key={p.code} value={p.code}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className={labelClass}>Ciclo</span>
-          <select value={cycle} onChange={(e) => changeCycle(e.target.value)} className={inputClass}>
-            <option value="monthly">Mensual</option>
-            <option value="annual">Anual</option>
-          </select>
-        </label>
-        <label className="block">
-          <span className={labelClass}>Vence el</span>
-          <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className={inputClass} />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Motivo (queda en la auditoría)</span>
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={2}
-            maxLength={300}
-            placeholder="Ej. Pago confirmado por WhatsApp"
-            className={inputClass}
-          />
-        </label>
-        <Button type="submit" loading={busy} fullWidth>
-          {busy ? "Guardando..." : "Guardar cambios"}
-        </Button>
-      </form>
-    </BottomSheet>
-  );
-}
 
 export default function AdminClientesPage() {
   const [search, setSearch] = useState("");
@@ -224,7 +97,12 @@ export default function AdminClientesPage() {
                 {rows.map((c) => (
                   <tr key={c.owner_id}>
                     <td className="max-w-[16rem] px-4 py-3">
-                      <p className="truncate font-medium">{c.full_name || c.email}</p>
+                      <Link
+                        href={`/admin/clientes/${c.owner_id}`}
+                        className="block truncate font-medium hover:text-[var(--color-brand-light)] hover:underline"
+                      >
+                        {c.full_name || c.email}
+                      </Link>
                       {c.full_name ? <p className="truncate text-xs text-[var(--color-text-muted)]">{c.email}</p> : null}
                     </td>
                     <td className="px-3 py-3 capitalize">{c.plan_code ?? "—"}</td>
@@ -251,11 +129,10 @@ export default function AdminClientesPage() {
           <ul className="flex flex-col gap-3 md:hidden">
             {rows.map((c) => (
               <li key={c.owner_id}>
-                <button
-                  type="button"
-                  onClick={() => setSelected(c)}
-                  aria-label={`Activar o extender plan de ${c.full_name || c.email}`}
-                  className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-left transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
+                <Link
+                  href={`/admin/clientes/${c.owner_id}`}
+                  aria-label={`Ver detalle de ${c.full_name || c.email}`}
+                  className="block w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-left transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
                 >
                   <p className="truncate text-sm font-semibold">{c.full_name || c.email}</p>
                   {c.full_name ? <p className="truncate text-xs text-[var(--color-text-muted)]">{c.email}</p> : null}
@@ -280,7 +157,16 @@ export default function AdminClientesPage() {
                       <strong className="text-[var(--color-text)]">{fmtDay(c.current_period_end ?? c.trial_end)}</strong>
                     </span>
                   </div>
-                </button>
+                </Link>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => setSelected(c)}
+                  aria-label={`Activar o extender plan de ${c.full_name || c.email}`}
+                >
+                  Activar o extender
+                </Button>
               </li>
             ))}
           </ul>
@@ -288,7 +174,7 @@ export default function AdminClientesPage() {
       )}
 
       {selected ? (
-        <CustomerSheet
+        <SubscriptionSheet
           customer={selected}
           plans={plans}
           onClose={() => setSelected(null)}

@@ -107,6 +107,8 @@ interface FinanceContextValue {
   /** Vuelve a cargar negocios y datos (p. ej. tras generar recurrentes o aceptar una invitación). */
   reload: () => Promise<void>;
   isPlatformAdmin: boolean;
+  /** true cuando ya se sabe si la persona es administradora de la plataforma (evita mostrar la app de clientes por un instante). */
+  adminResolved: boolean;
 }
 
 const WORKSPACE_KEY = "finanzasapp:workspace";
@@ -150,6 +152,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const currentIdRef = useRef<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
+  const [adminCheckedFor, setAdminCheckedFor] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonthState] = useState(() => new Date().getMonth());
 
@@ -758,8 +761,16 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     let cancelled = false;
     fetchIsPlatformAdmin(user.id)
-      .then((v) => !cancelled && setIsPlatformAdmin(v))
-      .catch(() => !cancelled && setIsPlatformAdmin(false));
+      .then((v) => {
+        if (cancelled) return;
+        setIsPlatformAdmin(v);
+        setAdminCheckedFor(user.id);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setIsPlatformAdmin(false);
+        setAdminCheckedFor(user.id);
+      });
     return () => {
       cancelled = true;
     };
@@ -808,6 +819,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       signOut,
       reload,
       isPlatformAdmin: isPlatformAdmin && !!user,
+      adminResolved: user ? adminCheckedFor === user.id : hydrated,
     }),
     [
       user,
@@ -843,6 +855,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       signOut,
       reload,
       isPlatformAdmin,
+      adminCheckedFor,
     ]
   );
 
