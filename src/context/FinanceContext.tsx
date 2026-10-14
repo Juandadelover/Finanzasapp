@@ -81,7 +81,7 @@ interface FinanceContextValue {
   setSelectedMonth: (year: number, month: number) => void;
   goToPreviousMonth: () => void;
   goToNextMonth: () => void;
-  addTransaction: (input: NewTransactionInput) => Promise<void>;
+  addTransaction: (input: NewTransactionInput) => Promise<Transaction | null>;
   updateTransaction: (id: string, input: NewTransactionInput) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   markTransactionPaid: (id: string, input: { accountId: string; date: string }) => Promise<void>;
@@ -306,7 +306,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const addTransaction = useCallback(
     async (input: NewTransactionInput) => {
-      if (!currentId) return;
+      if (!currentId) return null;
       const { data, error } = await supabase
         .from("transactions")
         .insert({
@@ -327,10 +327,11 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       if (error || !data) {
         console.error("No se pudo guardar el movimiento", error);
         toast.error("No se pudo guardar el movimiento. Revisa tu conexión e intenta de nuevo.");
-        return;
+        return null;
       }
       const transaction = rowToTransaction(data as TransactionRow);
       setData((prev) => ({ ...prev, transactions: [transaction, ...prev.transactions] }));
+      return transaction;
     },
     [supabase, currentId]
   );

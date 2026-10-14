@@ -10,6 +10,9 @@ import { QuickActions } from "@/components/QuickActions";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { useFinance } from "@/context/FinanceContext";
+import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
+import { formatAmount } from "@/lib/format";
+import { pendingTransactions, sumAmount } from "@/lib/cartera";
 import { computeTotals, transactionsForMonth } from "@/lib/selectors";
 
 export default function HomePage() {
@@ -22,6 +25,10 @@ export default function HomePage() {
 
   const totals = useMemo(() => computeTotals(monthTransactions), [monthTransactions]);
   const recent = monthTransactions.slice(0, 5);
+  const { hidden } = usePrivacy();
+  const owed = sumAmount(pendingTransactions(state.transactions, "income"));
+  const owe = sumAmount(pendingTransactions(state.transactions, "expense"));
+  const money = (v: number) => (hidden ? MASKED_AMOUNT : formatAmount(v, state.settings.currency));
 
   if (!hydrated) {
     return (
@@ -42,6 +49,23 @@ export default function HomePage() {
         expense={totals.expense}
         currency={state.settings.currency}
       />
+      <div className="mx-4 mt-3 grid grid-cols-2 gap-3">
+        {[
+          { label: "Me deben", value: owed, color: "var(--color-income)" },
+          { label: "Debo", value: owe, color: "var(--color-expense)" },
+        ].map((tile) => (
+          <Link
+            key={tile.label}
+            href="/cartera"
+            className="min-w-0 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3 transition hover:bg-[var(--color-surface-2)]"
+          >
+            <p className="text-xs text-[var(--color-text-faint)]">{tile.label}</p>
+            <p className="truncate text-base font-semibold" style={{ color: tile.color }}>
+              {money(tile.value)}
+            </p>
+          </Link>
+        ))}
+      </div>
       <QuickActions />
 
       <div className="mx-4 mt-6 flex items-center justify-between">
