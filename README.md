@@ -72,6 +72,20 @@ Mientras tanto, activa el inicio de sesión anónimo para poder entrar con el bo
 
 Con eso puedes probar todo el flujo (movimientos, categorías, estadísticas, bloqueo biométrico) con datos reales guardados en tu propia cuenta temporal — no comparte datos con nadie más, gracias a RLS.
 
+## Usuarios de prueba (desarrollo)
+
+`supabase/seed/dev_users.sql` crea un usuario por rol en el negocio "Tienda Demo" (ver `docs/REQUISITOS-SAAS.md`, sección 5.6). Entran con email y contraseña; la contraseña se define al ejecutar el seed y no se guarda en el repositorio.
+
+| Email | Rol |
+|---|---|
+| `admin@finanzasapp.test` | Administrador de la plataforma |
+| `dueno@finanzasapp.test` | Dueño de "Tienda Demo" (plan Negocio) |
+| `adminnegocio@finanzasapp.test` | Admin |
+| `editor@finanzasapp.test` | Editor |
+| `contador@finanzasapp.test` | Contador (solo lectura) |
+| `registro@finanzasapp.test` | Solo registro (solo gastos) |
+| `gratis@finanzasapp.test` | Dueño en plan Gratis con un pago en revisión |
+
 ## Deployment (Vercel)
 
 En el proyecto de Vercel conectado a este repositorio, agrega estas variables de entorno (mismas que `.env.example`, con el valor real de la anon key):

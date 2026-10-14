@@ -1,28 +1,13 @@
 -- Fase 0 del SaaS: negocios (workspaces) con roles y esquema base de
--- suscripciones con pagos manuales. Ver docs/REQUISITOS-SAAS.md (D2, D4, D7).
+-- suscripciones con pagos manuales. Ver docs/REQUISITOS-SAAS.md (D2, D4).
 --
--- D7: los datos de la app personal no se migran. Se eliminan los usuarios
--- invitados (anónimos) con todos sus datos, y la migración falla si aún
--- quedan movimientos o categorías de otros usuarios.
-
-delete from auth.users where is_anonymous;
-
-do $$
-begin
-  if exists (select 1 from public.transactions) or exists (select 1 from public.categories) then
-    raise exception 'Vacía transactions y categories antes de aplicar esta migración (D7).';
-  end if;
-end $$;
+-- No destructiva: no borra filas, tablas, columnas, políticas ni restricciones.
+-- Cada usuario existente recibe su negocio "Mi negocio" con sus categorías y
+-- movimientos actuales. Quedan en desuso: user_settings, categories.user_id y
+-- transactions.user_id (ahora opcionales; el creador va en created_by).
 
 -- ---------------------------------------------------------------------------
--- 1. Quitar el modelo "un usuario = unos datos"
--- ---------------------------------------------------------------------------
-drop trigger if exists on_auth_user_created on auth.users;
-drop function if exists public.handle_new_user();
-drop table if exists public.user_settings;
-
--- ---------------------------------------------------------------------------
--- 2. Negocios y membresías
+-- 1. Negocios y membresías
 -- ---------------------------------------------------------------------------
 create type public.workspace_role as enum ('owner', 'admin', 'editor', 'accountant', 'recorder');
 
@@ -83,34 +68,26 @@ as $$
   select exists (select 1 from public.platform_admins a where a.user_id = auth.uid());
 $$;
 
--- ---------------------------------------------------------------------------
--- 3. Categorías y movimientos pasan a pertenecer a un negocio
--- ---------------------------------------------------------------------------
-alter table public.transactions drop constraint transactions_category_id_fkey;
+-- El dueño y la moneda de un negocio no se cambian desde el cliente.
+create function public.protect_workspace_fields()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.owner_id <> old.owner_id or new.currency <> old.currency then
+    raise exception 'No se puede cambiar el dueño ni la moneda del negocio.';
+  end if;
+  return new;
+end;
+$$;
 
-drop policy "categories_all_own" on public.categories;
-drop index public.categories_user_id_idx;
-alter table public.categories
-  drop column user_id,
-  add column workspace_id uuid not null references public.workspaces(id) on delete cascade,
-  alter column monthly_budget type numeric(18,2),
-  add constraint categories_id_workspace_key unique (id, workspace_id);
-create index categories_workspace_id_idx on public.categories(workspace_id);
-
-drop policy "transactions_all_own" on public.transactions;
-drop index public.transactions_user_id_date_idx;
-alter table public.transactions drop column user_id;
-alter table public.transactions
-  add column workspace_id uuid not null references public.workspaces(id) on delete cascade,
-  add column created_by uuid default auth.uid() references auth.users(id) on delete set null,
-  alter column amount type numeric(18,2),
-  -- La categoría debe ser del mismo negocio que el movimiento.
-  add constraint transactions_category_fkey foreign key (category_id, workspace_id)
-    references public.categories(id, workspace_id) on delete set null (category_id);
-create index transactions_workspace_date_idx on public.transactions(workspace_id, date desc);
+create trigger workspaces_protect_fields
+  before update on public.workspaces
+  for each row execute function public.protect_workspace_fields();
 
 -- ---------------------------------------------------------------------------
--- 4. Planes y suscripciones (cobro por dueño, pagos manuales)
+-- 2. Planes y suscripciones (cobro por dueño, pagos manuales)
 -- ---------------------------------------------------------------------------
 create table public.plans (
   code text primary key,
@@ -206,7 +183,57 @@ insert into public.plan_limits (plan_code, key, value) values
   ('pro',         'feature.collection_docs', 'true');
 
 -- ---------------------------------------------------------------------------
--- 5. Arranque de usuarios y negocios nuevos
+-- 3. Categorías y movimientos pasan a pertenecer a un negocio
+-- ---------------------------------------------------------------------------
+alter table public.categories
+  add column workspace_id uuid references public.workspaces(id) on delete cascade,
+  alter column user_id drop not null,
+  alter column monthly_budget type numeric(18,2);
+
+alter table public.transactions
+  add column workspace_id uuid references public.workspaces(id) on delete cascade,
+  add column created_by uuid default auth.uid() references auth.users(id) on delete set null,
+  alter column user_id drop not null,
+  alter column amount type numeric(18,2);
+
+-- Cada usuario existente pasa a ser dueño de "Mi negocio" con sus datos actuales.
+do $$
+declare
+  u record;
+  ws uuid;
+begin
+  for u in
+    select au.id, s.monthly_budget
+    from auth.users au
+    left join public.user_settings s on s.user_id = au.id
+  loop
+    insert into public.workspaces (name, owner_id, monthly_budget)
+    values ('Mi negocio', u.id, u.monthly_budget)
+    returning id into ws;
+
+    insert into public.memberships (workspace_id, user_id, role) values (ws, u.id, 'owner');
+    insert into public.subscriptions (owner_id, plan_code, status, trial_end)
+    values (u.id, 'emprendedor', 'trial', now() + interval '14 days');
+
+    update public.categories set workspace_id = ws where user_id = u.id;
+    update public.transactions set workspace_id = ws, created_by = user_id where user_id = u.id;
+  end loop;
+end $$;
+
+alter table public.categories
+  alter column workspace_id set not null,
+  add constraint categories_id_workspace_key unique (id, workspace_id);
+create index categories_workspace_id_idx on public.categories(workspace_id);
+
+alter table public.transactions
+  alter column workspace_id set not null,
+  -- La categoría debe ser del mismo negocio que el movimiento.
+  add constraint transactions_category_workspace_fkey foreign key (category_id, workspace_id)
+    references public.categories(id, workspace_id) on delete set null (category_id);
+create index transactions_workspace_date_idx on public.transactions(workspace_id, date desc);
+
+-- ---------------------------------------------------------------------------
+-- 4. Arranque de usuarios y negocios nuevos
 -- ---------------------------------------------------------------------------
 create function public.handle_new_workspace()
 returns trigger
@@ -237,11 +264,14 @@ begin
 end;
 $$;
 
+-- Se crea después del paso 3 para no duplicar categorías a los usuarios existentes.
 create trigger on_workspace_created
   after insert on public.workspaces
   for each row execute function public.handle_new_workspace();
 
-create function public.handle_new_user()
+-- Reemplaza la versión anterior (que creaba user_settings y categorías por usuario).
+-- Los usuarios invitados a un negocio (metadata "invited") no reciben negocio propio.
+create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer set search_path = ''
@@ -249,6 +279,10 @@ as $$
 begin
   insert into public.profiles (id, full_name, avatar_url)
   values (new.id, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url');
+
+  if coalesce((new.raw_user_meta_data->>'invited')::boolean, false) then
+    return new;
+  end if;
 
   insert into public.workspaces (name, owner_id) values ('Mi negocio', new.id);
 
@@ -260,15 +294,11 @@ begin
 end;
 $$;
 
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
-
 revoke execute on function public.handle_new_user() from public, anon, authenticated;
 revoke execute on function public.handle_new_workspace() from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
--- 6. Row Level Security
+-- 5. Row Level Security
 -- ---------------------------------------------------------------------------
 alter table public.workspaces enable row level security;
 alter table public.memberships enable row level security;
@@ -289,9 +319,6 @@ create policy workspaces_update on public.workspaces for update
   with check (public.has_workspace_role(id, array['owner', 'admin']::public.workspace_role[]));
 create policy workspaces_delete on public.workspaces for delete
   using (owner_id = auth.uid());
--- El dueño y la moneda no se cambian desde el cliente.
-revoke update on public.workspaces from anon, authenticated;
-grant update (name, document, tax_regime, logo_url, monthly_budget) on public.workspaces to authenticated;
 
 -- Membresías: las ven los miembros; dueño/admin gestionan las que no son de dueño;
 -- cualquiera puede salirse de un negocio que no es suyo.
@@ -313,34 +340,29 @@ create policy platform_admins_select_self on public.platform_admins for select
   using (user_id = auth.uid());
 
 -- Categorías: las leen todos los miembros; las gestionan dueño, admin y editor.
-create policy categories_select on public.categories for select
-  using (public.is_workspace_member(workspace_id));
-create policy categories_insert on public.categories for insert
-  with check (public.has_workspace_role(workspace_id, array['owner', 'admin', 'editor']::public.workspace_role[]));
-create policy categories_update on public.categories for update
+-- La política antigua "por usuario" se reutiliza como política de gestión.
+alter policy categories_all_own on public.categories rename to categories_manage;
+alter policy categories_manage on public.categories
   using (public.has_workspace_role(workspace_id, array['owner', 'admin', 'editor']::public.workspace_role[]))
   with check (public.has_workspace_role(workspace_id, array['owner', 'admin', 'editor']::public.workspace_role[]));
-create policy categories_delete on public.categories for delete
-  using (public.has_workspace_role(workspace_id, array['owner', 'admin', 'editor']::public.workspace_role[]));
+create policy categories_select on public.categories for select
+  using (public.is_workspace_member(workspace_id));
 
 -- Movimientos:
 --  * dueño/admin/editor: todo
 --  * contador: solo lectura
 --  * solo registro: crea gastos y ve únicamente los que registró
-create policy transactions_select on public.transactions for select
-  using (public.has_workspace_role(workspace_id, array['owner', 'admin', 'editor', 'accountant']::public.workspace_role[])
-    or (created_by = auth.uid()
-      and public.has_workspace_role(workspace_id, array['recorder']::public.workspace_role[])));
-create policy transactions_insert on public.transactions for insert
-  with check (created_by = auth.uid()
-    and (public.has_workspace_role(workspace_id, array['owner', 'admin', 'editor']::public.workspace_role[])
-      or (type = 'expense'
-        and public.has_workspace_role(workspace_id, array['recorder']::public.workspace_role[]))));
-create policy transactions_update on public.transactions for update
+alter policy transactions_all_own on public.transactions rename to transactions_manage;
+alter policy transactions_manage on public.transactions
   using (public.has_workspace_role(workspace_id, array['owner', 'admin', 'editor']::public.workspace_role[]))
   with check (public.has_workspace_role(workspace_id, array['owner', 'admin', 'editor']::public.workspace_role[]));
-create policy transactions_delete on public.transactions for delete
-  using (public.has_workspace_role(workspace_id, array['owner', 'admin', 'editor']::public.workspace_role[]));
+create policy transactions_select on public.transactions for select
+  using (public.has_workspace_role(workspace_id, array['accountant']::public.workspace_role[])
+    or (created_by = auth.uid()
+      and public.has_workspace_role(workspace_id, array['recorder']::public.workspace_role[])));
+create policy transactions_insert_recorder on public.transactions for insert
+  with check (created_by = auth.uid() and type = 'expense'
+    and public.has_workspace_role(workspace_id, array['recorder']::public.workspace_role[]));
 
 -- Planes: públicos (página de precios); los cambia solo el admin de plataforma.
 create policy plans_select on public.plans for select using (true);

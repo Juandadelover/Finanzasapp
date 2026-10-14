@@ -4,7 +4,7 @@
 --   select set_config('app.dev_seed_password', '<contraseña>', false);
 --   \i supabase/seed/dev_users.sql
 --
--- Es idempotente: borra los usuarios @finanzasapp.test y los vuelve a crear.
+-- No borra nada: si los usuarios de prueba ya existen, no hace cambios.
 -- Se niega a correr si hay usuarios reales (no anónimos y fuera de
 -- @finanzasapp.test), para no ejecutarse por error en producción.
 
@@ -34,20 +34,24 @@ begin
     raise exception 'Hay usuarios reales en este proyecto: el seed de desarrollo no se ejecuta aquí.';
   end if;
 
-  delete from auth.users where email like '%@finanzasapp.test';
+  if exists (select 1 from auth.users where email like '%@finanzasapp.test') then
+    raise notice 'Los usuarios de prueba ya existen; no se hace nada.';
+    return;
+  end if;
 
   -- Crea cada usuario con email confirmado e identidad "email".
-  -- El trigger on_auth_user_created le crea perfil, negocio "Mi negocio" y prueba de 14 días.
+  -- El trigger on_auth_user_created le crea perfil, negocio "Mi negocio" y prueba
+  -- de 14 días, salvo a los marcados como invitados (solo serán miembros).
   for u in
     select * from (values
-      ('admin@finanzasapp.test',        'Admin Plataforma'),
-      ('dueno@finanzasapp.test',        'Daniela Dueña'),
-      ('adminnegocio@finanzasapp.test', 'Andrés Admin'),
-      ('editor@finanzasapp.test',       'Elena Editora'),
-      ('contador@finanzasapp.test',     'Carlos Contador'),
-      ('registro@finanzasapp.test',     'Rosa Registro'),
-      ('gratis@finanzasapp.test',       'Gabriel Gratis')
-    ) as t(email, full_name)
+      ('admin@finanzasapp.test',        'Admin Plataforma', false),
+      ('dueno@finanzasapp.test',        'Daniela Dueña',    false),
+      ('adminnegocio@finanzasapp.test', 'Andrés Admin',     true),
+      ('editor@finanzasapp.test',       'Elena Editora',    true),
+      ('contador@finanzasapp.test',     'Carlos Contador',  true),
+      ('registro@finanzasapp.test',     'Rosa Registro',    true),
+      ('gratis@finanzasapp.test',       'Gabriel Gratis',   false)
+    ) as t(email, full_name, invited)
   loop
     declare
       uid uuid := gen_random_uuid();
@@ -62,7 +66,7 @@ begin
         '00000000-0000-0000-0000-000000000000', uid, 'authenticated', 'authenticated', u.email,
         extensions.crypt(pwd, extensions.gen_salt('bf')), now(),
         '{"provider":"email","providers":["email"]}'::jsonb,
-        jsonb_build_object('full_name', u.full_name), now(), now(),
+        jsonb_build_object('full_name', u.full_name, 'invited', u.invited), now(), now(),
         '', '', '', '', '', '', '', '', false, false
       );
       insert into auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
@@ -82,7 +86,6 @@ begin
 
   -- Administrador de la plataforma (panel /admin).
   insert into public.platform_admins (user_id) values (v_admin);
-  delete from public.subscriptions where owner_id = v_admin;
 
   -- Dueño: su negocio se llama "Tienda Demo" y tiene plan Negocio activo.
   update public.workspaces set name = 'Tienda Demo', tax_regime = 'no_responsable_iva'
@@ -93,8 +96,6 @@ begin
     where owner_id = v_owner;
 
   -- Miembros invitados: no tienen negocio propio ni suscripción, solo su rol en "Tienda Demo".
-  delete from public.workspaces where owner_id in (v_admin_ws, v_editor, v_accountant, v_recorder);
-  delete from public.subscriptions where owner_id in (v_admin_ws, v_editor, v_accountant, v_recorder);
   insert into public.memberships (workspace_id, user_id, role) values
     (v_ws, v_admin_ws,   'admin'),
     (v_ws, v_editor,     'editor'),
