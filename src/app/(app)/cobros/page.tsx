@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FileText, Plus } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { buttonClass } from "@/components/ui/Button";
+import { DataTable } from "@/components/ui/DataTable";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
@@ -22,6 +25,7 @@ import {
 } from "@/lib/documents";
 
 export default function CobrosPage() {
+  const router = useRouter();
   const { currentWorkspace, permissions } = useFinance();
   const { hidden } = usePrivacy();
   const [tab, setTab] = useState<DocumentKind>("collection");
@@ -49,7 +53,9 @@ export default function CobrosPage() {
   return (
     <div className="pb-28">
       <AppHeader />
+      <PageContainer>
       <PageHeader
+        className="lg:mx-0 lg:mt-0"
         title="Cobros"
         subtitle="Documentos para cobrar y cotizar a tus clientes."
         backHref="/cartera"
@@ -62,11 +68,11 @@ export default function CobrosPage() {
           ) : null
         }
       />
-      <div className="px-4">
+      <div className="px-4 lg:px-0">
         <div
           role="tablist"
           aria-label="Tipo de documento"
-          className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-[var(--color-surface-2)] p-1"
+          className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-[var(--color-surface-2)] p-1 lg:max-w-sm"
         >
           {(
             [
@@ -113,10 +119,30 @@ export default function CobrosPage() {
               ) : null}
             </>
           ) : (
-            visible.map((d) => (
+            <DataTable
+              caption={tab === "quote" ? "Cotizaciones" : "Cuentas de cobro"}
+              rows={visible}
+              getRowKey={(d) => d.id}
+              onRowClick={(d) => router.push(`/cobros/${d.id}`)}
+              mobileClassName="flex flex-col gap-2"
+              columns={[
+                { key: "number", header: "Número", cell: (d) => <span className="whitespace-nowrap font-semibold">{formatDocNumber(d.number)}</span> },
+                { key: "client", header: "Cliente", className: "w-full max-w-0", cell: (d) => <span className="block truncate text-[var(--color-text-muted)]">{d.contactName ?? "Sin cliente"}</span> },
+                { key: "date", header: "Fecha", cell: (d) => <span className="whitespace-nowrap text-[var(--color-text-muted)]">{formatDayLabel(d.issueDate)}</span> },
+                {
+                  key: "status",
+                  header: "Estado",
+                  cell: (d) => (
+                    <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", STATUS_CHIP[d.status])}>
+                      {STATUS_LABELS[d.status]}
+                    </span>
+                  ),
+                },
+                { key: "total", header: "Total", align: "right", cell: (d) => <span className="whitespace-nowrap font-bold">{hidden ? MASKED_AMOUNT : formatAmount(d.total, currency)}</span> },
+              ]}
+              renderMobile={(d) => (
               <Link
-                key={d.id}
-                href={`/cobros/${d.id}`}
+                  href={`/cobros/${d.id}`}
                 className="flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
               >
                 <div className="min-w-0">
@@ -133,10 +159,12 @@ export default function CobrosPage() {
                   </span>
                 </div>
               </Link>
-            ))
+              )}
+            />
           )}
         </div>
       </div>
+      </PageContainer>
     </div>
   );
 }

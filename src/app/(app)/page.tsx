@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { ChevronRight, Receipt } from "lucide-react";
+import { BarChart3, ChevronRight, Receipt } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
 import { BalanceCard } from "@/components/BalanceCard";
@@ -10,17 +10,25 @@ import { QuickActions } from "@/components/QuickActions";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { GettingStarted } from "@/components/GettingStarted";
+import { cn } from "@/lib/cn";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { DataTable } from "@/components/ui/DataTable";
+import { PageContainer } from "@/components/ui/PageContainer";
+import { ResponsiveGrid } from "@/components/ui/ResponsiveGrid";
+import { ChartCard } from "@/components/charts/ChartCard";
+import { IncomeExpenseBarChart } from "@/components/charts/IncomeExpenseBarChart";
+import { transactionColumns } from "@/components/transactionColumns";
 import { useFinance } from "@/context/FinanceContext";
 import { useUI } from "@/context/UIContext";
 import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import { formatAmount } from "@/lib/format";
 import { pendingTransactions, sumAmount } from "@/lib/cartera";
-import { accountBalances, computeTotals, transactionsForMonth } from "@/lib/selectors";
+import { accountBalances, computeTotals, lastNMonths, transactionsForMonth } from "@/lib/selectors";
+import { monthShortLabel } from "@/lib/format";
 
 export default function HomePage() {
   const { state, hydrated, selectedYear, selectedMonth, permissions } = useFinance();
-  const { openNewTransaction } = useUI();
+  const { openNewTransaction, openEditTransaction } = useUI();
 
   const monthTransactions = useMemo(
     () => transactionsForMonth(state.transactions, selectedYear, selectedMonth),
@@ -38,13 +46,25 @@ export default function HomePage() {
   const { hidden } = usePrivacy();
   const owed = sumAmount(pendingTransactions(state.transactions, "income"));
   const owe = sumAmount(pendingTransactions(state.transactions, "expense"));
+  const sixMonthPoints = useMemo(
+    () =>
+      lastNMonths(state.transactions, selectedYear, selectedMonth, 6).map(({ year, month }) => {
+        const { income, expense } = computeTotals(transactionsForMonth(state.transactions, year, month));
+        return { year, month, label: monthShortLabel(month), income, expense };
+      }),
+    [state.transactions, selectedYear, selectedMonth]
+  );
+  const columns = useMemo(
+    () => transactionColumns({ categories: state.categories, accounts: state.accounts, currency: state.settings.currency, hidden, full: false }),
+    [state.categories, state.accounts, state.settings.currency, hidden]
+  );
   const money = (v: number) => (hidden ? MASKED_AMOUNT : formatAmount(v, state.settings.currency));
 
   if (!hydrated) {
     return (
       <>
         <AppHeader />
-        <div role="status" className="mx-4 mt-4 flex flex-col gap-3">
+        <div role="status" className="mx-4 mt-4 flex flex-col gap-3 lg:mx-0">
           <span className="sr-only">Cargando…</span>
           <Skeleton className="h-56 rounded-3xl" />
           <div className="grid grid-cols-2 gap-3">
@@ -61,13 +81,16 @@ export default function HomePage() {
     <>
       <AppHeader />
       <h1 className="sr-only">Inicio</h1>
+      <PageContainer>
       <MonthSelector />
+      <ResponsiveGrid variant="split" className="gap-0 lg:items-start lg:gap-5">
       {isRecorder ? (
-        <p className="mx-4 mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm text-[var(--color-text-muted)]">
+        <p className="mx-4 mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm text-[var(--color-text-muted)] lg:col-span-full lg:mx-0 lg:mt-0">
           Registra aquí los gastos del negocio. Verás solo los que tú anotes.
         </p>
       ) : (
       <>
+      <div className="lg:col-start-1">
       <BalanceCard
         accountsTotal={accountsTotal}
         monthResult={totals.balance}
@@ -75,7 +98,8 @@ export default function HomePage() {
         expense={totals.expense}
         currency={state.settings.currency}
       />
-      <div className="mx-4 mt-3 grid grid-cols-2 gap-3">
+      </div>
+      <div className="mx-4 mt-3 grid grid-cols-2 gap-3 lg:mx-0 lg:mt-0 lg:col-start-1">
         {[
           { label: "Me deben", value: owed, color: "var(--color-income)" },
           { label: "Debo", value: owe, color: "var(--color-expense)" },
@@ -92,12 +116,23 @@ export default function HomePage() {
           </Link>
         ))}
       </div>
+      {/* Solo escritorio: tendencia de 6 meses (móvil la tiene en Estadísticas) */}
+      <div className="hidden lg:col-start-1 lg:block">
+        <ChartCard icon={BarChart3} accent="var(--color-income)" title="Ingresos vs gastos" subtitle="Últimos 6 meses">
+          <IncomeExpenseBarChart data={sixMonthPoints} currency={state.settings.currency} />
+        </ChartCard>
+      </div>
       </>
       )}
-      <QuickActions />
-      <GettingStarted />
+      <div className={cn("lg:col-start-2", !isRecorder && "lg:row-span-2 lg:row-start-1")}>
+        <QuickActions />
+      </div>
+      <div className="empty:hidden lg:col-start-2">
+        <GettingStarted />
+      </div>
 
-      <div className="mx-4 mt-6 flex items-center justify-between">
+      <div className="lg:col-start-1">
+      <div className="mx-4 mt-6 flex items-center justify-between lg:mx-0 lg:mt-0">
         <h2 className="text-sm font-semibold text-[var(--color-text)]">Movimientos recientes</h2>
         <Link
           href="/movimientos"
@@ -108,29 +143,38 @@ export default function HomePage() {
         </Link>
       </div>
 
-      <div className="mx-4 mt-2 flex flex-col gap-1">
-        {recent.length === 0 ? (
-          <EmptyState
-            icon={Receipt}
-            title="Aún no tienes movimientos este mes"
-            description="Registra tu primer gasto o ingreso con los botones de arriba."
-            action={
-              permissions.canCreateExpense
-                ? { label: "Registrar un gasto", onClick: () => openNewTransaction("expense") }
-                : undefined
-            }
-          />
-        ) : (
-          recent.map((t) => (
+      <div className="mx-4 mt-2 lg:mx-0">
+        <DataTable
+          caption="Movimientos recientes"
+          rows={recent}
+          columns={columns}
+          getRowKey={(t) => t.id}
+          onRowClick={permissions.canEditTransactions ? openEditTransaction : undefined}
+          mobileClassName="flex flex-col gap-1"
+          renderMobile={(t) => (
             <TransactionItem
-              key={t.id}
               transaction={t}
               category={state.categories.find((c) => c.id === t.categoryId)}
               currency={state.settings.currency}
             />
-          ))
-        )}
+          )}
+          empty={
+            <EmptyState
+              icon={Receipt}
+              title="Aún no tienes movimientos este mes"
+              description="Registra tu primer gasto o ingreso con los botones de arriba."
+              action={
+                permissions.canCreateExpense
+                  ? { label: "Registrar un gasto", onClick: () => openNewTransaction("expense") }
+                  : undefined
+              }
+            />
+          }
+        />
       </div>
+      </div>
+      </ResponsiveGrid>
+      </PageContainer>
     </>
   );
 }

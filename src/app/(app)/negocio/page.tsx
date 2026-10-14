@@ -6,6 +6,7 @@ import { Briefcase } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/Button";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
@@ -123,7 +124,7 @@ export default function NegocioPage() {
   const canEdit = currentWorkspace?.role === "owner" || currentWorkspace?.role === "admin";
 
   return (
-    <div className="pb-8">
+    <PageContainer size="narrow" className="pb-8">
       <AppHeader />
       <PageHeader title="Datos del negocio" backHref="/ajustes" backLabel="Ajustes" />
       {currentWorkspace ? (
@@ -140,6 +141,6 @@ export default function NegocioPage() {
           <Skeleton className="h-16 rounded-2xl" />
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }

@@ -8,7 +8,7 @@ export function MonthSelector() {
   const { selectedYear, selectedMonth, goToPreviousMonth, goToNextMonth } = useFinance();
 
   return (
-    <div className="flex items-center justify-center gap-2 py-1">
+    <div className="flex items-center justify-center gap-2 py-1 lg:justify-start">
       <button
         type="button"
         onClick={goToPreviousMonth}

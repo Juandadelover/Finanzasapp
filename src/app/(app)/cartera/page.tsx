@@ -8,6 +8,8 @@ import { stagger, useEnterOnce } from "@/components/ui/motion";
 import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button, buttonClass } from "@/components/ui/Button";
+import { DataTable } from "@/components/ui/DataTable";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton, SkeletonList } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -145,12 +147,25 @@ export default function CarteraPage() {
 
   const contactOf = (id: string | null) => (id ? state.contacts.find((c) => c.id === id) : undefined);
 
+  const waOf = (t: Transaction) => {
+    const contact = contactOf(t.contactId);
+    return tab === "income" && contact?.phone && contact
+      ? whatsappUrl(
+          contact.phone,
+          `Hola ${contact.name}, te escribimos de ${currentWorkspace?.name ?? "nuestro negocio"}. ` +
+            `Te recordamos amablemente el pago pendiente de ${formatAmount(t.amount, currency)}` +
+            (t.dueDate ? `, con vencimiento el ${formatDayLabel(t.dueDate)}` : "") +
+            `. Quedamos atentos a tu confirmación. ¡Gracias!`,
+        )
+      : null;
+  };
+
   return (
     <>
       <AppHeader />
-
-      <PageHeader title="Cartera" subtitle="Lo que te deben y lo que debes." />
-      <div className="mx-4 mt-2 flex flex-wrap gap-2">
+      <PageContainer>
+      <PageHeader title="Cartera" subtitle="Lo que te deben y lo que debes." className="lg:mx-0 lg:mt-0" />
+      <div className="mx-4 mt-2 flex flex-wrap gap-2 lg:mx-0">
         <Link
           href="/cobros"
           className={buttonClass({
@@ -178,7 +193,7 @@ export default function CarteraPage() {
       <div
         role="tablist"
         aria-label="Me deben o debo"
-        className="mx-4 mt-4 grid grid-cols-2 gap-1 rounded-2xl bg-[var(--color-surface)] p-1"
+        className="mx-4 mt-4 grid grid-cols-2 gap-1 rounded-2xl bg-[var(--color-surface)] p-1 lg:mx-0 lg:max-w-sm"
       >
         {(["income", "expense"] as const).map((k) => (
           <button
@@ -200,7 +215,8 @@ export default function CarteraPage() {
       </div>
 
       <div key={tab} className="tab-fade">
-      <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(138,5,190,0.35)]">
+      <div className="lg:mt-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:items-stretch lg:gap-4">
+      <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(138,5,190,0.35)] lg:mx-0 lg:mt-0">
         <span className="text-sm font-medium text-white/80">
           {tab === "income" ? "Te deben en total" : "Debes en total"}
         </span>
@@ -212,16 +228,17 @@ export default function CarteraPage() {
         </p>
       </div>
 
-      <h2 className="mx-4 mt-4 text-xs font-semibold text-[var(--color-text-muted)]">Según los días de atraso</h2>
-      <div className="mx-4 mt-1.5 grid grid-cols-3 gap-1.5 sm:grid-cols-5">
+      <div className="lg:flex lg:flex-col lg:justify-center">
+      <h2 className="mx-4 mt-4 text-xs font-semibold text-[var(--color-text-muted)] lg:mx-0 lg:mt-0">Según los días de atraso</h2>
+      <div className="mx-4 mt-1.5 grid grid-cols-3 gap-1.5 sm:grid-cols-5 lg:mx-0 lg:gap-3">
         {AGING_ORDER.map((b) => (
           <div
             key={b}
-            className="min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-2 text-center"
+            className="min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-2 text-center lg:py-3"
           >
             <p className="truncate text-xs text-[var(--color-text-muted)]">{AGING_LABELS[b]}</p>
             <p
-              className="break-words text-xs font-semibold tabular-nums"
+              className="break-words text-xs font-semibold tabular-nums lg:text-sm"
               style={{ color: b !== "current" && aging[b] > 0 ? "var(--color-expense)" : undefined }}
             >
               {hidden ? "••" : formatAmount(aging[b], currency, { showSymbol: false })}
@@ -230,7 +247,10 @@ export default function CarteraPage() {
         ))}
       </div>
 
-      <section className="mx-4 mt-3 mb-4">
+      </div>
+      </div>
+
+      <section className="mx-4 mt-3 mb-4 lg:mx-0 lg:mt-5">
         {list.length === 0 ? (
           <>
             <EmptyState
@@ -249,24 +269,73 @@ export default function CarteraPage() {
             ) : null}
           </>
         ) : (
-          <div className="flex flex-col gap-2">
-            {list.map((t, i) => {
-              const st = stagger(enter, i);
+          <DataTable
+            caption={tab === "income" ? "Cuentas por cobrar" : "Cuentas por pagar"}
+            rows={list}
+            getRowKey={(t) => t.id}
+            mobileClassName="flex flex-col gap-2"
+            columns={[
+              {
+                key: "contact",
+                header: "Contacto",
+                className: "max-w-48",
+                cell: (t) => <span className="block truncate font-medium">{contactOf(t.contactId)?.name ?? "Sin contacto"}</span>,
+              },
+              {
+                key: "description",
+                header: "Descripción",
+                className: "w-full max-w-0",
+                cell: (t) => <span className="block truncate text-[var(--color-text-muted)]">{t.description || "Sin descripción"}</span>,
+              },
+              {
+                key: "due",
+                header: "Vence",
+                cell: (t) => (
+                  <span
+                    className="whitespace-nowrap text-xs font-medium"
+                    style={{ color: daysOverdue(t.dueDate, today) > 0 ? "var(--color-expense)" : "var(--color-text-muted)" }}
+                  >
+                    {dueLabel(t.dueDate, today)}
+                  </span>
+                ),
+              },
+              { key: "amount", header: "Monto", align: "right", cell: (t) => <span className="whitespace-nowrap font-semibold">{money(t.amount)}</span> },
+              {
+                key: "actions",
+                header: <span className="sr-only">Acciones</span>,
+                cell: (t) => {
+                  const wa = waOf(t);
+                  return canManage || wa ? (
+                    <div className="flex justify-end gap-2">
+                      {canManage ? (
+                        <Button variant="secondary" size="sm" onClick={() => setPaying(t)}>
+                          <CheckCircle2 size={16} className="text-[var(--color-income)]" aria-hidden />
+                          Marcar pagado
+                        </Button>
+                      ) : null}
+                      {wa ? (
+                        <a
+                          href={wa}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex min-h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-[#25D366] px-3 py-1.5 text-xs font-semibold text-black"
+                        >
+                          <MessageCircle size={16} aria-hidden />
+                          WhatsApp
+                        </a>
+                      ) : null}
+                    </div>
+                  ) : null;
+                },
+              },
+            ]}
+            renderMobile={(t) => {
+              const st = stagger(enter, list.indexOf(t));
               const contact = contactOf(t.contactId);
               const overdue = daysOverdue(t.dueDate, today) > 0;
-              const wa =
-                tab === "income" && contact?.phone
-                  ? whatsappUrl(
-                      contact.phone,
-                      `Hola ${contact.name}, te escribimos de ${currentWorkspace?.name ?? "nuestro negocio"}. ` +
-                        `Te recordamos amablemente el pago pendiente de ${formatAmount(t.amount, currency)}` +
-                        (t.dueDate ? `, con vencimiento el ${formatDayLabel(t.dueDate)}` : "") +
-                        `. Quedamos atentos a tu confirmación. ¡Gracias!`,
-                    )
-                  : null;
+              const wa = waOf(t);
               return (
                 <div
-                  key={t.id}
                   style={st.style}
                   className={cn("rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3", st.className)}
                 >
@@ -310,11 +379,13 @@ export default function CarteraPage() {
                   ) : null}
                 </div>
               );
-            })}
-          </div>
+            }}
+          />
         )}
       </section>
       </div>
+
+      </PageContainer>
 
       {paying ? <PaySheet key={paying.id} transaction={paying} onClose={() => setPaying(null)} /> : null}
     </>

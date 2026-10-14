@@ -24,7 +24,11 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
   const next = index < LEGAL_DOCS.length - 1 ? LEGAL_DOCS[index + 1] : null;
 
   return (
-    <article className="text-base leading-7 text-[var(--color-text)]">
+    <article
+      className={`text-base leading-7 text-[var(--color-text)] ${
+        doc.toc ? "lg:grid lg:grid-cols-[14rem_minmax(0,65ch)] lg:justify-center lg:gap-x-12" : "lg:mx-auto lg:max-w-[65ch]"
+      }`}
+    >
       <nav aria-label="Documentos legales" className="no-scrollbar -mx-1 mb-5 flex gap-2 overflow-x-auto px-1">
         {LEGAL_DOCS.map((d) => (
           <Link
@@ -51,7 +55,10 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
       <p className="mt-2 text-sm text-[var(--color-text-muted)]">Última actualización: {LEGAL_UPDATED}</p>
 
       {doc.toc ? (
-        <nav aria-label="Contenido" className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <nav
+          aria-label="Contenido"
+          className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 lg:sticky lg:top-6 lg:col-start-1 lg:row-span-[99] lg:row-start-1 lg:mt-0 lg:max-h-[calc(100dvh-3rem)] lg:self-start lg:overflow-y-auto"
+        >
           <p className="mb-2 text-sm font-semibold">Contenido</p>
           <ol className="text-sm">
             {doc.sections.map((s) => (

@@ -70,7 +70,7 @@ export function FloatingActionButton() {
   return (
     <div
       ref={rootRef}
-      className="fixed bottom-[calc(env(safe-area-inset-bottom)+92px)] right-4 z-(--z-fab) flex flex-col items-end gap-3"
+      className="fixed bottom-[calc(env(safe-area-inset-bottom)+92px)] right-4 z-(--z-fab) flex flex-col items-end gap-3 lg:hidden"
     >
       {visible ? (
         <div

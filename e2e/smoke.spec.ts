@@ -25,7 +25,7 @@ test.describe("dueño", () => {
   test("Inicio muestra saldo y negocio", async ({ page }) => {
     await login(page, "dueno@finanzasapp.test");
     await expect(page.getByText("Saldo en cuentas")).toBeVisible();
-    await expect(page.getByText("Tienda Demo").first()).toBeVisible();
+    await expect(page.getByText("Tienda Demo").filter({ visible: true }).first()).toBeVisible();
   });
 
   test("registra un gasto y aparece en movimientos", async ({ page }) => {
@@ -42,14 +42,15 @@ test.describe("dueño", () => {
     await expect(dialog).toBeHidden();
 
     await page.goto("/movimientos");
-    const row = page.getByText(description);
+    // La página tiene la tabla (escritorio) y la lista (celular); se usa la visible.
+    const row = page.getByText(description).filter({ visible: true });
     await expect(row).toBeVisible();
 
     // Limpieza para poder repetir la prueba.
     await row.click();
     await page.getByRole("button", { name: "Eliminar movimiento" }).click();
     await page.getByRole("button", { name: "Eliminar", exact: true }).click();
-    await expect(page.getByText(description)).toHaveCount(0);
+    await expect(page.getByText(description).filter({ visible: true })).toHaveCount(0);
   });
 
   test("/cartera muestra a Restaurante El Fogón vencido", async ({ page }) => {
@@ -91,6 +92,8 @@ test.describe("otros roles", () => {
   });
 
   test("admin de plataforma ve /admin/pagos", async ({ page }) => {
+    // El panel de administración se usa en escritorio: ahí muestra la tabla.
+    await page.setViewportSize({ width: 1440, height: 900 });
     await login(page, "admin@finanzasapp.test");
     await page.goto("/admin/pagos");
     const table = page.getByRole("table", { name: "Pagos de suscripción" });

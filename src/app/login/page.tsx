@@ -152,16 +152,36 @@ function LoginContent() {
   }
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center px-6 py-10">
-      <div className="gradient-brand flex h-16 w-16 items-center justify-center rounded-3xl shadow-[0_8px_24px_rgba(138,5,190,0.4)]">
-        <TrendingUp size={30} className="text-white" strokeWidth={2.5} />
+    <main className="flex min-h-dvh flex-col lg:grid lg:grid-cols-2">
+      <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-surface)] p-12 lg:flex xl:p-16">
+        <div className="flex items-center gap-3">
+          <div className="gradient-brand flex h-12 w-12 items-center justify-center rounded-2xl shadow-[0_8px_24px_rgba(138,5,190,0.4)]">
+            <TrendingUp size={24} className="text-white" strokeWidth={2.5} aria-hidden />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight">Finanzas</h1>
+        </div>
+        <div>
+          <p className="max-w-md text-4xl font-bold leading-tight tracking-tight">
+            Controla el dinero de tu negocio: ingresos, gastos y lo que te deben, en un solo lugar.
+          </p>
+          <p className="mt-6 max-w-md text-sm leading-relaxed text-[var(--color-text-muted)]">
+            Tus datos financieros se guardan de forma privada en tu cuenta y solo tú puedes acceder a ellos.
+          </p>
+        </div>
+        <div aria-hidden />
+      </aside>
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 lg:px-12">
+      <div className="flex flex-col items-center lg:hidden">
+        <div className="gradient-brand flex h-16 w-16 items-center justify-center rounded-3xl shadow-[0_8px_24px_rgba(138,5,190,0.4)]">
+          <TrendingUp size={30} className="text-white" strokeWidth={2.5} />
+        </div>
+        <h1 className="mt-6 text-2xl font-bold tracking-tight">Finanzas</h1>
+        <p className="mt-2 max-w-xs text-center text-sm text-[var(--color-text-muted)]">
+          Controla el dinero de tu negocio: ingresos, gastos y lo que te deben, en un solo lugar.
+        </p>
       </div>
-      <h1 className="mt-6 text-2xl font-bold tracking-tight">Finanzas</h1>
-      <p className="mt-2 max-w-xs text-center text-sm text-[var(--color-text-muted)]">
-        Controla el dinero de tu negocio: ingresos, gastos y lo que te deben, en un solo lugar.
-      </p>
 
-      <div className="mt-8 flex w-full max-w-sm flex-col gap-3">
+      <div className="mt-8 flex w-full max-w-sm flex-col gap-3 lg:mt-0">
         {invited ? (
           <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-center text-xs text-[var(--color-text-muted)]">
             Te invitaron a un negocio. Crea tu cuenta con el mismo correo de la invitación.
@@ -345,7 +365,7 @@ function LoginContent() {
         </p>
       </div>
 
-      <p className="mt-10 max-w-xs text-center text-xs leading-relaxed text-[var(--color-text-muted)]">
+      <p className="mt-10 max-w-xs text-center text-xs lg:hidden leading-relaxed text-[var(--color-text-muted)]">
         Tus datos financieros se guardan de forma privada en tu cuenta y solo tú puedes acceder a ellos.
       </p>
       <nav aria-label="Información" className="mt-2 flex max-w-xs flex-wrap justify-center gap-x-1 text-xs text-[var(--color-text-muted)]">
@@ -361,6 +381,7 @@ function LoginContent() {
           </Link>
         ))}
       </nav>
+      </div>
     </main>
   );
 }

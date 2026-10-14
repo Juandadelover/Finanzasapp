@@ -5,7 +5,7 @@ import { LEGAL_DOCS } from "@/lib/legal";
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh">
-      <header className="mx-auto flex max-w-[65ch] items-center justify-between px-5 pt-5">
+      <header className="mx-auto flex max-w-[65ch] items-center justify-between px-5 pt-5 lg:max-w-5xl">
         <Link href="/login" className="flex min-h-11 items-center gap-2 text-sm font-semibold">
           <span className="gradient-brand flex h-8 w-8 items-center justify-center rounded-xl">
             <TrendingUp size={16} className="text-white" strokeWidth={2.5} />
@@ -16,8 +16,8 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
           Precios
         </Link>
       </header>
-      <main className="mx-auto max-w-[65ch] px-5 pb-16 pt-6">{children}</main>
-      <footer className="mx-auto max-w-[65ch] border-t border-[var(--color-border)] px-5 py-6">
+      <main className="mx-auto max-w-[65ch] px-5 pb-16 pt-6 lg:max-w-5xl">{children}</main>
+      <footer className="mx-auto max-w-[65ch] border-t border-[var(--color-border)] px-5 py-6 lg:max-w-5xl">
         <nav aria-label="Documentos legales" className="flex flex-wrap gap-x-2 text-sm text-[var(--color-text-muted)]">
           {LEGAL_DOCS.map((d) => (
             <Link key={d.slug} href={`/legal/${d.slug}`} className="inline-flex min-h-11 items-center px-2 hover:text-[var(--color-text)]">

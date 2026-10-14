@@ -41,7 +41,7 @@ export function BottomNav() {
   }, [activeIndex, reduced]);
 
   return (
-    <nav aria-label="Principal" className="fixed bottom-0 left-0 right-0 z-(--z-nav) flex justify-center px-2 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
+    <nav aria-label="Principal" className="fixed bottom-0 left-0 right-0 z-(--z-nav) flex justify-center lg:hidden px-2 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
       <div className="material relative flex items-center gap-0.5 rounded-full px-1.5 py-2">
         <span
           ref={pill}

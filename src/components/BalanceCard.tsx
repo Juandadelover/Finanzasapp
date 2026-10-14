@@ -25,7 +25,7 @@ export function BalanceCard({ accountsTotal, monthResult, income, expense, curre
   const balanceText = hidden ? MASKED_AMOUNT : formatAmount(headline, currency);
 
   return (
-    <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[var(--shadow-brand-lg)]">
+    <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 lg:mx-0 lg:mt-0 text-white shadow-[var(--shadow-brand-lg)]">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-white/85">
           {accountsTotal !== null ? "Saldo en cuentas" : "Resultado del mes"}

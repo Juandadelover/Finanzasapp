@@ -19,5 +19,7 @@ export default defineConfig({
       args: proxy ? [`--proxy-server=${proxy}`, "--proxy-bypass-list=<loopback>;127.0.0.1;localhost"] : [],
     },
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // Por defecto, ancho de celular (la app es mobile-first); las pruebas de
+  // escritorio (e2e/desktop.spec.ts) fijan su propio viewport de 1440px.
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } } }],
 });

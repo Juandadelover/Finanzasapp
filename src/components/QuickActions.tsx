@@ -13,7 +13,7 @@ export function QuickActions() {
   if (!canCreateIncome && !canCreateExpense) return null;
 
   return (
-    <div className={cn("mx-4 mt-4 grid gap-3", canCreateIncome && canCreateExpense ? "grid-cols-2" : "grid-cols-1")}>
+    <div className={cn("mx-4 mt-4 grid gap-3 lg:mx-0 lg:mt-0", canCreateIncome && canCreateExpense ? "grid-cols-2" : "grid-cols-1")}>
       {canCreateExpense ? (
         <button
           type="button"

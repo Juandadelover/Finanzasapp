@@ -6,6 +6,10 @@ import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
 import { useEnterOnce } from "@/components/ui/motion";
 import { TransactionItem } from "@/components/TransactionItem";
+import { DataTable } from "@/components/ui/DataTable";
+import { PageContainer } from "@/components/ui/PageContainer";
+import { transactionColumns } from "@/components/transactionColumns";
+import { usePrivacy } from "@/context/PrivacyContext";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -21,7 +25,8 @@ type Filter = "all" | TransactionType;
 
 export default function MovimientosPage() {
   const { state, hydrated, selectedYear, selectedMonth, permissions } = useFinance();
-  const { openNewTransaction } = useUI();
+  const { openNewTransaction, openEditTransaction } = useUI();
+  const { hidden } = usePrivacy();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [categoryFilter, setCategoryFilter] = useState<Set<string>>(new Set());
@@ -64,6 +69,10 @@ export default function MovimientosPage() {
     return Array.from(map.entries());
   }, [filtered]);
 
+  const columns = useMemo(
+    () => transactionColumns({ categories: state.categories, accounts: state.accounts, currency: state.settings.currency, hidden }),
+    [state.categories, state.accounts, state.settings.currency, hidden]
+  );
   const enter = useEnterOnce(hydrated);
   // Running index across date groups so the stagger reads as one list.
   const offsets = groups.reduce<number[]>((acc, _g, i) => [...acc, i === 0 ? 0 : acc[i - 1] + groups[i - 1][1].length], []);
@@ -82,7 +91,9 @@ export default function MovimientosPage() {
   return (
     <>
       <AppHeader />
+      <PageContainer>
       <PageHeader
+        className="lg:mx-0 lg:mt-0"
         title="Movimientos"
         subtitle={`${filtered.length} movimiento${filtered.length === 1 ? "" : "s"}`}
         actions={
@@ -103,8 +114,9 @@ export default function MovimientosPage() {
         }
       />
 
+      <div className="lg:mt-3 lg:flex lg:flex-wrap lg:items-center lg:gap-x-4 lg:gap-y-2">
       {dateRange ? (
-        <div className="mx-4 flex items-center justify-center gap-1 py-1">
+        <div className="mx-4 flex items-center justify-center gap-1 py-1 lg:mx-0 lg:justify-start">
           <span className="text-sm font-medium tracking-wide text-[var(--color-brand-light)] uppercase">
             Rango personalizado
           </span>
@@ -121,7 +133,7 @@ export default function MovimientosPage() {
         <MonthSelector />
       )}
 
-      <div className="mx-4 mt-3 flex items-center gap-2">
+      <div className="mx-4 mt-3 flex items-center gap-2 lg:order-3 lg:mx-0 lg:mt-0 lg:min-w-64 lg:flex-1">
         <div className="flex min-h-11 flex-1 items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5 focus-within:border-[var(--color-brand)]">
           <Search size={16} aria-hidden className="shrink-0 text-[var(--color-text-faint)]" />
           <input
@@ -151,7 +163,7 @@ export default function MovimientosPage() {
         </button>
       </div>
 
-      <div className="mx-4 mt-1 flex gap-2">
+      <div className="mx-4 mt-1 flex gap-2 lg:order-2 lg:mx-0 lg:mt-0">
         {(
           [
             { key: "all", label: "Todos" },
@@ -175,8 +187,9 @@ export default function MovimientosPage() {
           </button>
         ))}
       </div>
+      </div>
 
-      <div className="mx-4 mt-4 flex flex-col gap-4">
+      <div className="mx-4 mt-4 flex flex-col gap-4 lg:mx-0">
         {!hydrated ? (
           <SkeletonList count={5} />
         ) : groups.length === 0 ? (
@@ -200,8 +213,20 @@ export default function MovimientosPage() {
             />
           )
         ) : (
-          groups.map(([date, items], gi) => (
-            <div key={date}>
+          <>
+          <div className="hidden lg:block">
+            <DataTable
+              caption="Movimientos"
+              rows={filtered}
+              columns={columns}
+              getRowKey={(t) => t.id}
+              onRowClick={permissions.canEditTransactions ? openEditTransaction : undefined}
+              mobileClassName="hidden"
+              renderMobile={() => null}
+            />
+          </div>
+          {groups.map(([date, items], gi) => (
+            <div key={date} className="lg:hidden">
               <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-faint)]">
                 {formatDayLabel(date)}
               </p>
@@ -217,9 +242,11 @@ export default function MovimientosPage() {
                 ))}
               </div>
             </div>
-          ))
+          ))}
+          </>
         )}
       </div>
+      </PageContainer>
 
       {filterSheetOpen ? (
         <MovimientosFilterSheet
