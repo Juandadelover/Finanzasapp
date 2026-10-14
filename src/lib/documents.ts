@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { toastDbError } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/client";
 
 export type DocumentKind = "quote" | "collection";
@@ -168,7 +169,7 @@ export async function createDocument(input: NewDocumentInput): Promise<Collectio
     .single();
   if (error || !data) {
     console.error(error);
-    toast.error("No se pudo crear el documento. Intenta de nuevo.");
+    toastDbError(error, "No se pudo crear el documento. Intenta de nuevo.");
     return null;
   }
   const doc = rowToDoc(data as unknown as DocRow);

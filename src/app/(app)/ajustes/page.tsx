@@ -9,6 +9,8 @@ import {
   Download,
   Fingerprint,
   Landmark,
+  ShieldCheck,
+  Star,
   LogOut,
   Plus,
   Sparkles,
@@ -79,6 +81,7 @@ function CategoryRow({
 export default function AjustesPage() {
   const {
     user,
+    isPlatformAdmin,
     state,
     permissions,
     addCategory,
@@ -245,6 +248,28 @@ export default function AjustesPage() {
             <span className="flex-1 font-medium">Cuentas</span>
             <ChevronRight size={16} className="text-[var(--color-text-faint)]" />
           </Link>
+          <Link
+            href="/suscripcion"
+            className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm transition hover:bg-[var(--color-surface-2)]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]">
+              <Star size={18} />
+            </span>
+            <span className="flex-1 font-medium">Mi suscripción</span>
+            <ChevronRight size={16} className="text-[var(--color-text-faint)]" />
+          </Link>
+          {isPlatformAdmin ? (
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm transition hover:bg-[var(--color-surface-2)]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]">
+              <ShieldCheck size={18} />
+            </span>
+            <span className="flex-1 font-medium">Panel de administración</span>
+            <ChevronRight size={16} className="text-[var(--color-text-faint)]" />
+          </Link>
+          ) : null}
         </div>
       </section>
 

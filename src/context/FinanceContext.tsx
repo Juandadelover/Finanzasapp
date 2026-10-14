@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { toast } from "sonner";
+import { fetchIsPlatformAdmin, toastDbError } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/client";
 import {
   rowToAccount,
@@ -98,6 +98,7 @@ interface FinanceContextValue {
   exportData: () => string;
   importData: (json: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  isPlatformAdmin: boolean;
 }
 
 const WORKSPACE_KEY = "finanzasapp:workspace";
@@ -139,6 +140,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [currentId, setCurrentId] = useState<string | null>(null);
   const currentIdRef = useRef<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonthState] = useState(() => new Date().getMonth());
 
@@ -326,7 +328,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo guardar el movimiento", error);
-        toast.error("No se pudo guardar el movimiento. Revisa tu conexión e intenta de nuevo.");
+        toastDbError(error, "No se pudo guardar el movimiento. Revisa tu conexión e intenta de nuevo.");
         return null;
       }
       const transaction = rowToTransaction(data as TransactionRow);
@@ -357,7 +359,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo actualizar el movimiento", error);
-        toast.error("No se pudo actualizar el movimiento. Intenta de nuevo.");
+        toastDbError(error, "No se pudo actualizar el movimiento. Intenta de nuevo.");
         return;
       }
       const transaction = rowToTransaction(data as TransactionRow);
@@ -374,7 +376,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from("transactions").delete().eq("id", id);
       if (error) {
         console.error("No se pudo eliminar el movimiento", error);
-        toast.error("No se pudo eliminar el movimiento. Intenta de nuevo.");
+        toastDbError(error, "No se pudo eliminar el movimiento. Intenta de nuevo.");
         return;
       }
       setData((prev) => ({ ...prev, transactions: prev.transactions.filter((t) => t.id !== id) }));
@@ -393,7 +395,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo marcar como pagado", error);
-        toast.error("No se pudo marcar como pagado. Intenta de nuevo.");
+        toastDbError(error, "No se pudo marcar como pagado. Intenta de nuevo.");
         return;
       }
       const transaction = rowToTransaction(data as TransactionRow);
@@ -421,7 +423,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo crear la cuenta", error);
-        toast.error("No se pudo crear la cuenta. Intenta de nuevo.");
+        toastDbError(error, "No se pudo crear la cuenta. Intenta de nuevo.");
         return null;
       }
       const account = rowToAccount(data as AccountRow);
@@ -447,7 +449,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo actualizar la cuenta", error);
-        toast.error("No se pudo actualizar la cuenta. Intenta de nuevo.");
+        toastDbError(error, "No se pudo actualizar la cuenta. Intenta de nuevo.");
         return;
       }
       const account = rowToAccount(data as AccountRow);
@@ -475,7 +477,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo crear el contacto", error);
-        toast.error("No se pudo crear el contacto. Intenta de nuevo.");
+        toastDbError(error, "No se pudo crear el contacto. Intenta de nuevo.");
         return null;
       }
       const contact = rowToContact(data as ContactRow);
@@ -504,7 +506,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo actualizar el contacto", error);
-        toast.error("No se pudo actualizar el contacto. Intenta de nuevo.");
+        toastDbError(error, "No se pudo actualizar el contacto. Intenta de nuevo.");
         return;
       }
       const contact = rowToContact(data as ContactRow);
@@ -531,7 +533,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo registrar la transferencia", error);
-        toast.error("No se pudo registrar la transferencia. Intenta de nuevo.");
+        toastDbError(error, "No se pudo registrar la transferencia. Intenta de nuevo.");
         return null;
       }
       const transfer = rowToTransfer(data as TransferRow);
@@ -546,7 +548,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from("transfers").delete().eq("id", id);
       if (error) {
         console.error("No se pudo eliminar la transferencia", error);
-        toast.error("No se pudo eliminar la transferencia. Intenta de nuevo.");
+        toastDbError(error, "No se pudo eliminar la transferencia. Intenta de nuevo.");
         return;
       }
       setData((prev) => ({ ...prev, transfers: prev.transfers.filter((t) => t.id !== id) }));
@@ -573,7 +575,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo crear la categoría", error);
-        toast.error("No se pudo crear la categoría. Intenta de nuevo.");
+        toastDbError(error, "No se pudo crear la categoría. Intenta de nuevo.");
         return null;
       }
       const newCategory = rowToCategory(data as CategoryRow);
@@ -600,7 +602,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) {
         console.error("No se pudo actualizar la categoría", error);
-        toast.error("No se pudo actualizar la categoría. Intenta de nuevo.");
+        toastDbError(error, "No se pudo actualizar la categoría. Intenta de nuevo.");
         return;
       }
       const category = rowToCategory(data as CategoryRow);
@@ -617,7 +619,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from("categories").delete().eq("id", id);
       if (error) {
         console.error("No se pudo eliminar la categoría", error);
-        toast.error("No se pudo eliminar la categoría. Intenta de nuevo.");
+        toastDbError(error, "No se pudo eliminar la categoría. Intenta de nuevo.");
         return;
       }
       setData((prev) => ({
@@ -642,7 +644,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     const error = transactionsRes.error || categoriesRes?.error || budgetsRes?.error;
     if (error) {
       console.error("No se pudieron borrar los datos", error);
-      toast.error("No se pudieron borrar todos los datos. Intenta de nuevo.");
+      toastDbError(error, "No se pudieron borrar todos los datos. Intenta de nuevo.");
     }
     await loadWorkspaceData(currentId);
   }, [supabase, user, currentId, loadWorkspaceData]);
@@ -693,12 +695,23 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         return true;
       } catch (error) {
         console.error("No se pudo importar el respaldo", error);
-        toast.error("No se pudo importar el respaldo. Intenta de nuevo.");
+        toastDbError(error, "No se pudo importar el respaldo. Intenta de nuevo.");
         return false;
       }
     },
     [supabase, user, currentId, loadWorkspaceData]
   );
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    fetchIsPlatformAdmin(user.id)
+      .then((v) => !cancelled && setIsPlatformAdmin(v))
+      .catch(() => !cancelled && setIsPlatformAdmin(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
@@ -735,6 +748,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       exportData,
       importData,
       signOut,
+      isPlatformAdmin: isPlatformAdmin && !!user,
     }),
     [
       user,
@@ -766,6 +780,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       exportData,
       importData,
       signOut,
+      isPlatformAdmin,
     ]
   );
 
