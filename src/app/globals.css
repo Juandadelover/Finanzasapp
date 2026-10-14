@@ -5,7 +5,15 @@
   --color-surface: #ffffff;
   --color-surface-2: #f1eff5;
   --color-surface-3: #e6e3ee;
+  --color-surface-elevated: #ffffff;
   --color-border: #e2dfea;
+
+  /* Materials: translucent chrome over scrolling content (see .material). */
+  --material-bg: rgba(241, 239, 245, 0.72);
+  --material-bg-bar: rgba(246, 245, 248, 0.78);
+  --material-border: rgba(23, 21, 28, 0.08);
+  --material-highlight: rgba(255, 255, 255, 0.7);
+  --shadow-sheet: 0 -12px 48px rgba(23, 21, 28, 0.16);
 
   --color-text: #17151c;
   --color-text-muted: #5c5868;
@@ -35,7 +43,14 @@
   --color-surface: #121820;
   --color-surface-2: #1a212b;
   --color-surface-3: #232b37;
+  --color-surface-elevated: #151c25;
   --color-border: #232b37;
+
+  --material-bg: rgba(26, 33, 43, 0.72);
+  --material-bg-bar: rgba(10, 14, 19, 0.72);
+  --material-border: rgba(255, 255, 255, 0.08);
+  --material-highlight: rgba(255, 255, 255, 0.06);
+  --shadow-sheet: 0 -12px 48px rgba(0, 0, 0, 0.55);
 
   --color-text: #f4f6f8;
   --color-text-muted: #97a2b0;
@@ -75,10 +90,53 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Sin retardo de toque: respuesta al instante (no double-tap-to-zoom en controles). */
+html,
+a,
+button,
+[role="button"],
+label,
+input,
+select,
+textarea,
+summary {
+  touch-action: manipulation;
+}
+
+/* Tipografía: tracking según el tamaño, interlineado cómodo en cuerpo. */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.014em;
+    text-wrap: balance;
+  }
+  h1 {
+    letter-spacing: -0.022em;
+  }
+  p {
+    text-wrap: pretty;
+  }
+}
+
+/* Cifras grandes (saldo): tracking cerrado e interlineado ajustado. */
+.amount-display {
+  letter-spacing: -0.032em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -133,6 +191,97 @@ textarea {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Materiales translúcidos: blur + saturación sobre una superficie semitransparente. */
+.material,
+.app-header::before {
+  background: var(--material-bg);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+.material-bar {
+  background: color-mix(in oklab, var(--color-surface-elevated) 86%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+}
+
+.material {
+  border: 1px solid var(--material-border);
+  box-shadow: inset 0 1px 0 var(--material-highlight), 0 8px 30px rgba(0, 0, 0, 0.28);
+}
+
+/* Cabecera: transparente arriba; al hacer scroll el material aparece (borde de scroll, no divisor fijo). */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  isolation: isolate;
+}
+
+.app-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--material-bg-bar);
+  border-bottom: 1px solid var(--material-border);
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+  pointer-events: none;
+}
+
+.app-header[data-scrolled="true"]::before {
+  opacity: 1;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .material,
+  .material-bar,
+  .app-header::before {
+    background: var(--color-surface-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .material-bar {
+    background: var(--color-surface-elevated);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .material,
+  .material-bar,
+  .app-header::before {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--color-text-muted);
+  }
+}
+
+/* Menú del FAB: escala anclada al origen (el botón), --p lo maneja un resorte (0 a 1). */
+.spring-pop {
+  opacity: var(--p, 1);
+  transform: translateY(calc((1 - var(--p, 1)) * 14px)) scale(calc(0.7 + 0.3 * var(--p, 1)));
+  transform-origin: bottom right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spring-pop {
+    transform: none;
+  }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes fadeIn {
@@ -202,3 +351,10 @@ textarea {
   }
 }
 /* === Fin Reportes === */
+
+/* Glifos del FAB: con movimiento reducido solo se hace crossfade, sin rotación. */
+@media (prefers-reduced-motion: reduce) {
+  .fab-glyph {
+    transform: none !important;
+  }
+}

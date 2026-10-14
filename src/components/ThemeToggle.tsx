@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Laptop, Moon, Sun } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 
 const OPTIONS = [
   { value: "light", label: "Claro", icon: Sun },
@@ -25,23 +25,21 @@ export function ThemeToggle() {
   }
 
   return (
-    <div className="flex rounded-xl bg-[var(--color-surface-2)] p-1">
-      {OPTIONS.map(({ value, label, icon: Icon }) => (
-        <button
-          key={value}
-          type="button"
-          onClick={() => setTheme(value)}
-          className={cn(
-            "flex flex-1 items-center justify-center gap-1.5 min-h-11 rounded-xl py-2 text-xs font-medium transition",
-            theme === value
-              ? "bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm"
-              : "text-[var(--color-text-muted)]"
-          )}
-        >
-          <Icon size={14} />
-          {label}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl
+      shape="rounded"
+      aria-label="Tema"
+      value={(theme ?? "system") as (typeof OPTIONS)[number]["value"]}
+      onChange={setTheme}
+      buttonClassName="text-xs"
+      options={OPTIONS.map(({ value, label, icon: Icon }) => ({
+        value,
+        label: (
+          <>
+            <Icon size={14} />
+            {label}
+          </>
+        ),
+      }))}
+    />
   );
 }

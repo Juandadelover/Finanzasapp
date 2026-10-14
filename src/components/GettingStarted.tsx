@@ -71,7 +71,7 @@ export function GettingStarted() {
   if (!hydrated || !currentWorkspace || currentWorkspace.role !== "owner" || dismissed || allDone) return null;
 
   const rowClass =
-    "flex min-h-11 w-full items-center gap-3 rounded-xl px-2 text-left text-sm transition hover:bg-[var(--color-surface-2)]";
+    "flex min-h-11 w-full items-center gap-3 rounded-xl px-2 text-left text-sm transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]";
 
   return (
     <section
@@ -91,7 +91,7 @@ export function GettingStarted() {
           type="button"
           onClick={dismiss}
           aria-label="Ocultar primeros pasos"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.92] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
         >
           <X size={18} />
         </button>

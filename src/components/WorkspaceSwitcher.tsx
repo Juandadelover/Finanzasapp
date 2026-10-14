@@ -79,7 +79,7 @@ export function WorkspaceSwitcher() {
                   switchWorkspace(w.id);
                 }}
                 className={cn(
-                  "flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-[var(--color-surface-2)]",
+                  "flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]",
                   active && "bg-[var(--color-surface-2)]"
                 )}
               >
@@ -116,7 +116,7 @@ export function WorkspaceSwitcher() {
             <button
               type="button"
               onClick={() => setCreating(true)}
-              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium text-[var(--color-brand-light)] transition hover:bg-[var(--color-surface-2)]"
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium text-[var(--color-brand-light)] transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
             >
               <Plus size={16} /> Crear negocio
             </button>
@@ -125,7 +125,7 @@ export function WorkspaceSwitcher() {
             <Link
               href="/equipo"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition hover:bg-[var(--color-surface-2)]"
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
             >
               <Users size={16} className="text-[var(--color-text-faint)]" /> Equipo
             </Link>
@@ -134,7 +134,7 @@ export function WorkspaceSwitcher() {
             <Link
               href="/negocio"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition hover:bg-[var(--color-surface-2)]"
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
             >
               <Building2 size={16} className="text-[var(--color-text-faint)]" /> Datos del negocio
             </Link>

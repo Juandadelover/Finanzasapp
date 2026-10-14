@@ -18,7 +18,7 @@ export function QuickActions() {
         <button
           type="button"
           onClick={() => openNewTransaction("expense")}
-          className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] py-5 transition hover:bg-[var(--color-surface-2)] active:scale-[0.98]"
+          className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] py-5 transition hover:bg-[var(--color-surface-2)] active:scale-[0.97]"
         >
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-expense)]/15 text-[var(--color-expense)]">
             <TrendingDown size={20} />
@@ -31,7 +31,7 @@ export function QuickActions() {
         <button
           type="button"
           onClick={() => openNewTransaction("income")}
-          className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] py-5 transition hover:bg-[var(--color-surface-2)] active:scale-[0.98]"
+          className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] py-5 transition hover:bg-[var(--color-surface-2)] active:scale-[0.97]"
         >
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-income)]/15 text-[var(--color-income)]">
             <TrendingUp size={20} />

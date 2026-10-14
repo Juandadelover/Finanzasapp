@@ -5,6 +5,8 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { haptic } from "@/components/ui/motion";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { ICONS } from "@/lib/icons";
 import { cn } from "@/lib/cn";
 import { formatAmountInput, parseAmountInput } from "@/lib/format";
@@ -56,6 +58,7 @@ export function CategoryModal({
       type,
       monthlyBudget: type === "expense" && monthlyBudget > 0 ? monthlyBudget : null,
     });
+    haptic();
     onClose();
   }
 
@@ -63,31 +66,18 @@ export function CategoryModal({
     <BottomSheet isOpen onClose={onClose} title={editing ? "Editar categoría" : "Nueva categoría"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         {!editing && !lockType ? (
-          <div className="flex rounded-full bg-[var(--color-surface-2)] p-1">
-            <button
-              type="button"
-              onClick={() => setType("expense")}
-              className={cn(
-                "flex-1 rounded-full py-2 text-sm font-medium transition",
-                type === "expense" ? "bg-[var(--color-expense)] text-white" : "text-[var(--color-text-muted)]"
-              )}
-            >
-              Gasto
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setType("income");
-                setMonthlyBudget(0);
-              }}
-              className={cn(
-                "flex-1 rounded-full py-2 text-sm font-medium transition",
-                type === "income" ? "bg-[var(--color-income)] text-white" : "text-[var(--color-text-muted)]"
-              )}
-            >
-              Ingreso
-            </button>
-          </div>
+          <SegmentedControl
+            aria-label="Tipo de categoría"
+            value={type}
+            onChange={(next) => {
+              setType(next);
+              if (next === "income") setMonthlyBudget(0);
+            }}
+            options={[
+              { value: "expense", label: "Gasto", indicatorClass: "bg-[var(--color-expense)]", activeClass: "text-white" },
+              { value: "income", label: "Ingreso", indicatorClass: "bg-[var(--color-income)]", activeClass: "text-white" },
+            ]}
+          />
         ) : null}
 
         <div className="flex items-center justify-center">
@@ -146,7 +136,7 @@ export function CategoryModal({
                 onClick={() => setColor(c)}
                 aria-label={`Color ${c}`}
                 className={cn(
-                  "h-11 w-11 rounded-full border-2 transition",
+                  "h-11 w-11 rounded-full border-2 transition active:scale-[0.92]",
                   color === c ? "border-white" : "border-transparent"
                 )}
                 style={{ backgroundColor: c }}
@@ -169,7 +159,7 @@ export function CategoryModal({
                   type="button"
                   onClick={() => setIcon(key)}
                   className={cn(
-                    "flex h-11 w-11 items-center justify-center rounded-xl border-2 text-[var(--color-text-muted)] transition",
+                    "flex h-11 w-11 items-center justify-center rounded-xl border-2 text-[var(--color-text-muted)] transition active:scale-[0.92]",
                     isSelected ? "border-[var(--color-brand)] text-[var(--color-brand-light)]" : "border-transparent bg-[var(--color-surface-2)]"
                   )}
                 >

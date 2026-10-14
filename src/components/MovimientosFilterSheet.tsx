@@ -68,7 +68,7 @@ export function MovimientosFilterSheet({
                   key={category.id}
                   type="button"
                   onClick={() => toggleCategory(category.id)}
-                  className="flex w-full items-center gap-3 min-h-11 rounded-xl px-2 py-2 text-left transition hover:bg-[var(--color-surface-2)]"
+                  className="flex w-full items-center gap-3 min-h-11 rounded-xl px-2 py-2 text-left transition active:scale-[0.98] hover:bg-[var(--color-surface-2)]"
                 >
                   <span
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"

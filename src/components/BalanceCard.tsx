@@ -37,7 +37,7 @@ export function BalanceCard({ accountsTotal, monthResult, income, expense, curre
         </Link>
       </div>
       <p
-        className={`tabular mt-2 break-words font-bold tracking-tight ${balanceText.length > 14 ? "text-2xl" : balanceText.length > 11 ? "text-3xl" : "text-4xl"}`}
+        className={`tabular amount-display mt-2 break-words font-bold ${balanceText.length > 14 ? "text-2xl" : balanceText.length > 11 ? "text-3xl" : "text-4xl"}`}
       >
         {balanceText}
       </p>

@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/Button";
+import { haptic } from "@/components/ui/motion";
 
 /**
  * Accessible replacement for window.confirm. <ConfirmProvider> is mounted in AppShell.
@@ -99,7 +100,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         ? createPortal(
             <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
               <div
-                className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out] motion-reduce:animate-none"
+                className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
                 onClick={() => close(false)}
               />
               <div
@@ -108,7 +109,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 aria-modal="true"
                 aria-labelledby="confirm-title"
                 aria-describedby={o.description ? "confirm-desc" : undefined}
-                className="relative w-full max-w-sm rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-2xl"
+                className="relative w-full max-w-sm animate-[popIn_0.24s_cubic-bezier(0.16,1,0.3,1)] rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 shadow-[var(--shadow-sheet)]"
               >
                 <h2 id="confirm-title" className="text-base font-semibold">
                   {o.title}
@@ -125,7 +126,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   <Button
                     variant={o.destructive ? "danger" : "primary"}
                     className={o.destructive ? "border-[var(--color-expense)]" : undefined}
-                    onClick={() => close(true)}
+                    onClick={() => {
+                      haptic();
+                      close(true);
+                    }}
                   >
                     {o.confirmLabel ?? "Confirmar"}
                   </Button>

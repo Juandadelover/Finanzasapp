@@ -7,6 +7,8 @@ import Link from "next/link";
 import { Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { haptic } from "@/components/ui/motion";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { CategoryPicker } from "@/components/CategoryPicker";
 import { CategoryModal } from "@/components/CategoryModal";
 import { useFinance } from "@/context/FinanceContext";
@@ -125,6 +127,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
       }
       await reload();
       toast.success("Movimiento recurrente creado.");
+      haptic();
       onClose();
       return;
     }
@@ -133,6 +136,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
     } else {
       addTransaction(input);
     }
+    haptic();
     onClose();
   }
 
@@ -164,38 +168,21 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
   return (
     <BottomSheet isOpen onClose={onClose} title={editing ? "Editar movimiento" : "Nuevo movimiento"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <div className="flex rounded-full bg-[var(--color-surface-2)] p-1">
-          <button
-            type="button"
-            onClick={() => {
-              setType("expense");
-              setCategoryId(null);
-              setContactId(null);
-            }}
-            className={cn(
-              "min-h-11 flex-1 rounded-full py-2 text-sm font-medium transition",
-              type === "expense" ? "bg-[var(--color-expense)] text-white" : "text-[var(--color-text-muted)]"
-            )}
-          >
-            Gasto
-          </button>
-          {permissions.canCreateIncome || editing ? (
-          <button
-            type="button"
-            onClick={() => {
-              setType("income");
-              setCategoryId(null);
-              setContactId(null);
-            }}
-            className={cn(
-              "min-h-11 flex-1 rounded-full py-2 text-sm font-medium transition",
-              type === "income" ? "bg-[var(--color-income)] text-white" : "text-[var(--color-text-muted)]"
-            )}
-          >
-            Ingreso
-          </button>
-          ) : null}
-        </div>
+        <SegmentedControl
+          aria-label="Tipo de movimiento"
+          value={type}
+          onChange={(next) => {
+            setType(next);
+            setCategoryId(null);
+            setContactId(null);
+          }}
+          options={[
+            { value: "expense", label: "Gasto", indicatorClass: "bg-[var(--color-expense)]", activeClass: "text-white" },
+            ...(permissions.canCreateIncome || editing
+              ? [{ value: "income" as const, label: "Ingreso", indicatorClass: "bg-[var(--color-income)]", activeClass: "text-white" }]
+              : []),
+          ]}
+        />
 
         <div className="flex flex-col items-center gap-1 py-2">
           <span className="text-xs uppercase tracking-wide text-[var(--color-text-faint)]">Monto</span>
@@ -225,21 +212,15 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
           />
         </div>
 
-        <div className="flex rounded-full bg-[var(--color-surface-2)] p-1">
-          {(["paid", "pending"] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setStatus(value)}
-              className={cn(
-                "min-h-11 flex-1 rounded-full py-2 text-sm font-medium transition",
-                status === value ? "gradient-brand text-white" : "text-[var(--color-text-muted)]"
-              )}
-            >
-              {value === "paid" ? "Pagado" : "Pendiente"}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          aria-label="Estado del pago"
+          value={status}
+          onChange={setStatus}
+          options={[
+            { value: "paid", label: "Pagado", indicatorClass: "gradient-brand", activeClass: "text-white" },
+            { value: "pending", label: "Pendiente", indicatorClass: "gradient-brand", activeClass: "text-white" },
+          ]}
+        />
 
         <div>
           <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
@@ -262,7 +243,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
                   type="button"
                   onClick={() => setAccountId(status === "pending" && accountId === a.id ? null : a.id)}
                   className={cn(
-                    "inline-flex min-h-11 items-center rounded-full border px-3.5 py-1.5 text-sm font-medium transition",
+                    "inline-flex min-h-11 items-center rounded-full border px-3.5 py-1.5 text-sm font-medium transition active:scale-[0.96]",
                     accountId === a.id
                       ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
                       : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"

@@ -151,11 +151,13 @@ A violet brand over cool blue-black (dark) or lilac-tinted white (light) neutral
 **Character:** One neutral geometric sans in a narrow weight range (400 to 700). Hierarchy comes from size and weight, and amounts dominate.
 
 ### Hierarchy
-- **Display** (700, 36px / `text-4xl`, tight tracking): the balance figure only.
+- **Display** (700, 36px / `text-4xl`, `.amount-display`: -0.032em tracking, 1.05 leading): the balance figure only.
 - **Headline** (700, 20 to 24px): page titles (`text-xl font-bold` is the most common).
 - **Title** (600, 14px): section headings, card titles, button labels.
 - **Body** (400 to 500, 14px): rows, descriptions, inputs. `text-sm` is the workhorse (about 240 uses).
 - **Label** (500, 12px, and 11px for dense captions): metadata, field labels, deltas. `text-xs` is the second most used size.
+
+Tracking is size-specific: h1 -0.022em, h2/h3 -0.014em (balanced wrapping, set in `@layer base`), body at 0. Body leading is 1.5 by default; Tailwind size utilities set their own.
 
 ### Named Rules
 **The Amount First Rule.** The largest, boldest text on a screen is a money figure, colored by direction where it is a movement.
@@ -172,11 +174,26 @@ Hybrid: tonal layering at rest, soft shadows only on floating or brand elements.
 - **Brand glow, large** (`0 16px 40px rgba(138,5,190,0.35)`): hero balance card.
 - **Brand glow, button** (`0 8px 24px rgba(138,5,190,0.35)`): primary submit buttons (the dominant shadow, about 17 uses).
 - **FAB glow** (`0 10px 30px rgba(138,5,190,0.45)`) and **logo glow** (`0 4px 16px rgba(138,5,190,0.35)`).
-- **Floating nav** (`0 8px 30px rgba(0,0,0,0.45)`) plus `backdrop-blur`.
-- **Menu items / sheets**: Tailwind `shadow-lg` and `shadow-2xl`.
+- **Floating nav**: the `.material` class (see Materials below) with a soft drop shadow.
+- **Menu items**: Tailwind `shadow-lg`. **Sheets / dialogs**: `--shadow-sheet` (`0 -12px 48px`, lighter in the light theme) on `--color-surface-elevated`, one step above `--color-surface`.
+
+### Materials
+Chrome that floats over scrolling content is translucent: `.material` (BottomNav) and `.app-header` (sticky AppHeader) use `--material-bg` / `--material-bg-bar` (72 to 78% surface), `blur(20px) saturate(180%)`, a 1px `--material-border` hairline and an inset top highlight. The header is transparent at rest and fades its material in once the page scrolls (scroll-edge effect, no fixed divider). Sheet headers use `.material-bar`. Never stack one translucent layer on another. `prefers-reduced-transparency` swaps to a solid surface with no blur; `prefers-contrast: more` uses a solid surface and a contrasting border.
 
 ### Named Rules
 **The Flat Cards Rule.** Content cards never get a shadow; only brand-gradient and floating elements do.
+
+## Motion
+
+Feel is built on response, direct manipulation and springs; see `src/components/ui/motion.ts`.
+
+- **Response:** controls scale to `0.97` on press-down (`active:scale-[0.97]`, 75ms in, 150ms out); icon buttons `0.92`, rows `0.98`, FAB `0.94`. `touch-action: manipulation` is global (no tap delay). No artificial waits on the input path.
+- **Springs, not durations:** `createSpring` takes `response` and `damping` (1 = no overshoot). It always starts from the live value and velocity, so every spring is interruptible. Presets: `SPRINGS.sheet` (0.34s) and `SPRINGS.ui` (0.3s), both critically damped.
+- **BottomSheet:** drag the header (Pointer Events + capture, grab offset kept) to dismiss. 1:1 tracking, rubber-band when pulled up, release velocity handed to the spring, flick projection (`project`) decides close vs snap back, scrim opacity follows position. Open, close and snap-back are springs and can be grabbed mid-flight. X, Esc and scrim animate out and call `onClose` when settled; a parent that unmounts the sheet gets a visual ghost exit. Esc closes only the top sheet, Tab is trapped, focus returns to the trigger, body scroll is locked. From `sm` the dialog is centered and crossfades with a 0.96 scale.
+- **FAB menu:** one spring (`--p`, 0 to 1) drives the items (scale anchored bottom-right at the FAB, 14px rise, opacity) and the plus/close glyph rotation; exit mirrors entry. Esc and outside press close it.
+- **Sliding indicators:** `SegmentedControl` (theme, movement type, payment status) and the BottomNav pill move on a spring and re-target mid-slide.
+- **Reduced motion:** springs and slides are replaced by crossfades or instant jumps (sheet and FAB crossfade, indicators jump); press feedback and colour changes stay. The global `prefers-reduced-motion` rule also collapses CSS transitions.
+- **Haptics:** `haptic()` (Vibration API, silent no-op elsewhere) fires on confirm and save, once, on the causal event.
 
 ## Shapes
 
@@ -186,8 +203,8 @@ Soft and rounded. Scale in use: `rounded-xl` 12px (inputs, buttons, small wells;
 
 ### Buttons
 - **Shape:** 12px radius for rectangular actions; full pill for FAB menu items and chips.
-- **Primary:** brand gradient fill, white 14px semibold text, `py-3`, brand glow shadow, `active:scale-[0.99]`, `disabled:opacity-60`.
-- **FAB:** 56px circle gradient with `Plus`, rotates 45deg when open; menu items are pill buttons on surface-2 with a green/red tinted icon well.
+- **Primary:** brand gradient fill, white 14px semibold text, `py-3`, brand glow shadow, `active:scale-[0.97]` (all variants), `disabled:opacity-60`.
+- **FAB:** 56px circle gradient with `Plus` that rotates into `X` on a spring; menu items are pill buttons on surface-2 with a green/red tinted icon well.
 - **Secondary:** 1px border on transparent, hover fill surface-2. Destructive: red text or icon with the same shape.
 - **Icon button:** `rounded-full p-1.5/p-2`, muted text, hover fill surface-2.
 
@@ -203,11 +220,11 @@ Soft and rounded. Scale in use: `rounded-xl` 12px (inputs, buttons, small wells;
 - 12px radius, 1px border, surface-2 fill, `px-3.5 py-2.5`, 14px text, faint placeholder. Focus: border shifts to brand (outline removed). Labels: 12px medium faint text above, `mb-1.5`. Error: 14px expense-red message under the field.
 
 ### Navigation
-- **BottomNav:** floating pill (`rounded-full`, 1px border, surface-2 at 95% with blur), five icon-only 56x48 targets with `aria-label`; active = surface-3 fill plus lifted-violet icon at heavier stroke; inactive = faint.
+- **BottomNav:** floating pill (`rounded-full`, `.material` translucent chrome), five icon-only 56x48 targets with `aria-label`; active = a surface-3 pill that slides between items on a spring, plus lifted-violet icon at heavier stroke; inactive = faint.
 - **AppHeader:** logo tile (40px gradient, 16px radius) plus workspace switcher on the left, privacy eye toggle and page actions on the right.
 
 ### Bottom Sheet
-- Portal modal: black/70 blurred scrim, surface panel with 24px top radius (full 24px from `sm`), sticky header with 16px semibold title and a close icon button, `px-5 py-4` body, max height 92vh.
+- Portal modal: black/70 blurred scrim (opacity tied to drag), elevated surface panel with a grabber and 24px top radius (full 24px from `sm`), sticky header with 16px semibold title and a close icon button, `px-5 py-4` body, max height 92vh.
 
 ### Transaction Row
 - 44px tinted category icon well (16px radius), 14px medium description, 12px faint meta, right-aligned 14px semibold signed amount in income/expense color; row hover fill surface-2.

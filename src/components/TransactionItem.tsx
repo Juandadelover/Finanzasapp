@@ -66,7 +66,7 @@ export function TransactionItem({ transaction, category, currency }: Transaction
     <button
       type="button"
       onClick={() => openEditTransaction(transaction)}
-      className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
+      className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition duration-150 hover:bg-[var(--color-surface-2)] active:scale-[0.98] active:bg-[var(--color-surface-2)] active:duration-75"
     >
       {content}
     </button>

@@ -7,7 +7,7 @@ export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    "gradient-brand text-white shadow-[var(--shadow-brand-md)] active:scale-[0.99]",
+    "gradient-brand text-white shadow-[var(--shadow-brand-md)]",
   secondary:
     "border border-[var(--color-border)] bg-transparent text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
   ghost:
@@ -34,7 +34,9 @@ export function buttonClass({
   className?: string;
 } = {}) {
   return cn(
-    "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition",
+    "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition duration-150 ease-out",
+    // Feedback on press-down, not on release.
+    "active:scale-[0.97] active:duration-75",
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-light)]",
     "disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100",
     VARIANTS[variant],
