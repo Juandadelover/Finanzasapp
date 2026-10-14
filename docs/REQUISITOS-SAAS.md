@@ -10,8 +10,11 @@
 | D2 | **Se cobra por dueño** | La suscripción pertenece al usuario dueño; su plan define cuántos negocios puede crear y cuántos miembros invitar en cada uno. Los miembros invitados no pagan. |
 | D3 | **Sin facturación electrónica en el producto** | El público son emprendedores que necesitan controlar su plata, no un software contable. Se ofrecen **cotizaciones y cuentas de cobro en PDF** (sin valor fiscal) y el control de "Me deben". Quien deba facturar electrónicamente usa el sistema gratuito de la DIAN u otro proveedor, y registra aquí el cobro. |
 | D4 | **Sin pasarela de pagos al inicio** | El cliente paga por fuera (Nequi, transferencia, llave Bre-B) y sube el comprobante; tú apruebas en un panel `/admin` y la app activa el plan y controla vencimientos. Ver sección 5. |
+| D5 | **Se cobra como persona natural** | Los pagos llegan a cuentas a tu nombre. Mientras seas **no responsable de IVA** (ingresos brutos anuales < 3.500 UVT y demás requisitos del art. 437 E.T.), los precios **no llevan IVA** y en general no estás obligado a facturar electrónicamente; basta con el recibo de pago de la app. Debes declarar renta si superas los topes del año. Al pasar los topes, cambian estas reglas: confírmalo con un contador. |
+| D6 | **Medios de pago: Nequi, Bancolombia y llave Bre-B** | Son los únicos medios en "Cómo pagar". Los números, titular y llave los configuras tú en el panel `/admin`; no van en el código. |
+| D7 | **Borrar los usuarios actuales y sembrar usuarios de prueba por rol** | Los usuarios y datos de la app personal se eliminan (no se migran). En desarrollo/staging se crea un usuario de prueba por rol (ver sección 5.6). |
 
-> Nota: D3 aplica al **producto**. Como operador del SaaS tú sí debes emitir factura electrónica por las suscripciones que cobras (si estás obligado según tu régimen). Eso se resuelve por fuera de la app con un proveedor (p. ej. Alegra o el facturador gratuito DIAN) — confírmalo con tu contador. El export de pagos del panel admin (RF-ADM-09) sirve de insumo.
+> Nota: D3 aplica al **producto**. Para tus propios cobros, ver D5: como persona natural no responsable de IVA no deberías necesitar factura electrónica; si algún día pasas los topes, se emite por fuera de la app (p. ej. facturador gratuito DIAN), usando el export de pagos del panel admin (RF-ADM-09).
 
 ---
 
@@ -49,7 +52,7 @@ Modelo **freemium + prueba gratuita de 14 días** del plan pagado, sin tarjeta p
 
 | Característica | Gratis | Emprendedor | Negocio | Pro (futuro) |
 |---|---|---|---|---|
-| Precio sugerido (mensual) | $0 | COP 24.900 | COP 59.900 | COP 129.900 |
+| Precio sugerido (mensual, sin IVA — D5) | $0 | COP 24.900 | COP 59.900 | COP 129.900 |
 | Descuento anual | — | 2 meses gratis | 2 meses gratis | 2 meses gratis |
 | Negocios (del dueño) | 1 | 1 | 3 | 10 |
 | Usuarios por espacio | 1 | 2 | 5 | 15 |
@@ -201,7 +204,7 @@ Prioridad: **M** = Must (MVP SaaS), **S** = Should, **C** = Could (posterior).
 
 ## 5. Suscripciones y cobro del SaaS (*billing*) — pagos manuales (D4)
 
-Al inicio **no hay pasarela de pagos**: el emprendedor paga por fuera de la app (transferencia, Nequi, Daviplata, llave Bre-B) y tú activas su plan desde un panel de administración. Esto permite lanzar y validar precios sin afiliarse a una pasarela, a cambio de trabajo operativo manual que es manejable hasta unos ~100–200 clientes pagos.
+Al inicio **no hay pasarela de pagos**: el emprendedor paga por fuera de la app por **Nequi, transferencia a Bancolombia o llave Bre-B** (D6) y tú activas su plan desde un panel de administración. Esto permite lanzar y validar precios sin afiliarse a una pasarela, a cambio de trabajo operativo manual que es manejable hasta unos ~100–200 clientes pagos.
 
 La clave es que **la app sí lleva el control de la suscripción** (plan, estado, fecha de vencimiento, límites), aunque el dinero no pase por ella. Así, cuando se integre una pasarela, solo cambia *cómo se registra el pago*, no el resto del sistema.
 
@@ -212,9 +215,9 @@ La clave es que **la app sí lleva el control de la suscripción** (plan, estado
  ─────────────────                          ─────────────────
  1. Elige plan y ciclo (mensual/anual)
  2. Ve "Cómo pagar": monto exacto,
-    cuentas/llave Bre-B/QR y una
+    Nequi / Bancolombia / llave Bre-B y una
     REFERENCIA única (ej. FZ-7K3Q)
- 3. Paga por fuera (Nequi, transferencia)
+ 3. Paga por fuera (Nequi, Bancolombia, Bre-B)
  4. Sube el comprobante (foto/PDF)  ─────▶  5. Ve la solicitud "En revisión"
     Estado: "En revisión"                      con comprobante, monto y referencia
     (acceso provisional 48 h)               6. Verifica contra su extracto/Nequi
@@ -232,7 +235,7 @@ La clave es que **la app sí lleva el control de la suscripción** (plan, estado
 | RF-SUB-01 | La suscripción pertenece al **usuario dueño** (D2); todos los negocios que crea heredan su plan; los miembros invitados no pagan | M |
 | RF-SUB-02 | Página pública de precios con mensual/anual | M |
 | RF-SUB-03 | Prueba gratis de 14 días del plan pagado, sin pedir pago; al terminar baja a Gratis sin borrar datos | M |
-| RF-SUB-04 | Pantalla **"Cómo pagar"**: monto exacto, medios de pago configurables por ti (Nequi, Daviplata, cuenta Bancolombia, llave Bre-B, código QR) y **referencia única** por solicitud para identificar el pago | M |
+| RF-SUB-04 | Pantalla **"Cómo pagar"**: monto exacto, medios de pago **Nequi, Bancolombia y llave Bre-B** (D6), con los datos que configuras en `/admin` y **referencia única** por solicitud para identificar el pago | M |
 | RF-SUB-05 | **Subir comprobante** (imagen/PDF, máx. 5 MB) y crear una solicitud de pago en estado `en_revision`; botón alternativo "Enviar por WhatsApp" con mensaje prellenado (referencia + monto) | M |
 | RF-SUB-06 | Acceso provisional al plan pagado por 48 h tras subir el comprobante, una vez por periodo (reduce fricción mientras revisas) | S |
 | RF-SUB-07 | Estados de suscripción: `trial`, `active`, `pending_review`, `grace` (vencida, en gracia), `expired` (bajó a Gratis), `canceled` | M |
@@ -242,7 +245,7 @@ La clave es que **la app sí lleva el control de la suscripción** (plan, estado
 | RF-SUB-11 | Recibo de pago en PDF (no es factura electrónica — ver nota en D3) | M |
 | RF-SUB-12 | Subir de plan: la app calcula la diferencia proporcional a pagar por los días restantes; bajar de plan: aplica al siguiente vencimiento | S |
 | RF-SUB-13 | Cupones / descuentos (lanzamiento, referidos, incubadoras) aplicados al monto mostrado | S |
-| RF-SUB-14 | Precios en COP; mostrar IVA solo si tu régimen lo exige (ver pregunta abierta 1) | M |
+| RF-SUB-14 | Precios en COP **sin IVA** (persona natural no responsable — D5); el recibo indica "No responsable de IVA". Si cambia el régimen, el IVA se activa por configuración | M |
 | RF-SUB-15 | Plan anual con descuento destacado (menos renovaciones manuales para ti y menos fricción para el cliente) | M |
 
 ### 5.3 Panel de administración (operación del cobro)
@@ -252,11 +255,12 @@ La clave es que **la app sí lleva el control de la suscripción** (plan, estado
 | RF-ADM-02 | Bandeja de **pagos en revisión**: comprobante, monto esperado vs. declarado, referencia, dueño, plan; acciones **Aprobar** / **Rechazar con motivo** | M |
 | RF-ADM-03 | Al aprobar: extiende `current_period_end` (1 o 12 meses desde el vencimiento anterior, o desde hoy si ya expiró), registra el pago y envía confirmación + recibo | M |
 | RF-ADM-04 | Buscar clientes; ver plan, estado, vencimiento e historial; activar/extender manualmente (cortesías, soporte) con motivo obligatorio | M |
-| RF-ADM-05 | Configurar los medios de pago mostrados (números, llave Bre-B, QR) y los precios de los planes sin desplegar | M |
+| RF-ADM-05 | Configurar los datos de los tres medios (número Nequi, cuenta Bancolombia y tipo, llave Bre-B, titular), activarlos/desactivarlos y cambiar precios sin desplegar | M |
 | RF-ADM-06 | Alerta (email/push) cuando entra un comprobante nuevo | S |
 | RF-ADM-07 | Detección de comprobantes duplicados (mismo archivo/hash o misma referencia usada dos veces) | S |
 | RF-ADM-08 | Métricas: MRR, clientes pagos por plan, vencimientos próximos, pagos pendientes de revisión | S |
-| RF-ADM-09 | Exportar pagos del mes (CSV) para tu contabilidad y facturación | M |
+| RF-ADM-09 | Exportar pagos del mes y del año (CSV) para tu declaración de renta y para vigilar el tope de 3.500 UVT (D5) | M |
+| RF-ADM-11 | Alerta cuando los ingresos acumulados del año se acerquen al tope de no responsable de IVA (p. ej. al 80 %) | S |
 | RF-ADM-10 | Toda acción del admin queda en `audit_log` | M |
 
 ### 5.4 Control de acceso por plan (*entitlements*)
@@ -271,6 +275,26 @@ La clave es que **la app sí lleva el control de la suscripción** (plan, estado
 - `payments.method` admite `manual` hoy y `wompi` / `mercadopago` mañana; la suscripción, los estados y los límites no cambian.
 - Cuándo integrarla: cuando revisar comprobantes tome más de ~30 min/día, o cuando muchas no renovaciones sean por "se me olvidó pagar". Opciones para Colombia: **Wompi** (tarjeta, PSE, Nequi; tokenización para cobro recurrente) o **Mercado Pago** (suscripciones nativas). Stripe no aplica sin una entidad en el exterior.
 - Paso intermedio sin integración técnica: **links de pago** (Wompi, Bold, Nequi Negocios) generados a mano y pegados en "Cómo pagar".
+
+### 5.6 Limpieza de datos y usuarios de prueba (D7)
+
+**Limpieza (una sola vez, en la Fase 0):** se borran todos los usuarios de `auth.users` del proyecto actual y sus datos (`profiles`, `user_settings`, `categories`, `transactions`), antes de aplicar el esquema multi-negocio. No se migra nada. Antes de borrar, se exporta un respaldo por si acaso.
+
+**Usuarios de prueba por rol** — creados por un script de *seed* que solo corre en desarrollo/staging y se niega a correr si detecta el proyecto de producción:
+
+| Usuario (email de prueba) | Rol | Escenario que permite probar |
+|---|---|---|
+| `admin@finanzasapp.test` | Administrador de la plataforma | Panel `/admin`: aprobar/rechazar comprobantes, configurar medios de pago y precios |
+| `dueno@finanzasapp.test` | **Dueño** del negocio "Tienda Demo" (plan Negocio activo) | Todo, incluida "Mi suscripción" e invitar miembros |
+| `adminnegocio@finanzasapp.test` | **Admin** en "Tienda Demo" | Todo menos suscripción y borrar el negocio |
+| `editor@finanzasapp.test` | **Editor** en "Tienda Demo" | Registrar y editar movimientos, clientes, cuentas de cobro |
+| `contador@finanzasapp.test` | **Contador** en "Tienda Demo" | Solo lectura + exportar reportes |
+| `registro@finanzasapp.test` | **Solo registro** en "Tienda Demo" | Solo crear gastos (empleado) |
+| `gratis@finanzasapp.test` | Dueño en plan **Gratis** | Probar límites (100 movimientos, 1 negocio) y el flujo de pago manual con un comprobante "en revisión" |
+
+- Las contraseñas no van en el repositorio: se leen de una variable de entorno (`DEV_SEED_PASSWORD`) en `.env.local`.
+- El seed crea también datos de ejemplo en "Tienda Demo": cuentas (Nequi, Bancolombia, Caja), categorías por defecto, ~3 meses de movimientos, 2 clientes con saldo pendiente y 1 proveedor.
+- El script es idempotente: se puede volver a correr para reiniciar el entorno de pruebas.
 
 ---
 
@@ -361,7 +385,7 @@ payments (subscription_id, plan_codigo, ciclo, monto_esperado, monto_declarado,
           referencia UNIQUE, method[manual|wompi|...], status[en_revision|aprobado|rechazado],
           comprobante_path, comprobante_hash, motivo_rechazo,
           reviewed_by, reviewed_at, provider_transaction_id NULL)
-payment_methods_config (tipo[nequi|daviplata|bancolombia|breb|qr], titular, valor, activo)
+payment_methods_config (tipo[nequi|bancolombia|breb], titular, valor, detalle, activo)
 platform_admins (user_id)
 usage_counters (owner_id | workspace_id, clave, periodo, valor)   ← tx/mes, créditos IA
 ```
@@ -390,7 +414,7 @@ Mantener el stack actual — es adecuado para un SaaS de esta escala:
 
 | Área | Hoy | Necesario | Esfuerzo |
 |---|---|---|---|
-| Tenancy | Datos por `user_id` | `workspace_id` + `memberships` + RLS por membresía | **Alto** (migración de todas las tablas y políticas) |
+| Tenancy | Datos por `user_id` | `workspace_id` + `memberships` + RLS por membresía | Medio–Alto (se reescriben tablas y políticas; sin migrar datos gracias a D7) |
 | Cuentas financieras | No existen | Tabla `accounts`, saldo por cuenta, transferencias | Medio |
 | Estado de movimientos | Solo realizados | Pagado / pendiente + vencimientos | Medio |
 | Montos | `amount` convertido con `Number()` en JS | `numeric` en BD + aritmética en centavos/decimal | Bajo–Medio |
@@ -423,7 +447,7 @@ El panel interno de administración está especificado en la sección 5.3 (RF-AD
 
 | Fase | Duración estimada* | Alcance |
 |---|---|---|
-| **0. Fundaciones** | 2–3 semanas | Migraciones versionadas, `workspaces` + `memberships` + RLS nueva, migración de datos existentes, login Google/email, pruebas de aislamiento |
+| **0. Fundaciones** | 2–3 semanas | Respaldo y borrado de usuarios/datos actuales (D7), migraciones versionadas, `workspaces` + `memberships` + RLS nueva, login Google/email, seed de usuarios de prueba por rol, pruebas de aislamiento |
 | **1. MVP negocio** | 4–6 semanas | Cuentas, pendientes/vencimientos, clientes/proveedores, "Me deben / Debo", cuentas de cobro PDF + recordatorio por WhatsApp, recurrentes, dashboard de negocio, P&G y flujo de caja, exporte Excel/PDF |
 | **2. Monetización** | 2–3 semanas | Planes, límites de plan, prueba de 14 días, "Cómo pagar" + subida de comprobante, panel `/admin` de aprobación, job de vencimientos, recordatorios, "Mi suscripción", página de precios, legales → **lanzamiento beta pagada** |
 | **3. Equipo y contador** | 2–3 semanas | Invitaciones, roles, acceso contador, auditoría |
@@ -454,10 +478,10 @@ El panel interno de administración está especificado en la sección 5.3 (RF-AD
 
 Resueltas: país (Colombia — D1), modelo de cobro (por dueño — D2), facturación electrónica (fuera del producto — D3), pagos manuales sin pasarela (D4).
 
+Resueltas también: cobro como persona natural (D5), medios de pago Nequi / Bancolombia / Bre-B (D6), borrar usuarios actuales y crear usuarios de prueba por rol (D7).
+
 Pendientes:
-1. **¿Con qué figura vas a cobrar** (persona natural o SAS)? Define a nombre de quién están las cuentas que reciben los pagos, tu régimen de IVA y si debes facturar electrónicamente las suscripciones.
-2. **¿Qué medios de pago vas a publicar?** (Nequi, Daviplata, cuenta Bancolombia, llave Bre-B) — idealmente a nombre de quien declara esos ingresos.
-3. **¿Los usuarios actuales de la app personal** se migran a un negocio "Personal" gratis o se mantiene una app separada?
-4. **¿El contador es un canal de venta?** (p. ej. cupón o plan gratis para contadores que recomiendan la app a sus clientes.)
-5. **Validar precios** (COP 24.900 / 59.900) con 10–15 entrevistas a emprendedores antes de fijarlos.
-6. **¿Presupuesto mensual de infraestructura?** (Supabase Pro + Vercel Pro + Resend + Sentry ≈ USD 70–100/mes al inicio.)
+1. **¿El contador es un canal de venta?** (p. ej. cupón o plan gratis para contadores que recomiendan la app a sus clientes.)
+2. **Validar precios** (COP 24.900 / 59.900) con 10–15 entrevistas a emprendedores antes de fijarlos.
+3. **¿Presupuesto mensual de infraestructura?** (Supabase Pro + Vercel Pro + Resend + Sentry ≈ USD 70–100/mes al inicio.)
+4. **Acceso al proyecto de Supabase** "Finanzasapp" desde la integración de Claude, para ejecutar la limpieza y el seed (hoy la integración solo ve otro proyecto).
