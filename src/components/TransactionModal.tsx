@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
+import { Repeat, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { CategoryPicker } from "@/components/CategoryPicker";
 import { CategoryModal } from "@/components/CategoryModal";
@@ -10,6 +11,8 @@ import { useFinance } from "@/context/FinanceContext";
 import { useUI } from "@/context/UIContext";
 import { cn } from "@/lib/cn";
 import { formatAmountInput, parseAmountInput, toISODate } from "@/lib/format";
+import { createRecurrence, FREQUENCY_LABEL, type Frequency } from "@/lib/recurrences";
+import { toastDbError } from "@/lib/subscription";
 import type { CategoryIcon, Transaction, TransactionStatus, TransactionType } from "@/types/finance";
 
 interface TransactionSheetProps {
@@ -19,8 +22,16 @@ interface TransactionSheetProps {
 }
 
 function TransactionSheet({ type: initialType, editing, onClose }: TransactionSheetProps) {
-  const { state, permissions, addTransaction, updateTransaction, deleteTransaction, addCategory } =
-    useFinance();
+  const {
+    state,
+    permissions,
+    currentWorkspace,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    addCategory,
+    reload,
+  } = useFinance();
 
   const [type, setType] = useState<TransactionType>(editing?.type ?? initialType);
   const [amount, setAmount] = useState(editing?.amount ?? 0);
@@ -32,6 +43,10 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
   const [contactId, setContactId] = useState<string | null>(editing?.contactId ?? null);
   const [error, setError] = useState<string | null>(null);
   const [creatingCategory, setCreatingCategory] = useState(false);
+  const [frequency, setFrequency] = useState<Frequency | "none">("none");
+  const [endDate, setEndDate] = useState("");
+  const [saving, setSaving] = useState(false);
+  const canRepeat = !editing && permissions.canEditTransactions && !!currentWorkspace;
 
   const accounts = useMemo(() => state.accounts.filter((a) => !a.archived), [state.accounts]);
   const [accountId, setAccountId] = useState<string | null>(
@@ -53,7 +68,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
     [state.categories, type]
   );
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (amount <= 0) {
       setError("Ingresa un monto mayor a cero.");
@@ -80,6 +95,36 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
       status,
       dueDate: status === "pending" && dueDate ? dueDate : null,
     };
+    if (!editing && canRepeat && frequency !== "none") {
+      if (endDate && endDate < date) {
+        setError("La fecha final debe ser posterior a la fecha de inicio.");
+        return;
+      }
+      if (saving || !currentWorkspace) return;
+      setSaving(true);
+      const { error: dbError } = await createRecurrence({
+        workspaceId: currentWorkspace.id,
+        type,
+        amount,
+        categoryId,
+        accountId: input.accountId,
+        contactId,
+        description: input.description,
+        frequency,
+        startDate: date,
+        endDate: endDate || null,
+        generatedStatus: status,
+      });
+      if (dbError) {
+        setSaving(false);
+        toastDbError(dbError, "No se pudo crear el movimiento recurrente.");
+        return;
+      }
+      await reload();
+      toast.success("Movimiento recurrente creado.");
+      onClose();
+      return;
+    }
     if (editing) {
       updateTransaction(editing.id, input);
     } else {
@@ -279,6 +324,43 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
           </div>
         ) : null}
 
+        {canRepeat ? (
+          <div>
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
+              <Repeat size={12} /> Repetir
+            </label>
+            <select
+              value={frequency}
+              onChange={(e) => setFrequency(e.target.value as Frequency | "none")}
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
+            >
+              <option value="none">No se repite</option>
+              {(Object.keys(FREQUENCY_LABEL) as Frequency[]).map((f) => (
+                <option key={f} value={f}>
+                  {FREQUENCY_LABEL[f]}
+                </option>
+              ))}
+            </select>
+            {frequency !== "none" ? (
+              <div className="mt-3">
+                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
+                  Hasta (opcional)
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={date}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
+                />
+                <p className="mt-1.5 text-xs text-[var(--color-text-faint)]">
+                  Se crea el primero hoy o en la fecha elegida y los siguientes se generan solos.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         {error ? <p className="text-sm text-[var(--color-expense)]">{error}</p> : null}
 
         <div className="flex gap-3 pt-1">
@@ -294,9 +376,10 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
           ) : null}
           <button
             type="submit"
-            className="gradient-brand flex-1 rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition active:scale-[0.99]"
+            disabled={saving}
+            className="gradient-brand flex-1 rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition active:scale-[0.99] disabled:opacity-60"
           >
-            {editing ? "Guardar cambios" : "Guardar movimiento"}
+            {editing ? "Guardar cambios" : saving ? "Guardando..." : frequency !== "none" && canRepeat ? "Guardar recurrente" : "Guardar movimiento"}
           </button>
         </div>
       </form>

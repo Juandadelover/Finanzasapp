@@ -146,3 +146,24 @@ body {
     background: #fff !important;
   }
 }
+
+/* === Reportes: impresión / PDF (/reportes) === */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  #print-area.report-print {
+    color: #111 !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+  #print-area.report-print * {
+    color: #111 !important;
+    background: transparent !important;
+    border-color: #ccc !important;
+  }
+  #print-area.report-print .report-row {
+    break-inside: avoid;
+  }
+}
+/* === Fin Reportes === */
