@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, TrendingUp } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, TrendingUp } from "lucide-react";
+import { Button, buttonClass } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
 
 const inputClass =
-  "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 pr-11 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-brand)] disabled:opacity-60";
+  "w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 pr-12 text-base text-[var(--color-text)] outline-none transition focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40 disabled:opacity-60";
 
 export default function RestablecerPage() {
   const [hasSession, setHasSession] = useState<boolean | null>(null);
@@ -36,28 +37,33 @@ export default function RestablecerPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6 py-10">
+    <main className="flex min-h-dvh flex-col items-center justify-center px-6 py-10">
       <div className="gradient-brand flex h-16 w-16 items-center justify-center rounded-3xl shadow-[0_8px_24px_rgba(138,5,190,0.4)]">
         <TrendingUp size={30} className="text-white" strokeWidth={2.5} />
       </div>
       <h1 className="mt-6 text-2xl font-bold tracking-tight">Nueva contraseña</h1>
-      <div className="mt-6 flex w-full max-w-xs flex-col gap-3">
-        {hasSession === null ? null : done ? (
+      <div className="mt-6 flex w-full max-w-sm flex-col gap-3">
+        {hasSession === null ? (
+          <p role="status" className="text-center text-sm text-[var(--color-text-muted)]">
+            Verificando el enlace...
+          </p>
+        ) : done ? (
           <>
-            <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm text-[var(--color-text-muted)]">
-              Tu contraseña fue actualizada.
-            </p>
-            <Link
-              href="/"
-              className="gradient-brand flex items-center justify-center rounded-full py-3.5 text-sm font-semibold text-white"
+            <div
+              role="status"
+              className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-center text-sm text-[var(--color-text-muted)]"
             >
+              <CheckCircle2 size={24} className="text-[var(--color-income)]" aria-hidden />
+              Tu contraseña quedó actualizada. Ya puedes entrar con la nueva.
+            </div>
+            <Link href="/" className={buttonClass({ size: "lg", fullWidth: true, className: "rounded-full" })}>
               Ir a la app
             </Link>
           </>
         ) : !hasSession ? (
           <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm text-[var(--color-text-muted)]">
-            El enlace venció o no es válido.{" "}
-            <Link href="/recuperar" className="font-medium text-[var(--color-brand-light)] underline">
+            El enlace venció o ya se usó.{" "}
+            <Link href="/recuperar" className="inline-flex min-h-11 items-center font-medium text-[var(--color-brand-light)] underline">
               Pide uno nuevo
             </Link>
             .
@@ -71,7 +77,7 @@ export default function RestablecerPage() {
               ] as const
             ).map(([id, label, value, set]) => (
               <div key={id}>
-                <label htmlFor={id} className="mb-1.5 block text-xs font-medium text-[var(--color-text-muted)]">
+                <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-[var(--color-text-muted)]">
                   {label}
                 </label>
                 <div className="relative">
@@ -81,6 +87,7 @@ export default function RestablecerPage() {
                     autoComplete="new-password"
                     required
                     minLength={8}
+                    aria-describedby={id === "password" ? "reset-hint" : undefined}
                     value={value}
                     onChange={(e) => set(e.target.value)}
                     disabled={loading}
@@ -90,26 +97,32 @@ export default function RestablecerPage() {
                     <button
                       type="button"
                       onClick={() => setShow((v) => !v)}
-                      aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-faint)]"
+                      aria-label={show ? "Ocultar contraseñas" : "Mostrar contraseñas"}
+                      aria-pressed={show}
+                      className="absolute right-0 top-0 flex h-full w-11 items-center justify-center rounded-xl text-[var(--color-text-muted)]"
                     >
-                      {show ? <EyeOff size={17} /> : <Eye size={17} />}
+                      {show ? <EyeOff size={18} aria-hidden /> : <Eye size={18} aria-hidden />}
                     </button>
                   ) : null}
                 </div>
+                {id === "password" ? (
+                  <p id="reset-hint" className="mt-1.5 text-xs text-[var(--color-text-muted)]">
+                    Mínimo 8 caracteres.
+                  </p>
+                ) : null}
               </div>
             ))}
-            {error ? <p className="text-sm text-[var(--color-expense)]">{error}</p> : null}
-            <button
-              type="submit"
-              disabled={loading}
-              className="gradient-brand flex items-center justify-center rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition disabled:opacity-60"
-            >
+            {error ? (
+              <p role="alert" className="text-sm text-[var(--color-expense)]">
+                {error}
+              </p>
+            ) : null}
+            <Button type="submit" size="lg" loading={loading} fullWidth className="rounded-full">
               {loading ? "Guardando..." : "Guardar contraseña"}
-            </button>
+            </Button>
           </form>
         )}
       </div>
-    </div>
+    </main>
   );
 }

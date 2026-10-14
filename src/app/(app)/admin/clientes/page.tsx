@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Search, Users } from "lucide-react";
+import { RefreshCw, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { EmptyState } from "@/components/EmptyState";
+import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 import {
   fetchAdminCustomers,
   fetchPlans,
@@ -14,9 +16,18 @@ import {
 } from "@/lib/admin";
 
 const inputClass =
-  "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)]";
+  "w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-base outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40";
 const labelClass =
-  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]";
+  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]";
+
+const STATUS_LABEL: Record<string, string> = {
+  active: "Activo",
+  grace: "En gracia",
+  provisional: "Provisional",
+  trial: "En prueba",
+  free: "Gratis",
+  expired: "Vencido",
+};
 
 function fmtDay(iso: string | null): string {
   if (!iso) return "—";
@@ -91,8 +102,8 @@ function CustomerSheet({
             <p className="text-xs text-[var(--color-text-muted)]">{customer.email}</p>
           ) : null}
         </div>
-        <div>
-          <label className={labelClass}>Plan</label>
+        <label className="block">
+          <span className={labelClass}>Plan</span>
           <select value={plan} onChange={(e) => setPlan(e.target.value)} className={inputClass}>
             {plans.map((p) => (
               <option key={p.code} value={p.code}>
@@ -100,20 +111,20 @@ function CustomerSheet({
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <label className={labelClass}>Ciclo</label>
+        </label>
+        <label className="block">
+          <span className={labelClass}>Ciclo</span>
           <select value={cycle} onChange={(e) => changeCycle(e.target.value)} className={inputClass}>
             <option value="monthly">Mensual</option>
             <option value="annual">Anual</option>
           </select>
-        </div>
-        <div>
-          <label className={labelClass}>Vence el</label>
+        </label>
+        <label className="block">
+          <span className={labelClass}>Vence el</span>
           <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Motivo</label>
+        </label>
+        <label className="block">
+          <span className={labelClass}>Motivo (queda en la auditoría)</span>
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -122,14 +133,10 @@ function CustomerSheet({
             placeholder="Ej. Pago confirmado por WhatsApp"
             className={inputClass}
           />
-        </div>
-        <button
-          type="submit"
-          disabled={busy}
-          className="gradient-brand rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] disabled:opacity-50"
-        >
-          {busy ? "Guardando..." : "Guardar"}
-        </button>
+        </label>
+        <Button type="submit" loading={busy} fullWidth>
+          {busy ? "Guardando..." : "Guardar cambios"}
+        </Button>
       </form>
     </BottomSheet>
   );
@@ -138,6 +145,7 @@ function CustomerSheet({
 export default function AdminClientesPage() {
   const [search, setSearch] = useState("");
   const [rows, setRows] = useState<AdminCustomer[] | null>(null);
+  const [failed, setFailed] = useState(false);
   const [plans, setPlans] = useState<PlanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<AdminCustomer | null>(null);
@@ -145,6 +153,7 @@ export default function AdminClientesPage() {
   const load = useCallback(async (q: string) => {
     setLoading(true);
     const data = await fetchAdminCustomers(q);
+    setFailed(data === null);
     setRows(data ?? []);
     setLoading(false);
   }, []);
@@ -160,10 +169,12 @@ export default function AdminClientesPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="relative">
+      <label className="relative block md:max-w-md">
+        <span className="sr-only">Buscar clientes por nombre o correo</span>
         <Search
           size={16}
-          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-faint)]"
+          aria-hidden
+          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
         />
         <input
           type="search"
@@ -172,50 +183,108 @@ export default function AdminClientesPage() {
           placeholder="Buscar por nombre o correo"
           className={`${inputClass} pl-10`}
         />
-      </div>
+      </label>
 
       {loading ? (
-        <div className="h-40 animate-pulse rounded-3xl bg-[var(--color-surface)]" />
+        <div role="status" className="flex flex-col gap-3">
+          <span className="sr-only">Cargando clientes...</span>
+          <Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
+        </div>
+      ) : failed ? (
+        <div role="alert" className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <p className="text-sm text-[var(--color-text-muted)]">No se pudieron cargar los clientes.</p>
+          <Button variant="secondary" size="sm" className="mt-3" onClick={() => void load(search.trim())}>
+            <RefreshCw size={14} aria-hidden /> Reintentar
+          </Button>
+        </div>
       ) : !rows || rows.length === 0 ? (
-        <EmptyState icon={Users} title="No se encontraron clientes" />
+        <EmptyState
+          icon={Users}
+          title="No se encontraron clientes"
+          description={search.trim() ? "Revisa la ortografía o busca por correo." : undefined}
+        />
       ) : (
-        <ul className="flex flex-col gap-3">
-          {rows.map((c) => (
-            <li key={c.owner_id}>
-              <button
-                type="button"
-                onClick={() => setSelected(c)}
-                className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-left transition hover:bg-[var(--color-surface-2)]"
-              >
-                <p className="truncate text-sm font-semibold">{c.full_name || c.email}</p>
-                {c.full_name ? (
-                  <p className="truncate text-xs text-[var(--color-text-muted)]">{c.email}</p>
-                ) : null}
-                <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)]">
-                  <span>
-                    Plan: <strong className="capitalize text-[var(--color-text)]">{c.plan_code ?? "—"}</strong>
-                  </span>
-                  <span>
-                    Vigente:{" "}
-                    <strong className="capitalize text-[var(--color-text)]">{c.effective_plan ?? "—"}</strong>
-                  </span>
-                  <span>
-                    Estado: <strong className="text-[var(--color-text)]">{c.status ?? "—"}</strong>
-                  </span>
-                  <span>
-                    Negocios: <strong className="text-[var(--color-text)]">{c.workspaces}</strong>
-                  </span>
-                  <span className="col-span-2">
-                    Vence:{" "}
-                    <strong className="text-[var(--color-text)]">
-                      {fmtDay(c.current_period_end ?? c.trial_end)}
-                    </strong>
-                  </span>
-                </div>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <div className="hidden overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] md:block">
+            <table className="w-full min-w-[44rem] text-left text-sm">
+              <caption className="sr-only">Clientes</caption>
+              <thead className="border-b border-[var(--color-border)] text-xs text-[var(--color-text-muted)]">
+                <tr>
+                  <th scope="col" className="px-4 py-3 font-medium">Cliente</th>
+                  <th scope="col" className="px-3 py-3 font-medium">Plan</th>
+                  <th scope="col" className="px-3 py-3 font-medium">Vigente</th>
+                  <th scope="col" className="px-3 py-3 font-medium">Estado</th>
+                  <th scope="col" className="px-3 py-3 text-right font-medium">Negocios</th>
+                  <th scope="col" className="px-3 py-3 font-medium">Vence</th>
+                  <th scope="col" className="px-4 py-3 font-medium"><span className="sr-only">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {rows.map((c) => (
+                  <tr key={c.owner_id}>
+                    <td className="max-w-[16rem] px-4 py-3">
+                      <p className="truncate font-medium">{c.full_name || c.email}</p>
+                      {c.full_name ? <p className="truncate text-xs text-[var(--color-text-muted)]">{c.email}</p> : null}
+                    </td>
+                    <td className="px-3 py-3 capitalize">{c.plan_code ?? "—"}</td>
+                    <td className="px-3 py-3 capitalize">{c.effective_plan ?? "—"}</td>
+                    <td className="px-3 py-3">{c.status ? (STATUS_LABEL[c.status] ?? c.status) : "—"}</td>
+                    <td className="tabular px-3 py-3 text-right">{c.workspaces}</td>
+                    <td className="whitespace-nowrap px-3 py-3">{fmtDay(c.current_period_end ?? c.trial_end)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setSelected(c)}
+                        aria-label={`Activar o extender plan de ${c.full_name || c.email}`}
+                      >
+                        Activar o extender
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <ul className="flex flex-col gap-3 md:hidden">
+            {rows.map((c) => (
+              <li key={c.owner_id}>
+                <button
+                  type="button"
+                  onClick={() => setSelected(c)}
+                  aria-label={`Activar o extender plan de ${c.full_name || c.email}`}
+                  className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-left transition hover:bg-[var(--color-surface-2)]"
+                >
+                  <p className="truncate text-sm font-semibold">{c.full_name || c.email}</p>
+                  {c.full_name ? <p className="truncate text-xs text-[var(--color-text-muted)]">{c.email}</p> : null}
+                  <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)]">
+                    <span>
+                      Plan: <strong className="capitalize text-[var(--color-text)]">{c.plan_code ?? "—"}</strong>
+                    </span>
+                    <span>
+                      Vigente: <strong className="capitalize text-[var(--color-text)]">{c.effective_plan ?? "—"}</strong>
+                    </span>
+                    <span>
+                      Estado:{" "}
+                      <strong className="text-[var(--color-text)]">
+                        {c.status ? (STATUS_LABEL[c.status] ?? c.status) : "—"}
+                      </strong>
+                    </span>
+                    <span>
+                      Negocios: <strong className="text-[var(--color-text)]">{c.workspaces}</strong>
+                    </span>
+                    <span className="col-span-2">
+                      Vence:{" "}
+                      <strong className="text-[var(--color-text)]">{fmtDay(c.current_period_end ?? c.trial_end)}</strong>
+                    </span>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       {selected ? (

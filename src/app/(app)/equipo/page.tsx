@@ -2,9 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, LogOut, MessageCircle, RefreshCw, Trash2, X } from "lucide-react";
+import { Copy, LogOut, MessageCircle, RefreshCw, Trash2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
+import { EmptyState } from "@/components/EmptyState";
+import { Button, buttonClass } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SkeletonList } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { toastDbError } from "@/lib/subscription";
@@ -25,19 +30,22 @@ import {
 } from "@/lib/team";
 
 const inputClass =
-  "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)]";
+  "w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-base outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40";
 const labelClass =
-  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]";
+  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]";
 const cardClass = "rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4";
 const chipClass =
-  "shrink-0 rounded-full bg-[var(--color-brand)]/15 px-2 py-0.5 text-[10px] font-medium text-[var(--color-brand-light)]";
+  "shrink-0 rounded-full bg-[var(--color-brand)]/15 px-2.5 py-0.5 text-xs font-medium text-[var(--color-brand-light)]";
 
 export default function EquipoPage() {
   const { currentWorkspace, user, reload } = useFinance();
   const router = useRouter();
+  const confirm = useConfirm();
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<InviteRole>("editor");
   const [busy, setBusy] = useState(false);
@@ -52,8 +60,9 @@ export default function EquipoPage() {
       const [m, i] = await Promise.all([fetchMembers(wsId), isAdmin ? fetchPendingInvitations(wsId) : Promise.resolve([])]);
       setMembers(m);
       setInvites(i);
+      setLoadError(false);
     } catch {
-      toast.error("No se pudo cargar el equipo.");
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -84,9 +93,10 @@ export default function EquipoPage() {
   function handleInvite(e: React.FormEvent) {
     e.preventDefault();
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
-      toast.error("Escribe un email válido.");
+      setEmailError("Escribe un email válido, por ejemplo persona@correo.com.");
       return;
     }
+    setEmailError(null);
     sendInvite(email, role);
   }
 
@@ -123,7 +133,13 @@ export default function EquipoPage() {
   async function remove(m: Member) {
     if (!wsId) return;
     const who = m.fullName || m.email || "esta persona";
-    if (!window.confirm(`¿Quitar a ${who} de ${wsName}? Perderá el acceso a este negocio.`)) return;
+    const ok = await confirm({
+      title: `¿Quitar a ${who}?`,
+      description: `Perderá el acceso a ${wsName || "este negocio"}. Puedes invitarle de nuevo después.`,
+      confirmLabel: "Quitar",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await removeMember(wsId, m.userId);
       toast.success("Miembro eliminado.");
@@ -135,7 +151,13 @@ export default function EquipoPage() {
 
   async function leave() {
     if (!wsId || !user) return;
-    if (!window.confirm(`¿Salir de ${wsName}? Dejarás de ver sus datos.`)) return;
+    const ok = await confirm({
+      title: `¿Salir de ${wsName || "este negocio"}?`,
+      description: "Dejarás de ver sus datos. Para volver necesitarás una nueva invitación.",
+      confirmLabel: "Salir del negocio",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await removeMember(wsId, user.id);
       toast.success("Saliste del negocio.");
@@ -151,24 +173,40 @@ export default function EquipoPage() {
   return (
     <div className="pb-8">
       <AppHeader />
-      <div className="flex flex-col gap-4 px-4 pt-5">
-        <h1 className="text-xl font-semibold tracking-tight">Equipo</h1>
-
+      <PageHeader
+        title="Equipo"
+        subtitle={wsName ? `Personas con acceso a ${wsName}` : undefined}
+        backHref="/ajustes"
+        backLabel="Ajustes"
+      />
+      <div className="mx-4 mt-4 flex flex-col gap-4">
         {isAdmin ? (
-          <form onSubmit={handleInvite} className={`${cardClass} flex flex-col gap-3`}>
+          <form onSubmit={handleInvite} noValidate className={`${cardClass} flex flex-col gap-3`}>
             <h2 className="text-sm font-semibold">Invitar a alguien</h2>
-            <div>
-              <label className={labelClass}>Email</label>
+            <label className="block">
+              <span className={labelClass}>Email</span>
               <input
                 type="email"
+                inputMode="email"
+                autoComplete="off"
                 className={inputClass}
                 value={email}
                 placeholder="persona@correo.com"
-                onChange={(e) => setEmail(e.target.value)}
+                aria-invalid={emailError ? true : undefined}
+                aria-describedby={emailError ? "invite-email-error" : undefined}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError(null);
+                }}
               />
-            </div>
-            <div>
-              <label className={labelClass}>Rol</label>
+              {emailError ? (
+                <span id="invite-email-error" role="alert" className="mt-1.5 block text-sm text-[var(--color-expense)]">
+                  {emailError}
+                </span>
+              ) : null}
+            </label>
+            <label className="block">
+              <span className={labelClass}>Rol</span>
               <select className={inputClass} value={role} onChange={(e) => setRole(e.target.value as InviteRole)}>
                 {INVITE_ROLES.map((r) => (
                   <option key={r.value} value={r.value}>
@@ -176,28 +214,44 @@ export default function EquipoPage() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1.5 text-xs text-[var(--color-text-faint)]">
+              <span className="mt-1.5 block text-xs text-[var(--color-text-muted)]">
                 {INVITE_ROLES.find((r) => r.value === role)?.description}
-              </p>
-            </div>
-            <button
-              type="submit"
-              disabled={busy}
-              className="gradient-brand rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition active:scale-[0.99] disabled:opacity-60"
-            >
+              </span>
+            </label>
+            <Button type="submit" loading={busy} fullWidth>
               {busy ? "Enviando..." : "Enviar invitación"}
-            </button>
-            <p className="text-xs text-[var(--color-text-faint)]">
-              El email de invitación se envía automáticamente. También puedes compartir el enlace por WhatsApp desde las
-              invitaciones pendientes.
+            </Button>
+            <p className="text-xs text-[var(--color-text-muted)]">
+              Enviamos la invitación por email. También puedes compartir el enlace por WhatsApp desde las invitaciones
+              pendientes.
             </p>
           </form>
         ) : null}
 
-        <section className={cardClass}>
-          <h2 className="mb-3 text-sm font-semibold">Miembros</h2>
+        <section className={cardClass} aria-labelledby="miembros-title">
+          <h2 id="miembros-title" className="mb-3 text-sm font-semibold">
+            Miembros
+          </h2>
           {loading ? (
-            <p className="text-sm text-[var(--color-text-faint)]">Cargando...</p>
+            <SkeletonList count={3} />
+          ) : loadError ? (
+            <div role="alert" className="flex flex-col items-start gap-2">
+              <p className="text-sm text-[var(--color-text-muted)]">
+                No pudimos cargar el equipo. Revisa tu conexión e intenta de nuevo.
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setLoading(true);
+                  load();
+                }}
+              >
+                <RefreshCw size={14} aria-hidden /> Reintentar
+              </Button>
+            </div>
+          ) : members.length === 0 ? (
+            <EmptyState icon={Users} title="Todavía no hay miembros" description="Invita a alguien para trabajar juntos." />
           ) : (
             <ul className="flex flex-col divide-y divide-[var(--color-border)]">
               {members.map((m) => {
@@ -212,7 +266,7 @@ export default function EquipoPage() {
                           {isMe ? <span className="ml-1.5 text-xs text-[var(--color-brand-light)]">Tú</span> : null}
                         </p>
                         {m.fullName && m.email ? (
-                          <p className="truncate text-xs text-[var(--color-text-faint)]">{m.email}</p>
+                          <p className="truncate text-xs text-[var(--color-text-muted)]">{m.email}</p>
                         ) : null}
                       </div>
                       {!editable ? <span className={chipClass}>{ROLE_LABELS[m.role]}</span> : null}
@@ -220,8 +274,8 @@ export default function EquipoPage() {
                     {editable ? (
                       <div className="flex items-center gap-2">
                         <select
-                          aria-label="Cambiar rol"
-                          className={`${inputClass} !py-2`}
+                          aria-label={`Rol de ${m.fullName || m.email || "este miembro"}`}
+                          className={inputClass}
                           value={m.role}
                           onChange={(e) => changeRole(m, e.target.value as InviteRole)}
                         >
@@ -231,14 +285,14 @@ export default function EquipoPage() {
                             </option>
                           ))}
                         </select>
-                        <button
-                          type="button"
+                        <Button
+                          variant="danger"
                           onClick={() => remove(m)}
-                          aria-label="Quitar del negocio"
-                          className="shrink-0 rounded-xl border border-[var(--color-border)] p-2.5 text-[var(--color-text-faint)] transition hover:text-red-400"
+                          aria-label={`Quitar a ${m.fullName || m.email || "este miembro"} del negocio`}
+                          className="w-11 shrink-0 !px-0"
                         >
-                          <Trash2 size={16} />
-                        </button>
+                          <Trash2 size={16} aria-hidden />
+                        </Button>
                       </div>
                     ) : null}
                   </li>
@@ -249,8 +303,10 @@ export default function EquipoPage() {
         </section>
 
         {isAdmin && invites.length > 0 ? (
-          <section className={cardClass}>
-            <h2 className="mb-3 text-sm font-semibold">Invitaciones pendientes</h2>
+          <section className={cardClass} aria-labelledby="pendientes-title">
+            <h2 id="pendientes-title" className="mb-3 text-sm font-semibold">
+              Invitaciones pendientes
+            </h2>
             <ul className="flex flex-col divide-y divide-[var(--color-border)]">
               {invites.map((inv) => (
                 <li key={inv.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0">
@@ -258,24 +314,29 @@ export default function EquipoPage() {
                     <p className="min-w-0 flex-1 truncate text-sm">{inv.email}</p>
                     <span className={chipClass}>{ROLE_LABELS[inv.role]}</span>
                   </div>
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    <button type="button" onClick={() => copyLink(inv.token)} className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 py-1.5">
-                      <Copy size={13} /> Copiar enlace
-                    </button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="secondary" size="sm" onClick={() => copyLink(inv.token)}>
+                      <Copy size={14} aria-hidden /> Copiar enlace
+                    </Button>
                     <a
                       href={whatsappInviteUrl(wsName, inv.token)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 py-1.5"
+                      className={buttonClass({ variant: "secondary", size: "sm" })}
                     >
-                      <MessageCircle size={13} /> WhatsApp
+                      <MessageCircle size={14} aria-hidden /> WhatsApp
                     </a>
-                    <button type="button" disabled={busy} onClick={() => sendInvite(inv.email, inv.role, true)} className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 py-1.5">
-                      <RefreshCw size={13} /> Reenviar
-                    </button>
-                    <button type="button" onClick={() => cancelInvite(inv)} className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-red-400">
-                      <X size={13} /> Cancelar
-                    </button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => sendInvite(inv.email, inv.role, true)}
+                    >
+                      <RefreshCw size={14} aria-hidden /> Reenviar
+                    </Button>
+                    <Button variant="danger" size="sm" onClick={() => cancelInvite(inv)}>
+                      <X size={14} aria-hidden /> Cancelar invitación
+                    </Button>
                   </div>
                 </li>
               ))}
@@ -284,13 +345,9 @@ export default function EquipoPage() {
         ) : null}
 
         {me && me.role !== "owner" ? (
-          <button
-            type="button"
-            onClick={leave}
-            className="flex items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] py-3 text-sm font-medium text-red-400"
-          >
-            <LogOut size={16} /> Salir del negocio
-          </button>
+          <Button variant="danger" onClick={leave} fullWidth>
+            <LogOut size={16} aria-hidden /> Salir del negocio
+          </Button>
         ) : null}
       </div>
     </div>

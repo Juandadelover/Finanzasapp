@@ -3,6 +3,8 @@
 import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { TrendingUp } from "lucide-react";
+import { Button, buttonClass } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { createClient } from "@/lib/supabase/client";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { acceptInvitation, errorMessage, getInvitation, type InvitationInfo } from "@/lib/team";
@@ -64,10 +66,8 @@ export default function InvitacionPage({ params }: { params: Promise<{ token: st
     window.location.href = `/login?${loginQs}`; // eslint-disable-line @next/next/no-location-assign-relative-destination
   }
 
-  const btn =
-    "gradient-brand block w-full rounded-xl py-3 text-center text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition active:scale-[0.99] disabled:opacity-60";
-  const btnAlt =
-    "block w-full rounded-xl border border-[var(--color-border)] py-3 text-center text-sm font-medium";
+  const btn = buttonClass({ fullWidth: true });
+  const btnAlt = buttonClass({ variant: "secondary", fullWidth: true });
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-10">
@@ -75,16 +75,21 @@ export default function InvitacionPage({ params }: { params: Promise<{ token: st
         <div className="gradient-brand flex h-10 w-10 items-center justify-center rounded-2xl">
           <TrendingUp size={20} className="text-white" strokeWidth={2.5} />
         </div>
-        <span className="text-lg font-semibold tracking-tight">Finanzasapp</span>
+        <span className="text-lg font-semibold tracking-tight">Finanzas</span>
       </div>
 
       <div className="flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
         {loading ? (
-          <p className="text-center text-sm text-[var(--color-text-faint)]">Cargando invitación...</p>
+          <div role="status" className="flex flex-col gap-3">
+            <span className="sr-only">Cargando invitación...</span>
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-11 w-full" />
+          </div>
         ) : !info ? (
           <>
             <h1 className="text-lg font-semibold">Invitación no encontrada</h1>
-            <p className="text-sm text-[var(--color-text-faint)]">
+            <p className="text-sm text-[var(--color-text-muted)]">
               El enlace no es válido. Revisa que lo hayas copiado completo o pide que te envíen una invitación nueva.
             </p>
             <Link href="/login" className={btnAlt}>
@@ -94,7 +99,7 @@ export default function InvitacionPage({ params }: { params: Promise<{ token: st
         ) : (
           <>
             <h1 className="text-lg font-semibold">Te invitaron a {info.workspace}</h1>
-            <p className="text-sm text-[var(--color-text-faint)]">
+            <p className="text-sm text-[var(--color-text-muted)]">
               Participarás como{" "}
               <span className="font-medium text-[var(--color-brand-light)]">{ROLE_LABELS[info.role]}</span>. La
               invitación es para <span className="font-medium">{info.email}</span>.
@@ -114,16 +119,20 @@ export default function InvitacionPage({ params }: { params: Promise<{ token: st
                     Iniciaste sesión como {sessionEmail}, pero esta invitación es para {info.email}. Cambia de cuenta
                     para aceptarla.
                   </p>
-                  <button type="button" onClick={switchAccount} className={btn}>
+                  <Button onClick={switchAccount} fullWidth>
                     Cambiar de cuenta
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <>
-                  <button type="button" onClick={handleAccept} disabled={busy} className={btn}>
+                  <Button onClick={handleAccept} loading={busy} fullWidth>
                     {busy ? "Aceptando..." : "Aceptar invitación"}
-                  </button>
-                  {error ? <p className="text-sm text-red-400">{error}</p> : null}
+                  </Button>
+                  {error ? (
+                    <p role="alert" className="text-sm text-[var(--color-expense)]">
+                      {error}
+                    </p>
+                  ) : null}
                 </>
               )
             ) : (
@@ -134,7 +143,7 @@ export default function InvitacionPage({ params }: { params: Promise<{ token: st
                 <Link href={`/login?${loginQs}`} className={btnAlt}>
                   Ya tengo cuenta
                 </Link>
-                <p className="text-xs text-[var(--color-text-faint)]">
+                <p className="text-xs text-[var(--color-text-muted)]">
                   Usa el email {info.email} para que la invitación funcione.
                 </p>
               </>

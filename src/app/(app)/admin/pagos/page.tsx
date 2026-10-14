@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Download, FileText, Inbox } from "lucide-react";
+import { Download, FileText, Inbox, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { EmptyState } from "@/components/EmptyState";
+import { Button, buttonClass } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
 import {
   approvePayment,
@@ -34,9 +36,16 @@ const STATUS_LABEL: Record<string, string> = {
 const QUICK_REASONS = ["El pago no llegó", "Monto incorrecto", "Comprobante ilegible"];
 
 const inputClass =
-  "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)]";
+  "w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-base outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40";
 const labelClass =
-  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]";
+  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]";
+
+const STATUS_CHIP: Record<string, string> = {
+  in_review: "bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]",
+  awaiting_receipt: "bg-[var(--color-warning)]/15 text-[var(--color-warning)]",
+  approved: "bg-[var(--color-income)]/15 text-[var(--color-income)]",
+  rejected: "bg-[var(--color-expense)]/15 text-[var(--color-expense)]",
+};
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
@@ -102,17 +111,19 @@ function ReceiptSheet({ payment, onClose }: { payment: AdminPayment; onClose: ()
   return (
     <BottomSheet isOpen onClose={onClose} title="Comprobante">
       {loading ? (
-        <div className="h-48 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+        <Skeleton className="h-48 rounded-2xl" />
       ) : !url ? (
-        <p className="text-sm text-[var(--color-text-muted)]">No se pudo cargar el comprobante.</p>
+        <p role="alert" className="text-sm text-[var(--color-text-muted)]">
+          No se pudo cargar el comprobante. Cierra esta ventana e intenta de nuevo.
+        </p>
       ) : isPdf ? (
         <a
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="gradient-brand flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white"
+          className={buttonClass({ fullWidth: true })}
         >
-          <FileText size={16} /> Abrir PDF
+          <FileText size={16} aria-hidden /> Abrir PDF
         </a>
       ) : (
         <a href={url} target="_blank" rel="noopener noreferrer">
@@ -157,8 +168,9 @@ function RejectSheet({
               key={r}
               type="button"
               onClick={() => setReason(r)}
+              aria-pressed={reason === r}
               className={cn(
-                "rounded-full border px-3 py-1.5 text-xs font-medium",
+                "min-h-11 rounded-full border px-3.5 text-sm font-medium",
                 reason === r
                   ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
                   : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
@@ -168,8 +180,8 @@ function RejectSheet({
             </button>
           ))}
         </div>
-        <div>
-          <label className={labelClass}>Motivo</label>
+        <label className="block">
+          <span className={labelClass}>Motivo (se le muestra al cliente)</span>
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -178,22 +190,64 @@ function RejectSheet({
             placeholder="Explica por qué se rechaza"
             className={inputClass}
           />
-        </div>
-        <button
+        </label>
+        <Button
           type="submit"
-          disabled={busy}
-          className="rounded-xl bg-[var(--color-expense)] py-3 text-sm font-semibold text-white disabled:opacity-50"
+          variant="danger"
+          loading={busy}
+          fullWidth
+          className="border-[var(--color-expense)]"
         >
           {busy ? "Rechazando..." : "Rechazar pago"}
-        </button>
+        </Button>
       </form>
     </BottomSheet>
+  );
+}
+
+function Actions({
+  p,
+  onReceipt,
+  onApprove,
+  onReject,
+}: {
+  p: AdminPayment;
+  onReceipt: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  const who = p.full_name || p.email || "este cliente";
+  return (
+    <div className="flex flex-wrap gap-2">
+      {p.receipt_path ? (
+        <Button variant="secondary" size="sm" onClick={onReceipt} aria-label={`Ver comprobante de ${who}`}>
+          Ver comprobante
+        </Button>
+      ) : null}
+      {p.status === "in_review" ? (
+        <>
+          <Button size="sm" onClick={onApprove} aria-label={`Aprobar pago de ${who}`}>
+            Aprobar
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={onReject}
+            aria-label={`Rechazar pago de ${who}`}
+            className="border-[var(--color-expense)]"
+          >
+            Rechazar
+          </Button>
+        </>
+      ) : null}
+    </div>
   );
 }
 
 export default function AdminPagosPage() {
   const [filter, setFilter] = useState<PaymentFilter>("in_review");
   const [rows, setRows] = useState<AdminPayment[] | null>(null);
+  const [failed, setFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [receipt, setReceipt] = useState<AdminPayment | null>(null);
   const [rejecting, setRejecting] = useState<AdminPayment | null>(null);
@@ -203,6 +257,7 @@ export default function AdminPagosPage() {
   const load = useCallback(async (f: PaymentFilter) => {
     setLoading(true);
     const data = await fetchAdminPayments(f);
+    setFailed(data === null);
     setRows(data ?? []);
     setLoading(false);
   }, []);
@@ -225,127 +280,187 @@ export default function AdminPagosPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-2 overflow-x-auto">
-        {FILTERS.map((f) => (
-          <button
-            key={f.value}
-            type="button"
-            onClick={() => setFilter(f.value)}
-            className={cn(
-              "shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium transition",
-              filter === f.value
-                ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
-                : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]"
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex justify-end">
-        <button
-          type="button"
+      <div className="flex items-start justify-between gap-3">
+        <div role="group" aria-label="Filtrar pagos por estado" className="no-scrollbar flex gap-2 overflow-x-auto">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              aria-pressed={filter === f.value}
+              onClick={() => setFilter(f.value)}
+              className={cn(
+                "min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition",
+                filter === f.value
+                  ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
+                  : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]",
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
           disabled={!rows || rows.length === 0}
           onClick={() => rows && exportCsv(rows)}
-          className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2 text-xs font-semibold disabled:opacity-50"
+          className="shrink-0"
         >
-          <Download size={14} /> Exportar CSV
-        </button>
+          <Download size={14} aria-hidden /> <span className="hidden sm:inline">Exportar CSV</span>
+          <span className="sr-only sm:hidden">Exportar CSV</span>
+        </Button>
       </div>
 
       {loading ? (
-        <div className="h-40 animate-pulse rounded-3xl bg-[var(--color-surface)]" />
+        <div role="status" className="flex flex-col gap-3">
+          <span className="sr-only">Cargando pagos...</span>
+          <Skeleton className="h-40 rounded-2xl" />
+          <Skeleton className="h-40 rounded-2xl" />
+        </div>
+      ) : failed ? (
+        <div role="alert" className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <p className="text-sm text-[var(--color-text-muted)]">No se pudieron cargar los pagos.</p>
+          <Button variant="secondary" size="sm" className="mt-3" onClick={() => void load(filter)}>
+            <RefreshCw size={14} aria-hidden /> Reintentar
+          </Button>
+        </div>
       ) : !rows || rows.length === 0 ? (
-        <EmptyState icon={Inbox} title="No hay pagos en esta vista" />
+        <EmptyState
+          icon={Inbox}
+          title="No hay pagos en esta vista"
+          description={filter === "in_review" ? "Cuando un cliente suba un comprobante aparecerá aquí." : "Prueba con otro filtro."}
+        />
       ) : (
-        <ul className="flex flex-col gap-3">
-          {rows.map((p) => {
-            const mismatch = p.declared_amount != null && p.declared_amount !== p.expected_amount;
-            return (
-              <li
-                key={p.id}
-                className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{p.full_name || p.email || "Sin nombre"}</p>
-                    {p.full_name && p.email ? (
-                      <p className="truncate text-xs text-[var(--color-text-muted)]">{p.email}</p>
-                    ) : null}
+        <>
+          {/* Wide screens: table */}
+          <div className="hidden overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] md:block">
+            <table className="w-full min-w-[56rem] text-left text-sm">
+              <caption className="sr-only">Pagos de suscripción</caption>
+              <thead className="border-b border-[var(--color-border)] text-xs text-[var(--color-text-muted)]">
+                <tr>
+                  <th scope="col" className="px-4 py-3 font-medium">Cliente</th>
+                  <th scope="col" className="px-3 py-3 font-medium">Plan</th>
+                  <th scope="col" className="px-3 py-3 text-right font-medium">Esperado</th>
+                  <th scope="col" className="px-3 py-3 text-right font-medium">Declarado</th>
+                  <th scope="col" className="px-3 py-3 font-medium">Referencia y medio</th>
+                  <th scope="col" className="px-3 py-3 font-medium">Fecha</th>
+                  <th scope="col" className="px-3 py-3 font-medium">Estado</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {rows.map((p) => {
+                  const mismatch = p.declared_amount != null && p.declared_amount !== p.expected_amount;
+                  return (
+                    <tr key={p.id} className="align-top">
+                      <td className="max-w-[14rem] px-4 py-3">
+                        <p className="truncate font-medium">{p.full_name || p.email || "Sin nombre"}</p>
+                        {p.full_name && p.email ? (
+                          <p className="truncate text-xs text-[var(--color-text-muted)]">{p.email}</p>
+                        ) : null}
+                      </td>
+                      <td className="px-3 py-3 capitalize">
+                        {p.plan_code} · {cycleLabel(p.billing_cycle)}
+                        <p className="text-xs text-[var(--color-text-muted)]">Actual: {p.current_plan ?? "—"}</p>
+                      </td>
+                      <td className="tabular px-3 py-3 text-right">{formatAmount(p.expected_amount, "COP")}</td>
+                      <td className={cn("tabular px-3 py-3 text-right", mismatch && "font-semibold text-[var(--color-expense)]")}>
+                        {p.declared_amount == null ? "—" : formatAmount(p.declared_amount, "COP")}
+                        {mismatch ? <p className="text-xs font-normal">No coincide</p> : null}
+                      </td>
+                      <td className="px-3 py-3">
+                        <p className="break-all">{p.reference ?? "—"}</p>
+                        <p className="text-xs capitalize text-[var(--color-text-muted)]">{p.channel ?? "—"}</p>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3 text-xs text-[var(--color-text-muted)]">{fmtDate(p.created_at)}</td>
+                      <td className="px-3 py-3">
+                        <span className={cn("inline-block rounded-full px-2.5 py-1 text-xs font-medium", STATUS_CHIP[p.status])}>
+                          {STATUS_LABEL[p.status] ?? p.status}
+                        </span>
+                        {p.status === "rejected" && p.rejection_reason ? (
+                          <p className="mt-1 max-w-[12rem] text-xs text-[var(--color-expense)]">Motivo: {p.rejection_reason}</p>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Actions
+                          p={p}
+                          onReceipt={() => setReceipt(p)}
+                          onApprove={() => setConfirming(p)}
+                          onReject={() => setRejecting(p)}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Phones: cards */}
+          <ul className="flex flex-col gap-3 md:hidden">
+            {rows.map((p) => {
+              const mismatch = p.declared_amount != null && p.declared_amount !== p.expected_amount;
+              return (
+                <li key={p.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{p.full_name || p.email || "Sin nombre"}</p>
+                      {p.full_name && p.email ? (
+                        <p className="truncate text-xs text-[var(--color-text-muted)]">{p.email}</p>
+                      ) : null}
+                    </div>
+                    <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-xs font-medium", STATUS_CHIP[p.status])}>
+                      {STATUS_LABEL[p.status] ?? p.status}
+                    </span>
                   </div>
-                  <span className="shrink-0 rounded-full bg-[var(--color-surface-2)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-text-muted)]">
-                    {STATUS_LABEL[p.status] ?? p.status}
-                  </span>
-                </div>
-                <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-                  <div>
-                    <dt className="text-[var(--color-text-faint)]">Plan</dt>
-                    <dd className="font-medium capitalize">
-                      {p.plan_code} · {cycleLabel(p.billing_cycle)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[var(--color-text-faint)]">Plan actual</dt>
-                    <dd className="font-medium capitalize">{p.current_plan ?? "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-[var(--color-text-faint)]">Esperado</dt>
-                    <dd className="font-medium">{formatAmount(p.expected_amount, "COP")}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-[var(--color-text-faint)]">Declarado</dt>
-                    <dd className={cn("font-medium", mismatch && "text-[var(--color-expense)]")}>
-                      {p.declared_amount == null ? "—" : formatAmount(p.declared_amount, "COP")}
-                      {mismatch ? " (no coincide)" : ""}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[var(--color-text-faint)]">Referencia</dt>
-                    <dd className="break-all font-medium">{p.reference ?? "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-[var(--color-text-faint)]">Medio</dt>
-                    <dd className="font-medium capitalize">{p.channel ?? "—"}</dd>
-                  </div>
-                </dl>
-                <p className="mt-2 text-xs text-[var(--color-text-faint)]">{fmtDate(p.created_at)}</p>
-                {p.status === "rejected" && p.rejection_reason ? (
-                  <p className="mt-1 text-xs text-[var(--color-expense)]">Motivo: {p.rejection_reason}</p>
-                ) : null}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {p.receipt_path ? (
-                    <button
-                      type="button"
-                      onClick={() => setReceipt(p)}
-                      className="rounded-xl border border-[var(--color-border)] px-3.5 py-2 text-xs font-semibold"
-                    >
-                      Ver comprobante
-                    </button>
+                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                    <div>
+                      <dt className="text-[var(--color-text-muted)]">Plan</dt>
+                      <dd className="font-medium capitalize">
+                        {p.plan_code} · {cycleLabel(p.billing_cycle)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[var(--color-text-muted)]">Plan actual</dt>
+                      <dd className="font-medium capitalize">{p.current_plan ?? "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[var(--color-text-muted)]">Esperado</dt>
+                      <dd className="tabular font-medium">{formatAmount(p.expected_amount, "COP")}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[var(--color-text-muted)]">Declarado</dt>
+                      <dd className={cn("tabular font-medium", mismatch && "text-[var(--color-expense)]")}>
+                        {p.declared_amount == null ? "—" : formatAmount(p.declared_amount, "COP")}
+                        {mismatch ? " (no coincide)" : ""}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[var(--color-text-muted)]">Referencia</dt>
+                      <dd className="break-all font-medium">{p.reference ?? "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[var(--color-text-muted)]">Medio</dt>
+                      <dd className="font-medium capitalize">{p.channel ?? "—"}</dd>
+                    </div>
+                  </dl>
+                  <p className="mt-2 text-xs text-[var(--color-text-muted)]">{fmtDate(p.created_at)}</p>
+                  {p.status === "rejected" && p.rejection_reason ? (
+                    <p className="mt-1 text-xs text-[var(--color-expense)]">Motivo: {p.rejection_reason}</p>
                   ) : null}
-                  {p.status === "in_review" ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setConfirming(p)}
-                        className="gradient-brand rounded-xl px-4 py-2 text-xs font-semibold text-white"
-                      >
-                        Aprobar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRejecting(p)}
-                        className="rounded-xl border border-[var(--color-expense)] px-4 py-2 text-xs font-semibold text-[var(--color-expense)]"
-                      >
-                        Rechazar
-                      </button>
-                    </>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                  <div className="mt-3">
+                    <Actions
+                      p={p}
+                      onReceipt={() => setReceipt(p)}
+                      onApprove={() => setConfirming(p)}
+                      onReject={() => setRejecting(p)}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
 
       {receipt ? <ReceiptSheet payment={receipt} onClose={() => setReceipt(null)} /> : null}
@@ -369,21 +484,12 @@ export default function AdminPagosPage() {
               {confirming.email ?? confirming.full_name}?
             </p>
             <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirming(null)}
-                className="flex-1 rounded-xl border border-[var(--color-border)] py-3 text-sm font-semibold"
-              >
+              <Button variant="secondary" className="flex-1" onClick={() => setConfirming(null)} disabled={busy}>
                 Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={handleApprove}
-                className="gradient-brand flex-1 rounded-xl py-3 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                {busy ? "Aprobando..." : "Aprobar"}
-              </button>
+              </Button>
+              <Button className="flex-1" loading={busy} onClick={handleApprove}>
+                {busy ? "Aprobando..." : "Aprobar pago"}
+              </Button>
             </div>
           </div>
         </BottomSheet>

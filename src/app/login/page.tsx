@@ -3,7 +3,8 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { TrendingUp, User } from "lucide-react";
+import { Eye, EyeOff, TrendingUp, User } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
 import { TERMS_VERSION } from "@/lib/legal";
 
@@ -46,10 +47,11 @@ function LoginContent() {
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [accepted, setAccepted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const inputClass =
-    "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-brand)] disabled:opacity-60";
-  const labelClass = "mb-1.5 block text-xs font-medium text-[var(--color-text-muted)]";
+    "w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-base text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40 disabled:opacity-60";
+  const labelClass = "mb-1.5 block text-sm font-medium text-[var(--color-text-muted)]";
 
   function switchMode(next: "signin" | "signup") {
     setMode(next);
@@ -66,7 +68,7 @@ function LoginContent() {
     const redirectTo = searchParams.get("redirectTo") ?? "/";
 
     if (mode === "signup" && !accepted) {
-      setError("Debes aceptar los Términos y la Política de tratamiento de datos.");
+      setError("Para crear tu cuenta, acepta los Términos y la Política de tratamiento de datos.");
       setLoading(false);
       return;
     }
@@ -79,8 +81,8 @@ function LoginContent() {
           /invalid login credentials/i.test(error.message);
         setError(
           invalid
-            ? "Email o contraseña incorrectos."
-            : "No se pudo iniciar sesión. Intenta de nuevo.",
+            ? "El email o la contraseña no coinciden. Revisa e intenta de nuevo, o recupera tu contraseña."
+            : "No se pudo iniciar sesión. Revisa tu conexión e intenta de nuevo.",
         );
         setLoading(false);
         return;
@@ -102,7 +104,9 @@ function LoginContent() {
       },
     });
     if (error) {
-      setError("No se pudo crear la cuenta. Revisa los datos e intenta de nuevo.");
+      setError(
+        "No se pudo crear la cuenta. Si ya tienes una, inicia sesión; si no, revisa los datos e intenta de nuevo.",
+      );
       setLoading(false);
       return;
     }
@@ -110,7 +114,7 @@ function LoginContent() {
       window.location.href = redirectTo;
       return;
     }
-    setInfo("Te enviamos un correo para confirmar tu cuenta.");
+    setInfo(`Te enviamos un correo a ${email.trim()} para confirmar tu cuenta. Ábrelo y toca el enlace para entrar. Si no lo ves, revisa spam.`);
     setLoading(false);
   }
 
@@ -148,7 +152,7 @@ function LoginContent() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6 py-10">
+    <main className="flex min-h-dvh flex-col items-center justify-center px-6 py-10">
       <div className="gradient-brand flex h-16 w-16 items-center justify-center rounded-3xl shadow-[0_8px_24px_rgba(138,5,190,0.4)]">
         <TrendingUp size={30} className="text-white" strokeWidth={2.5} />
       </div>
@@ -157,7 +161,7 @@ function LoginContent() {
         Controla el dinero de tu negocio: ingresos, gastos y lo que te deben, en un solo lugar.
       </p>
 
-      <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
+      <div className="mt-8 flex w-full max-w-sm flex-col gap-3">
         {invited ? (
           <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-center text-xs text-[var(--color-text-muted)]">
             Te invitaron a un negocio. Crea tu cuenta con el mismo correo de la invitación.
@@ -176,7 +180,7 @@ function LoginContent() {
               onClick={() => switchMode(key)}
               disabled={loading}
               aria-pressed={mode === key}
-              className={`rounded-full py-2 text-xs font-semibold transition disabled:opacity-60 ${
+              className={`min-h-11 rounded-full py-2 text-sm font-semibold transition disabled:opacity-60 ${
                 mode === key
                   ? "gradient-brand text-white"
                   : "text-[var(--color-text-muted)]"
@@ -198,6 +202,7 @@ function LoginContent() {
                 type="text"
                 autoComplete="name"
                 required
+                aria-required="true"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 disabled={loading}
@@ -224,34 +229,51 @@ function LoginContent() {
             <label htmlFor="password" className={labelClass}>
               Contraseña
             </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete={mode === "signin" ? "current-password" : "new-password"}
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              className={inputClass}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                aria-describedby={mode === "signup" ? "password-hint" : undefined}
+                className={`${inputClass} pr-12`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                aria-pressed={showPassword}
+                className="absolute right-0 top-0 flex h-full w-11 items-center justify-center rounded-xl text-[var(--color-text-muted)]"
+              >
+                {showPassword ? <EyeOff size={18} aria-hidden /> : <Eye size={18} aria-hidden />}
+              </button>
+            </div>
+            {mode === "signup" ? (
+              <p id="password-hint" className="mt-1.5 text-xs text-[var(--color-text-muted)]">
+                Mínimo 8 caracteres.
+              </p>
+            ) : null}
           </div>
           {mode === "signin" ? (
             <Link
               href={`/recuperar${email ? `?email=${encodeURIComponent(email)}` : ""}`}
-              className="-mt-1 self-end text-xs font-medium text-[var(--color-brand-light)] hover:underline"
+              className="-mt-1 inline-flex min-h-11 items-center self-end text-sm font-medium text-[var(--color-brand-light)] hover:underline"
             >
               ¿Olvidaste tu contraseña?
             </Link>
           ) : (
-            <label className="flex items-start gap-2 text-xs leading-relaxed text-[var(--color-text-muted)]">
+            <label className="flex items-start gap-3 text-sm leading-relaxed text-[var(--color-text-muted)]">
               <input
                 type="checkbox"
                 required
                 checked={accepted}
                 onChange={(e) => setAccepted(e.target.checked)}
                 disabled={loading}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-brand)]"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-brand)]"
               />
               <span>
                 Acepto los{" "}
@@ -265,62 +287,81 @@ function LoginContent() {
               </span>
             </label>
           )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="gradient-brand mt-1 flex items-center justify-center rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition disabled:opacity-60"
-          >
+          <Button type="submit" size="lg" loading={loading} fullWidth className="mt-1 rounded-full">
             {loading
-              ? "Procesando..."
+              ? mode === "signin"
+                ? "Iniciando sesión..."
+                : "Creando tu cuenta..."
               : mode === "signin"
                 ? "Iniciar sesión"
                 : "Crear cuenta"}
-          </button>
+          </Button>
         </form>
 
-        {error ? <p className="text-sm text-[var(--color-expense)]">{error}</p> : null}
-        {info ? <p className="text-sm text-[var(--color-text-muted)]">{info}</p> : null}
+        <div aria-live="polite">
+          {error ? (
+            <p role="alert" className="text-sm text-[var(--color-expense)]">
+              {error}
+            </p>
+          ) : null}
+          {info ? (
+            <p role="status" className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm text-[var(--color-text)]">
+              {info}
+            </p>
+          ) : null}
+        </div>
 
-        <div className="my-1 flex items-center gap-3 text-xs text-[var(--color-text-faint)]">
+        <div aria-hidden className="my-1 flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
           <span className="h-px flex-1 bg-[var(--color-border)]" />
           o
           <span className="h-px flex-1 bg-[var(--color-border)]" />
         </div>
 
         {GOOGLE_LOGIN_ENABLED ? (
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="lg"
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="flex items-center justify-center gap-3 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-3.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-surface-2)] disabled:opacity-60"
+            className="rounded-full"
           >
             <GoogleIcon />
             {loading ? "Conectando..." : "Continuar con Google"}
-          </button>
+          </Button>
         ) : null}
 
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="lg"
           onClick={handleGuestLogin}
           disabled={loading}
-          className="flex items-center justify-center gap-2 rounded-full border border-[var(--color-border)] bg-transparent py-3.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-surface-2)] disabled:opacity-60"
+          className="rounded-full"
         >
-          <User size={17} />
+          <User size={17} aria-hidden />
           {loading ? "Entrando..." : "Probar como invitado"}
-        </button>
+        </Button>
+        <p className="text-center text-xs text-[var(--color-text-muted)]">
+          El modo invitado no necesita correo. Es para conocer la app con datos de prueba.
+        </p>
       </div>
 
-      <p className="mt-10 max-w-xs text-center text-[11px] leading-relaxed text-[var(--color-text-faint)]">
+      <p className="mt-10 max-w-xs text-center text-xs leading-relaxed text-[var(--color-text-muted)]">
         Tus datos financieros se guardan de forma privada en tu cuenta y solo tú puedes acceder a ellos.
       </p>
-      <nav className="mt-4 flex max-w-xs flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-[var(--color-text-muted)]">
-        <Link href="/precios" className="hover:underline">Precios</Link>
-        <Link href="/legal/terminos" className="hover:underline">Términos</Link>
-        <Link href="/legal/privacidad" className="hover:underline">Privacidad</Link>
-        <Link href="/legal/reembolsos" className="hover:underline">Reembolsos</Link>
-        <Link href="/legal/aviso" className="hover:underline">Aviso</Link>
+      <nav aria-label="Información" className="mt-2 flex max-w-xs flex-wrap justify-center gap-x-1 text-xs text-[var(--color-text-muted)]">
+        {[
+          ["/precios", "Precios"],
+          ["/legal/terminos", "Términos"],
+          ["/legal/privacidad", "Privacidad"],
+          ["/legal/reembolsos", "Reembolsos"],
+          ["/legal/aviso", "Aviso"],
+        ].map(([href, label]) => (
+          <Link key={href} href={href} className="inline-flex min-h-11 items-center px-2 hover:underline">
+            {label}
+          </Link>
+        ))}
       </nav>
-    </div>
+    </main>
   );
 }
 

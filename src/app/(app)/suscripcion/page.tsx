@@ -1,10 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
 import { cn } from "@/lib/cn";
 import { formatAmount, formatAmountInput, parseAmountInput } from "@/lib/format";
@@ -30,9 +34,9 @@ import {
 } from "@/lib/subscription";
 
 const inputClass =
-  "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)]";
+  "w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-base outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40";
 const labelClass =
-  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]";
+  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]";
 const cardClass = "rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4";
 
 const STATUS_LABEL: Record<SubscriptionStatus, string> = {
@@ -81,9 +85,9 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       type="button"
       onClick={() => copy(text)}
       aria-label={label}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)]"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)]"
     >
-      <Copy size={15} />
+      <Copy size={16} aria-hidden />
     </button>
   );
 }
@@ -97,7 +101,14 @@ function Meter({ label, used, limit }: { label: string; used: number; limit: num
         <span className="text-[var(--color-text-muted)]">{label}</span>
         <span className="font-medium">{unlimited ? `${used} / Ilimitado` : `${used} / ${limit}`}</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-2)]">
+      <div
+        role="progressbar"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={unlimited ? undefined : limit ?? 0}
+        aria-valuenow={used}
+        className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-2)]"
+      >
         <div
           className={cn("h-full rounded-full", pct >= 100 ? "bg-[var(--color-expense)]" : "gradient-brand")}
           style={{ width: `${unlimited ? 0 : pct}%` }}
@@ -163,36 +174,32 @@ function PaySheet({
             <Check size={24} />
           </span>
           <p className="text-sm">Recibimos tu comprobante. Tienes 48 horas de acceso mientras lo revisamos.</p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="gradient-brand w-full rounded-xl py-3 text-sm font-semibold text-white"
-          >
+          <Button onClick={onClose} fullWidth>
             Listo
-          </button>
+          </Button>
         </div>
       ) : step === 1 ? (
         <div className="flex flex-col gap-4">
           <div className="text-center">
-            <p className="text-xs text-[var(--color-text-faint)]">
+            <p className="text-xs text-[var(--color-text-muted)]">
               Plan {planName} · {payment.billing_cycle === "annual" ? "Anual" : "Mensual"}
             </p>
             <p className="mt-1 text-3xl font-bold">{formatAmount(payment.expected_amount, "COP")}</p>
-            <p className="text-xs text-[var(--color-text-faint)]">COP, sin IVA</p>
+            <p className="text-xs text-[var(--color-text-muted)]">COP, sin IVA</p>
           </div>
           <div className="rounded-2xl border border-[var(--color-brand)] bg-[var(--color-brand)]/10 p-3.5">
-            <p className={labelClass}>Referencia</p>
+            <p className={labelClass}>Referencia de pago</p>
             <div className="flex items-center gap-2">
               <span className="flex-1 break-all text-2xl font-bold tracking-wider">{payment.reference}</span>
               <CopyButton text={payment.reference} label="Copiar referencia" />
             </div>
             <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
-              Escribe esta referencia en la descripción del pago
+              Escríbela en la descripción o mensaje del pago para que podamos identificarlo.
             </p>
           </div>
           {noMethods ? (
-            <p className="rounded-xl bg-[var(--color-surface-2)] p-3 text-center text-sm text-[var(--color-text-muted)]">
-              Pronto publicaremos los datos de pago
+            <p role="status" className="rounded-xl bg-[var(--color-surface-2)] p-3 text-center text-sm text-[var(--color-text-muted)]">
+              Aún no hay medios de pago disponibles. Vuelve a intentarlo en unos minutos.
             </p>
           ) : (
             <div className="flex flex-col gap-2">
@@ -207,34 +214,30 @@ function PaySheet({
                       <p className="text-xs text-[var(--color-text-muted)]">{m.holder_name}</p>
                     ) : null}
                     <p className="break-all text-sm">{m.value}</p>
-                    {m.details ? <p className="text-xs text-[var(--color-text-faint)]">{m.details}</p> : null}
+                    {m.details ? <p className="text-xs text-[var(--color-text-muted)]">{m.details}</p> : null}
                   </div>
                   <CopyButton text={m.value} label={`Copiar dato de ${m.kind}`} />
                 </div>
               ))}
             </div>
           )}
-          <button
-            type="button"
-            disabled={noMethods}
-            onClick={() => setStep(2)}
-            className="gradient-brand w-full rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition active:scale-[0.99] disabled:opacity-50"
-          >
+          <Button disabled={noMethods} onClick={() => setStep(2)} fullWidth>
             Ya pagué, subir comprobante
-          </button>
+          </Button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className={labelClass}>Medio de pago</label>
+          <div role="group" aria-label="Medio de pago">
+            <p className={labelClass}>Medio de pago</p>
             <div className="grid grid-cols-3 gap-2">
               {CHANNELS.map((c) => (
                 <button
                   key={c.value}
                   type="button"
                   onClick={() => setChannel(c.value)}
+                  aria-pressed={channel === c.value}
                   className={cn(
-                    "rounded-xl border py-2.5 text-xs font-medium transition",
+                    "min-h-11 rounded-xl border px-1 py-2.5 text-sm font-medium transition",
                     channel === c.value
                       ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
                       : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
@@ -245,39 +248,32 @@ function PaySheet({
               ))}
             </div>
           </div>
-          <div>
-            <label className={labelClass}>Monto pagado</label>
+          <label className="block">
+            <span className={labelClass}>Monto pagado (COP)</span>
             <input
               inputMode="numeric"
               value={formatAmountInput(amount)}
               onChange={(e) => setAmount(parseAmountInput(e.target.value))}
               className={inputClass}
             />
-          </div>
-          <div>
-            <label className={labelClass}>Comprobante (imagen o PDF, máx. 5 MB)</label>
+          </label>
+          <label className="block">
+            <span className={labelClass}>Comprobante</span>
             <input
               type="file"
               accept="image/*,application/pdf"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               className={inputClass}
             />
-          </div>
+            <span className="mt-1.5 block text-xs text-[var(--color-text-muted)]">Imagen o PDF, máximo 5 MB.</span>
+          </label>
           <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              className="rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-medium"
-            >
+            <Button variant="secondary" onClick={() => setStep(1)} disabled={busy}>
               Atrás
-            </button>
-            <button
-              type="submit"
-              disabled={busy}
-              className="gradient-brand flex-1 rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] disabled:opacity-60"
-            >
+            </Button>
+            <Button type="submit" loading={busy} className="flex-1">
               {busy ? "Enviando..." : "Enviar comprobante"}
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -287,10 +283,12 @@ function PaySheet({
 
 export default function SuscripcionPage() {
   const { user, currentWorkspace } = useFinance();
+  const confirm = useConfirm();
   const isOwner = currentWorkspace?.role === "owner";
   const workspaceId = currentWorkspace?.id ?? null;
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [sub, setSub] = useState<MySubscription | null>(null);
   const [wsPlan, setWsPlan] = useState<WorkspacePlan | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -303,6 +301,7 @@ export default function SuscripcionPage() {
 
   const load = useCallback(async () => {
     if (!workspaceId || !user) return;
+    setLoadError(false);
     if (!isOwner) {
       setWsPlan(await fetchWorkspacePlan(workspaceId));
       setLoading(false);
@@ -325,7 +324,10 @@ export default function SuscripcionPage() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    load().catch(() => setLoading(false));
+    load().catch(() => {
+      setLoadError(true);
+      setLoading(false);
+    });
   }, [load]);
 
   const planName = (code: string | null | undefined) => plans.find((p) => p.code === code)?.name ?? code ?? "";
@@ -345,10 +347,22 @@ export default function SuscripcionPage() {
 
   async function handleToggleCancel() {
     const next = !cancelFlag;
-    const msg = next
-      ? "¿Cancelar la renovación? Conservas tu plan hasta que termine el periodo pagado."
-      : "¿Reanudar la renovación de tu plan?";
-    if (!window.confirm(msg)) return;
+    const ok = await confirm(
+      next
+        ? {
+            title: "¿Cancelar la renovación?",
+            description: "Conservas tu plan hasta que termine el periodo pagado.",
+            confirmLabel: "Cancelar renovación",
+            cancelLabel: "Mantener plan",
+            destructive: true,
+          }
+        : {
+            title: "¿Reanudar la renovación?",
+            description: "Tu plan seguirá activo al terminar el periodo pagado.",
+            confirmLabel: "Reanudar renovación",
+          },
+    );
+    if (!ok) return;
     try {
       await setCancelAtPeriodEnd(next);
       setCancelFlag(next);
@@ -374,11 +388,35 @@ export default function SuscripcionPage() {
   return (
     <>
       <AppHeader />
-      <main className="flex flex-col gap-5 px-4 pt-5">
-        <h1 className="text-xl font-bold">Mi suscripción</h1>
-
+      <PageHeader title="Mi suscripción" backHref="/ajustes" backLabel="Ajustes" />
+      <main className="mx-4 mt-4 flex flex-col gap-5 pb-8">
         {loading ? (
-          <p className="text-sm text-[var(--color-text-muted)]">Cargando...</p>
+          <div role="status" className="flex flex-col gap-3">
+            <span className="sr-only">Cargando tu suscripción...</span>
+            <Skeleton className="h-44 rounded-2xl" />
+            <Skeleton className="h-20 rounded-2xl" />
+            <Skeleton className="h-20 rounded-2xl" />
+          </div>
+        ) : loadError ? (
+          <div role="alert" className={cardClass}>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              No pudimos cargar tu suscripción. Revisa tu conexión e intenta de nuevo.
+            </p>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-3"
+              onClick={() => {
+                setLoading(true);
+                load().catch(() => {
+                  setLoadError(true);
+                  setLoading(false);
+                });
+              }}
+            >
+              <RefreshCw size={14} aria-hidden /> Reintentar
+            </Button>
+          </div>
         ) : !isOwner ? (
           <div className={cardClass}>
             <p className={labelClass}>Plan del negocio</p>
@@ -409,30 +447,34 @@ export default function SuscripcionPage() {
                   <Meter label="Negocios" used={sub.usage.workspaces_owned} limit={limits?.max_workspaces_owned} />
                 </div>
                 {hasPaidPeriod ? (
-                  <button
-                    type="button"
-                    onClick={handleToggleCancel}
-                    className="mt-4 w-full rounded-xl border border-[var(--color-border)] py-2.5 text-sm font-medium transition hover:bg-[var(--color-surface-2)]"
-                  >
-                    {cancelFlag ? "Reanudar" : "Cancelar renovación"}
-                  </button>
+                  <>
+                    {cancelFlag ? (
+                      <p className="mt-4 text-sm text-[var(--color-text-muted)]">
+                        La renovación está cancelada: conservas tu plan hasta que termine el periodo pagado.
+                      </p>
+                    ) : null}
+                    <Button variant="secondary" onClick={handleToggleCancel} fullWidth className="mt-3">
+                      {cancelFlag ? "Reanudar renovación" : "Cancelar renovación"}
+                    </Button>
+                  </>
                 ) : null}
               </section>
             ) : (
-              <p className="text-sm text-[var(--color-text-muted)]">No se pudo cargar tu suscripción.</p>
+              <p role="alert" className="text-sm text-[var(--color-text-muted)]">No se pudo cargar tu suscripción. Recarga la página para intentarlo otra vez.</p>
             )}
 
             <section>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-semibold">Planes</h2>
-                <div className="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-0.5 text-xs font-medium">
+                <div role="group" aria-label="Ciclo de pago" className="flex rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-0.5 text-sm font-medium">
                   {(["monthly", "annual"] as const).map((c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => setCycle(c)}
+                      aria-pressed={cycle === c}
                       className={cn(
-                        "rounded-[10px] px-3 py-1.5 transition",
+                        "min-h-11 rounded-xl px-4 transition",
                         cycle === c ? "gradient-brand text-white" : "text-[var(--color-text-muted)]"
                       )}
                     >
@@ -442,7 +484,7 @@ export default function SuscripcionPage() {
                 </div>
               </div>
               {cycle === "annual" ? (
-                <p className="mb-2 text-xs text-[var(--color-income)]">Paga anual y obtén 2 meses gratis</p>
+                <p className="mb-2 text-xs text-[var(--color-income)]">Pagas el año y te ahorras 2 meses.</p>
               ) : null}
               <div className="flex flex-col gap-3">
                 {plans.map((plan) => {
@@ -467,17 +509,17 @@ export default function SuscripcionPage() {
                         <p className="text-sm text-[var(--color-text-muted)]">
                           {free ? "Gratis" : `${formatAmount(price, "COP")} / ${cycle === "annual" ? "año" : "mes"}`}
                         </p>
-                        {!free ? <p className="text-xs text-[var(--color-text-faint)]">Sin IVA</p> : null}
+                        {!free ? <p className="text-xs text-[var(--color-text-muted)]">Sin IVA</p> : null}
                       </div>
                       {!free ? (
-                        <button
-                          type="button"
+                        <Button
                           disabled={starting !== null}
+                          loading={starting === plan.code}
                           onClick={() => handleChoose(plan)}
-                          className="gradient-brand rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                          aria-label={`Elegir plan ${plan.name}`}
                         >
-                          {starting === plan.code ? "..." : "Elegir"}
-                        </button>
+                          Elegir
+                        </Button>
                       ) : null}
                     </div>
                   );
@@ -488,7 +530,7 @@ export default function SuscripcionPage() {
             <section>
               <h2 className="mb-3 text-sm font-semibold">Historial de pagos</h2>
               {payments.length === 0 ? (
-                <p className="text-sm text-[var(--color-text-muted)]">Aún no tienes pagos.</p>
+                <p className="rounded-2xl border border-dashed border-[var(--color-border)] px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">Aún no tienes pagos. Cuando elijas un plan, aquí verás cada pago y su estado.</p>
               ) : (
                 <div className="flex flex-col gap-2">
                   {payments.map((p) => {
@@ -505,18 +547,19 @@ export default function SuscripcionPage() {
                           {planName(p.plan_code)} · {p.billing_cycle === "annual" ? "Anual" : "Mensual"} ·{" "}
                           {formatAmount(p.expected_amount, "COP")}
                         </p>
-                        <p className="text-xs text-[var(--color-text-faint)]">{formatDate(p.created_at)}</p>
+                        <p className="text-xs text-[var(--color-text-muted)]">{formatDate(p.created_at)}</p>
                         {p.status === "rejected" && p.rejection_reason ? (
                           <p className="mt-1 text-sm text-[var(--color-expense)]">{p.rejection_reason}</p>
                         ) : null}
                         {p.status === "awaiting_receipt" ? (
-                          <button
-                            type="button"
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="mt-2 text-[var(--color-brand-light)]"
                             onClick={() => setActive({ payment: p, planName: planName(p.plan_code) })}
-                            className="mt-2 text-sm font-semibold text-[var(--color-brand-light)]"
                           >
                             Subir comprobante
-                          </button>
+                          </Button>
                         ) : null}
                       </div>
                     );
