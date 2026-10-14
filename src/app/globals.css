@@ -30,6 +30,10 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
+  /* Desktop shell (lg+): ancho de la barra lateral y alto de la cabecera fija. */
+  --sidebar-w: 248px;
+  --app-header-h: 72px;
+
   --shadow-brand-sm: 0 4px 16px rgba(138, 5, 190, 0.35);
   --shadow-brand-md: 0 8px 24px rgba(138, 5, 190, 0.35);
   --shadow-brand-lg: 0 16px 40px rgba(138, 5, 190, 0.35);

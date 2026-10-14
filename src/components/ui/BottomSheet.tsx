@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/motion";
 
 /**
- * Bottom sheet (centered dialog from `sm`).
+ * Bottom sheet (centered dialog from `sm`; max-w-md, 520px from `lg`). No drag-to-dismiss once centered.
  * - Drag the header down to dismiss: 1:1 tracking, rubber-band when pulled up,
  *   release velocity is handed to the spring and projected to choose close vs snap back.
  * - Open, close and snap-back are springs that can be grabbed mid-flight.
@@ -289,7 +289,7 @@ export function BottomSheet({ isOpen, onClose, title, children, className }: Bot
         data-sheet-panel
         tabIndex={-1}
         className={cn(
-          "relative z-(--z-raised) max-h-[92dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] pb-[calc(env(safe-area-inset-bottom)+16px)] shadow-[var(--shadow-sheet)] outline-none sm:max-w-md sm:rounded-3xl",
+          "relative z-(--z-raised) max-h-[92dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] pb-[calc(env(safe-area-inset-bottom)+16px)] shadow-[var(--shadow-sheet)] outline-none sm:max-w-md sm:rounded-3xl lg:max-w-[520px]",
           className
         )}
       >

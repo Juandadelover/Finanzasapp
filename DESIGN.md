@@ -164,7 +164,21 @@ Tracking is size-specific: h1 -0.022em, h2/h3 -0.014em (balanced wrapping, set i
 
 ## Layout
 
-Single-column mobile layout inside an app shell with a persistent floating bottom nav and FAB. Pages follow: `AppHeader`, optional month selector, then full-width blocks with a `mx-4` (16px) gutter and `mt-3`/`mt-4`/`mt-6` vertical steps. Lists use `gap-1` rows inside a gutter; tile grids use `grid-cols-2 gap-3`; category grids use 4 columns with `gap-3`. Sheets center and cap at `max-w-md` from the `sm` breakpoint. Loading states are pulsing surface blocks sized like the content (rounded-3xl). Respect `env(safe-area-inset-bottom)` for fixed bars.
+Single-column mobile layout (below 1024px; see Desktop layout for lg+) inside an app shell with a persistent floating bottom nav and FAB. Pages follow: `AppHeader`, optional month selector, then full-width blocks with a `mx-4` (16px) gutter and `mt-3`/`mt-4`/`mt-6` vertical steps. Lists use `gap-1` rows inside a gutter; tile grids use `grid-cols-2 gap-3`; category grids use 4 columns with `gap-3`. Sheets center and cap at `max-w-md` from the `sm` breakpoint. Loading states are pulsing surface blocks sized like the content (rounded-3xl). Respect `env(safe-area-inset-bottom)` for fixed bars.
+
+## Desktop layout
+
+Breakpoints are viewport-width only (no user-agent detection). **< `lg` (1024px)** is the phone column exactly as before (`max-w-lg`, BottomNav, FAB). **>= `lg`** switches to the desktop shell. Between 640 and 1023px nothing changes except centered sheets.
+
+- **Shell (`AppShell`):** fixed 248px `Sidebar` (`--sidebar-w`) with logo, `WorkspaceSwitcher variant="sidebar"` (name over role), primary nav (Inicio, Movimientos, Cartera, Estadísticas, Reportes), secondary group (Cuentas, Contactos, Cobros, Recurrentes, Equipo, Ajustes, plus Admin when `isPlatformAdmin`), and at the bottom the account link (`/cuenta`) and privacy toggle. Nav lists live in `components/nav.ts`; active = surface-3 pill + lifted violet, `aria-current="page"`. Content sits right of it in a fluid frame (`lg:max-w-6xl`, `lg:px-6`); `/admin` is full width. BottomNav and FAB are `lg:hidden`. A "Saltar al contenido" skip link targets `#contenido`.
+- **`AppHeader` on lg:** slim sticky bar (`--app-header-h`, 72px) with `actions` and the `NewTransactionButton` ("Nuevo movimiento"; Ingreso/Gasto menu when both are allowed, direct open when only one, hidden when none, same `permissions` as the FAB). Logo, switcher and eye move to the sidebar. Page titles stay in `<PageHeader>` (the h1).
+- **`BottomSheet` on lg:** centered dialog, `max-w-[520px]`, spring scale/opacity, no drag (already off from `sm`). Esc closes the top sheet; `ConfirmDialog` is unchanged (centered, Esc = cancel).
+- **Helpers for pages** (`src/components/ui/`, usage in each file's top comment). Mobile output is unchanged; wrappers only add classes from `lg`:
+  - `<PageContainer size="default" | "medium" | "narrow" as?>`: narrows a page inside the shell frame (`medium` = 4xl, `narrow` = 2xl, for forms/settings).
+  - `<ResponsiveGrid variant="stats" | "cards" | "split" | "pair">`: `stats` 2 to 4 cols, `cards` 1 to 2 (3 at xl), `split` main 2fr + aside 1fr, `pair` 2 equal. Equivalent raw classes: `grid grid-cols-2 gap-3 lg:grid-cols-4`, `grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]`.
+  - `<DataTable caption rows columns getRowKey renderMobile onRowClick? empty?>`: `<ul>` of `renderMobile(row)` below lg; semantic `<table>` from lg with sticky header (pinned under the app header), hover rows, right-aligned `tabular-nums` cells for `align: "right"` columns, keyboard-activatable rows when `onRowClick` is set.
+- **Input:** hover styles use Tailwind's `hover:` variant, which v4 already scopes to `@media (hover: hover)`, so touch never gets stuck hover. Focus uses the global `:focus-visible` ring; sidebar links, header button and menus are all Tab-reachable.
+- **Tokens:** `--sidebar-w: 248px`, `--app-header-h: 72px` in `globals.css`.
 
 ## Elevation & Depth
 
