@@ -300,8 +300,8 @@ export function incomeStatementCsv(business: string, period: Period, prev: Perio
   };
   section("Ingresos", s.income, s.totalIncome, s.previous.totalIncome);
   section("Gastos", s.expenses, s.totalExpenses, s.previous.totalExpenses);
-  rows.push(["Utilidad", s.profit, s.previous.profit, s.profit - s.previous.profit, pctText(pctChange(s.profit, s.previous.profit))]);
-  rows.push(["Margen", pctText(s.margin), pctText(s.previous.margin)]);
+  rows.push(["Ganancia", s.profit, s.previous.profit, s.profit - s.previous.profit, pctText(pctChange(s.profit, s.previous.profit))]);
+  rows.push(["Margen de ganancia", pctText(s.margin), pctText(s.previous.margin)]);
   return toCsv(rows);
 }
 
@@ -317,8 +317,8 @@ export function cashFlowCsv(business: string, period: Period, c: CashFlow) {
     ["Total", c.totalInflow, c.totalOutflow, c.net, ""],
     [],
     ["Pendientes del período"],
-    ["Por cobrar", c.receivable],
-    ["Por pagar", c.payable],
+    ["Te deben (pendiente)", c.receivable],
+    ["Debes (pendiente)", c.payable],
   ];
   return toCsv(rows);
 }

@@ -3,15 +3,22 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Ban, FileCheck, MessageCircle, Printer } from "lucide-react";
+import { Ban, FileCheck, FileX, MessageCircle, Printer } from "lucide-react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/EmptyState";
+import { Button, buttonClass } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
+import { cn } from "@/lib/cn";
 import { formatAmount, toISODate } from "@/lib/format";
 import {
   convertQuoteToCollection,
   formatDocNumber,
   getDocument,
   setDocumentTransaction,
+  STATUS_CHIP,
   STATUS_LABELS,
   updateDocumentStatus,
   whatsappNumber,
@@ -20,12 +27,9 @@ import {
 
 function longDate(iso: string): string {
   return new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" }).format(
-    new Date(iso + "T00:00:00")
+    new Date(iso + "T00:00:00"),
   );
 }
-
-const actionClass =
-  "flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm font-medium";
 
 export default function CobroDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +38,7 @@ export default function CobroDetailPage() {
   const [doc, setDoc] = useState<CollectionDocumentWithItems | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
   const currency = currentWorkspace?.currency ?? "COP";
 
   useEffect(() => {
@@ -48,15 +53,30 @@ export default function CobroDetailPage() {
     };
   }, [id]);
 
-  if (loading) return <p className="p-8 text-center text-sm text-[var(--color-text-muted)]">Cargando...</p>;
+  if (loading) {
+    return (
+      <div role="status">
+        <span className="sr-only">Cargando documento…</span>
+        <PageHeader title="Cobros" backHref="/cobros" backLabel="Cobros" />
+        <Skeleton className="mx-4 mt-4 h-96 rounded-2xl" />
+      </div>
+    );
+  }
   if (!doc) {
     return (
-      <div className="p-8 text-center text-sm text-[var(--color-text-muted)]">
-        Documento no encontrado.{" "}
-        <Link href="/cobros" className="text-[var(--color-brand)]">
-          Volver
-        </Link>
-      </div>
+      <>
+        <PageHeader title="Documento no encontrado" backHref="/cobros" backLabel="Cobros" />
+        <div className="mx-4 mt-6">
+          <EmptyState
+            icon={FileX}
+            title="No pudimos abrir este documento"
+            description="Puede que se haya eliminado o que no tengas acceso. Vuelve a la lista e inténtalo de nuevo."
+          />
+          <Link href="/cobros" className={buttonClass({ className: "mt-3 w-full" })}>
+            Ir a Cobros
+          </Link>
+        </div>
+      </>
     );
   }
 
@@ -73,9 +93,7 @@ export default function CobroDetailPage() {
       `Fecha: ${longDate(current.issueDate)}`,
       ...(current.dueDate && !isQuote ? [`Vence: ${longDate(current.dueDate)}`] : []),
       "",
-      ...current.items.map(
-        (i) => `- ${i.description} (${i.quantity} x ${formatAmount(i.unitPrice, currency)})`
-      ),
+      ...current.items.map((i) => `- ${i.description} (${i.quantity} x ${formatAmount(i.unitPrice, currency)})`),
       "",
       `*Total: ${formatAmount(current.total, currency)}*`,
       ...(current.notes ? ["", current.notes] : []),
@@ -86,10 +104,22 @@ export default function CobroDetailPage() {
   }
 
   async function handleVoid() {
-    if (!window.confirm("¿Marcar este documento como anulado?")) return;
+    const ok = await confirm({
+      title: "¿Anular este documento?",
+      description:
+        !isQuote && current.transactionId
+          ? "Quedará marcado como anulado. El cobro pendiente en Me deben no se borra: elimínalo desde Movimientos si ya no aplica."
+          : "Quedará marcado como anulado y no podrás usarlo para cobrar.",
+      confirmLabel: "Anular",
+      destructive: true,
+    });
+    if (!ok) return;
     setBusy(true);
-    if (await updateDocumentStatus(current.id, "void")) setDoc({ ...current, status: "void" });
-    setBusy(false);
+    try {
+      if (await updateDocumentStatus(current.id, "void")) setDoc({ ...current, status: "void" });
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleConvert() {
@@ -126,20 +156,22 @@ export default function CobroDetailPage() {
   }
 
   return (
-    <div className="px-4 pb-28 pt-4">
-      <div className="no-print mb-3 flex items-center gap-2">
-        <Link href="/cobros" aria-label="Volver" className="rounded-full p-2 hover:bg-[var(--color-surface-2)]">
-          <ArrowLeft size={20} />
-        </Link>
-        <h1 className="text-lg font-bold">{title}</h1>
-        <span className="ml-auto rounded-full bg-[var(--color-surface-2)] px-2.5 py-0.5 text-xs font-medium">
-          {STATUS_LABELS[current.status]}
-        </span>
-      </div>
+    <div className="pb-28">
+      <PageHeader
+        className="no-print"
+        title={`${isQuote ? "Cotización" : "Cuenta de cobro"} ${formatDocNumber(current.number)}`}
+        backHref="/cobros"
+        backLabel="Cobros"
+        actions={
+          <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", STATUS_CHIP[current.status])}>
+            {STATUS_LABELS[current.status]}
+          </span>
+        }
+      />
 
       <article
         id="print-area"
-        className="rounded-2xl border border-[#e5e7eb] bg-white p-5 text-[#111827] shadow-sm"
+        className="mx-4 mt-3 break-words rounded-2xl border border-[#e5e7eb] bg-white p-5 text-[#111827] shadow-sm"
       >
         <header className="border-b border-[#e5e7eb] pb-4">
           <p className="text-lg font-bold">{currentWorkspace?.name}</p>
@@ -209,27 +241,28 @@ export default function CobroDetailPage() {
         </footer>
       </article>
 
-      <div className="no-print mt-4 flex flex-col gap-2">
-        <button type="button" onClick={() => window.print()} className={actionClass}>
-          <Printer size={18} /> Descargar PDF
-        </button>
-        <button type="button" onClick={shareWhatsApp} className={actionClass}>
-          <MessageCircle size={18} /> Compartir por WhatsApp
-        </button>
+      <div className="no-print mx-4 mt-4 flex flex-col gap-2">
+        <Button variant="secondary" fullWidth onClick={() => window.print()} className="bg-[var(--color-surface)]">
+          <Printer size={18} aria-hidden /> Descargar PDF
+        </Button>
+        <Button variant="secondary" fullWidth onClick={shareWhatsApp} className="bg-[var(--color-surface)]">
+          <MessageCircle size={18} aria-hidden /> Compartir por WhatsApp
+        </Button>
         {canEdit && isQuote && current.status !== "void" ? (
-          <button type="button" disabled={busy} onClick={handleConvert} className={actionClass}>
-            <FileCheck size={18} /> Convertir en cuenta de cobro
-          </button>
+          <Button
+            variant="secondary"
+            fullWidth
+            loading={busy}
+            onClick={handleConvert}
+            className="bg-[var(--color-surface)]"
+          >
+            <FileCheck size={18} aria-hidden /> Convertir en cuenta de cobro
+          </Button>
         ) : null}
         {canEdit && current.status !== "void" ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={handleVoid}
-            className={`${actionClass} text-red-500`}
-          >
-            <Ban size={18} /> Marcar como anulada
-          </button>
+          <Button variant="danger" fullWidth disabled={busy} onClick={handleVoid}>
+            <Ban size={18} aria-hidden /> Anular documento
+          </Button>
         ) : null}
       </div>
     </div>

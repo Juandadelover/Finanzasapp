@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { ChevronLeft, MessageCircle, Plus, Search, Trash2, Users } from "lucide-react";
+import { Archive, MessageCircle, Plus, Search, Users } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SkeletonList } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { useFinance } from "@/context/FinanceContext";
 import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
@@ -14,9 +17,8 @@ import { dueLabel, sumAmount, whatsappUrl } from "@/lib/cartera";
 import type { Contact, ContactKind } from "@/types/finance";
 
 const inputClass =
-  "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)]";
-const labelClass =
-  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]";
+  "w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-base outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40";
+const labelClass = "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]";
 
 const KINDS: { value: ContactKind; label: string }[] = [
   { value: "client", label: "Cliente" },
@@ -41,6 +43,7 @@ function ContactSheet({
   const [email, setEmail] = useState(editing?.email ?? "");
   const [notes, setNotes] = useState(editing?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -61,9 +64,15 @@ function ContactSheet({
     onClose();
   }
 
-  function handleArchive() {
+  async function handleArchive() {
     if (!editing) return;
-    if (window.confirm("¿Archivar este contacto? Dejará de aparecer, pero sus movimientos se conservan.")) {
+    const ok = await confirm({
+      title: "¿Archivar este contacto?",
+      description: "Dejará de aparecer, pero sus movimientos se conservan.",
+      confirmLabel: "Archivar",
+      destructive: true,
+    });
+    if (ok) {
       updateContact(editing.id, { archived: true });
       onClose();
     }
@@ -72,8 +81,8 @@ function ContactSheet({
   return (
     <BottomSheet isOpen onClose={onClose} title={editing ? "Editar contacto" : "Nuevo contacto"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div>
-          <label className={labelClass}>Nombre</label>
+        <label className="block">
+          <span className={labelClass}>Nombre</span>
           <input
             autoFocus
             type="text"
@@ -83,20 +92,21 @@ function ContactSheet({
             placeholder="Nombre o razón social"
             className={inputClass}
           />
-        </div>
-        <div>
-          <label className={labelClass}>Tipo</label>
+        </label>
+        <div role="group" aria-label="Tipo">
+          <p className={labelClass}>Tipo</p>
           <div className="grid grid-cols-3 gap-2">
             {KINDS.map((k) => (
               <button
                 key={k.value}
                 type="button"
                 onClick={() => setKind(k.value)}
+                aria-pressed={kind === k.value}
                 className={cn(
-                  "rounded-xl border py-2.5 text-xs font-medium transition",
+                  "min-h-11 rounded-xl border py-2.5 text-xs font-medium transition",
                   kind === k.value
                     ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
-                    : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
+                    : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
                 )}
               >
                 {k.label}
@@ -105,12 +115,12 @@ function ContactSheet({
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelClass}>NIT / CC</label>
+          <label className="block">
+            <span className={labelClass}>NIT o cédula</span>
             <input value={document} onChange={(e) => setDocument(e.target.value)} className={inputClass} />
-          </div>
-          <div>
-            <label className={labelClass}>Teléfono</label>
+          </label>
+          <label className="block">
+            <span className={labelClass}>Teléfono</span>
             <input
               type="tel"
               inputMode="tel"
@@ -119,14 +129,14 @@ function ContactSheet({
               placeholder="300 123 4567"
               className={inputClass}
             />
-          </div>
+          </label>
         </div>
-        <div>
-          <label className={labelClass}>Correo</label>
+        <label className="block">
+          <span className={labelClass}>Correo</span>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Notas</label>
+        </label>
+        <label className="block">
+          <span className={labelClass}>Notas</span>
           <textarea
             value={notes}
             rows={2}
@@ -134,25 +144,26 @@ function ContactSheet({
             placeholder="Opcional"
             className={inputClass}
           />
-        </div>
-        {error ? <p className="text-sm text-[var(--color-expense)]">{error}</p> : null}
+        </label>
+        {error ? (
+          <p role="alert" className="text-sm text-[var(--color-expense)]">
+            {error}
+          </p>
+        ) : null}
         <div className="flex gap-3 pt-1">
           {editing ? (
-            <button
-              type="button"
+            <Button
+              variant="danger"
               onClick={handleArchive}
               aria-label="Archivar contacto"
-              className="flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-expense)] transition hover:bg-[var(--color-surface-2)]"
+              className="w-12 shrink-0 px-0"
             >
-              <Trash2 size={18} />
-            </button>
+              <Archive size={18} aria-hidden />
+            </Button>
           ) : null}
-          <button
-            type="submit"
-            className="gradient-brand flex-1 rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition active:scale-[0.99]"
-          >
+          <Button type="submit" className="flex-1">
             {editing ? "Guardar cambios" : "Crear contacto"}
-          </button>
+          </Button>
         </div>
       </form>
     </BottomSheet>
@@ -194,18 +205,19 @@ export default function ContactosPage() {
           !q ||
           c.name.toLowerCase().includes(q) ||
           (c.document ?? "").toLowerCase().includes(q) ||
-          (c.phone ?? "").includes(q)
+          (c.phone ?? "").includes(q),
       )
       .sort((a, b) => a.name.localeCompare(b.name, "es"));
   }, [state.contacts, tab, query]);
 
-  const detail = detailId ? state.contacts.find((c) => c.id === detailId) ?? null : null;
+  const detail = detailId ? (state.contacts.find((c) => c.id === detailId) ?? null) : null;
 
   if (!hydrated) {
     return (
       <>
         <AppHeader />
-        <div className="mx-4 mt-4 h-32 animate-pulse rounded-3xl bg-[var(--color-surface)]" />
+        <PageHeader title="Contactos" backHref="/cartera" backLabel="Cartera" />
+        <SkeletonList count={4} className="mx-4 mt-4" />
       </>
     );
   }
@@ -213,7 +225,8 @@ export default function ContactosPage() {
   function balanceFor(c: Contact) {
     const b = balances.get(c.id) ?? { owed: 0, owe: 0 };
     // Show the side relevant to the tab; fall back to the other when it is the only one.
-    if (tab === "client") return b.owed > 0 ? { v: b.owed, label: "Te debe" } : b.owe > 0 ? { v: b.owe, label: "Le debes" } : null;
+    if (tab === "client")
+      return b.owed > 0 ? { v: b.owed, label: "Te debe" } : b.owe > 0 ? { v: b.owe, label: "Le debes" } : null;
     return b.owe > 0 ? { v: b.owe, label: "Le debes" } : b.owed > 0 ? { v: b.owed, label: "Te debe" } : null;
   }
 
@@ -221,38 +234,43 @@ export default function ContactosPage() {
     <>
       <AppHeader />
 
-      <div className="mx-4 mt-4 flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <Link
-            href="/cartera"
-            aria-label="Volver a Cartera"
-            className="rounded-full p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
-          >
-            <ChevronLeft size={20} />
-          </Link>
-          <h1 className="text-lg font-semibold">Contactos</h1>
-        </div>
-        {canManage ? (
-          <button
-            type="button"
-            onClick={() => setSheet({ open: true, editing: null })}
-            className="flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2 text-sm font-semibold"
-          >
-            <Plus size={16} className="text-[var(--color-brand-light)]" />
-            Nuevo
-          </button>
-        ) : null}
-      </div>
+      <PageHeader
+        title="Contactos"
+        subtitle="Tus clientes y proveedores."
+        backHref="/cartera"
+        backLabel="Cartera"
+        actions={
+          canManage ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setSheet({ open: true, editing: null })}
+              className="rounded-full bg-[var(--color-surface)] px-4"
+            >
+              <Plus size={16} className="text-[var(--color-brand-light)]" aria-hidden />
+              Nuevo
+            </Button>
+          ) : null
+        }
+      />
 
-      <div className="mx-4 mt-4 grid grid-cols-2 gap-1 rounded-2xl bg-[var(--color-surface)] p-1">
+      <div
+        role="tablist"
+        aria-label="Tipo de contacto"
+        className="mx-4 mt-4 grid grid-cols-2 gap-1 rounded-2xl bg-[var(--color-surface)] p-1"
+      >
         {(["client", "supplier"] as const).map((k) => (
           <button
             key={k}
             type="button"
+            role="tab"
+            aria-selected={tab === k}
             onClick={() => setTab(k)}
             className={cn(
-              "rounded-xl py-2 text-sm font-medium transition",
-              tab === k ? "bg-[var(--color-surface-3)] text-[var(--color-brand-light)]" : "text-[var(--color-text-muted)]"
+              "min-h-11 rounded-xl py-2 text-sm font-medium transition",
+              tab === k
+                ? "bg-[var(--color-surface-3)] text-[var(--color-brand-light)]"
+                : "text-[var(--color-text-muted)]",
             )}
           >
             {k === "client" ? "Clientes" : "Proveedores"}
@@ -261,9 +279,14 @@ export default function ContactosPage() {
       </div>
 
       <div className="relative mx-4 mt-3">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-faint)]" />
+        <Search
+          size={16}
+          aria-hidden
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
+        />
         <input
           type="search"
+          aria-label="Buscar contacto"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar por nombre, NIT o teléfono"
@@ -273,11 +296,25 @@ export default function ContactosPage() {
 
       <section className="mx-4 mt-4 mb-4">
         {list.length === 0 ? (
-          <EmptyState
-            icon={Users}
-            title={query ? "Sin resultados" : tab === "client" ? "Aún no tienes clientes" : "Aún no tienes proveedores"}
-            description={query ? undefined : "Agrégalos para llevar el control de lo que te deben y debes."}
-          />
+          <>
+            <EmptyState
+              icon={Users}
+              title={
+                query ? "Sin resultados" : tab === "client" ? "Aún no tienes clientes" : "Aún no tienes proveedores"
+              }
+              description={
+                query
+                  ? "Prueba con otro nombre, NIT o teléfono."
+                  : "Agrégalos para llevar el control de lo que te deben y debes."
+              }
+            />
+            {canManage && !query ? (
+              <Button className="mt-3 w-full" onClick={() => setSheet({ open: true, editing: null })}>
+                <Plus size={16} aria-hidden />
+                {tab === "client" ? "Agregar cliente" : "Agregar proveedor"}
+              </Button>
+            ) : null}
+          </>
         ) : (
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5">
             {list.map((c) => {
@@ -287,24 +324,24 @@ export default function ContactosPage() {
                   key={c.id}
                   type="button"
                   onClick={() => setDetailId(c.id)}
-                  className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
+                  className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand)]/15 text-sm font-semibold text-[var(--color-brand-light)]">
                     {c.name.charAt(0).toUpperCase()}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{c.name}</span>
-                    <span className="block truncate text-xs text-[var(--color-text-faint)]">
+                    <span className="block truncate text-xs text-[var(--color-text-muted)]">
                       {c.phone || c.document || "Sin datos de contacto"}
                     </span>
                   </span>
                   {b ? (
-                    <span className="shrink-0 text-right">
-                      <span className="block text-sm font-semibold">{money(b.v)}</span>
-                      <span className="block text-[11px] text-[var(--color-text-faint)]">{b.label}</span>
+                    <span className="max-w-[45%] shrink-0 text-right">
+                      <span className="block truncate text-sm font-semibold tabular-nums">{money(b.v)}</span>
+                      <span className="block text-xs text-[var(--color-text-muted)]">{b.label}</span>
                     </span>
                   ) : (
-                    <span className="shrink-0 text-xs text-[var(--color-text-faint)]">Al día</span>
+                    <span className="shrink-0 text-xs text-[var(--color-text-muted)]">Al día</span>
                   )}
                 </button>
               );
@@ -341,19 +378,19 @@ export default function ContactosPage() {
                   `Hola ${detail.name}, te escribimos de ${currentWorkspace?.name ?? "nuestro negocio"}. ` +
                     (owed > 0
                       ? `Tienes un saldo pendiente de ${formatAmount(owed, currency)}. ¿Nos confirmas cuándo podrías realizar el pago? ¡Gracias!`
-                      : `Quedamos atentos a cualquier novedad. ¡Gracias!`)
+                      : `Quedamos atentos a cualquier novedad. ¡Gracias!`),
                 )
               : null;
             const row = (t: (typeof txs)[number]) => (
               <div key={t.id} className="flex items-center justify-between gap-3 py-1.5 text-sm">
-                <span className="min-w-0">
+                <span className="min-w-0 flex-1">
                   <span className="block truncate">{t.description || "Sin descripción"}</span>
-                  <span className="block text-xs text-[var(--color-text-faint)]">
+                  <span className="block text-xs text-[var(--color-text-muted)]">
                     {t.status === "pending" ? dueLabel(t.dueDate, today) : formatDayLabel(t.date)}
                   </span>
                 </span>
                 <span
-                  className="shrink-0 font-semibold"
+                  className="max-w-[45%] shrink-0 truncate font-semibold tabular-nums"
                   style={{ color: t.type === "income" ? "var(--color-income)" : "var(--color-expense)" }}
                 >
                   {money(t.amount)}
@@ -364,16 +401,16 @@ export default function ContactosPage() {
               <div className="flex flex-col gap-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-2xl bg-[var(--color-surface-2)] p-3">
-                    <p className="text-xs text-[var(--color-text-faint)]">Te debe</p>
-                    <p className="text-lg font-bold">{money(owed)}</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">Te debe</p>
+                    <p className="truncate text-lg font-bold tabular-nums">{money(owed)}</p>
                   </div>
                   <div className="rounded-2xl bg-[var(--color-surface-2)] p-3">
-                    <p className="text-xs text-[var(--color-text-faint)]">Le debes</p>
-                    <p className="text-lg font-bold">{money(owe)}</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">Le debes</p>
+                    <p className="truncate text-lg font-bold tabular-nums">{money(owe)}</p>
                   </div>
                 </div>
                 {detail.phone || detail.email || detail.document ? (
-                  <p className="text-xs text-[var(--color-text-muted)]">
+                  <p className="break-words text-xs text-[var(--color-text-muted)]">
                     {[detail.document, detail.phone, detail.email].filter(Boolean).join(" · ")}
                   </p>
                 ) : null}
@@ -382,16 +419,16 @@ export default function ContactosPage() {
                     href={wa}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 text-sm font-semibold text-black"
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 text-sm font-semibold text-black"
                   >
-                    <MessageCircle size={18} />
-                    Enviar WhatsApp
+                    <MessageCircle size={18} aria-hidden />
+                    Escribir por WhatsApp
                   </a>
                 ) : null}
                 <div>
                   <h3 className={labelClass}>Pendientes</h3>
                   {pending.length === 0 ? (
-                    <p className="text-sm text-[var(--color-text-faint)]">Sin movimientos pendientes.</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">Nada pendiente con este contacto.</p>
                   ) : (
                     pending.map(row)
                   )}
@@ -399,22 +436,21 @@ export default function ContactosPage() {
                 <div>
                   <h3 className={labelClass}>Pagos recientes</h3>
                   {paid.length === 0 ? (
-                    <p className="text-sm text-[var(--color-text-faint)]">Sin movimientos pagados.</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">Aún no hay pagos registrados.</p>
                   ) : (
                     paid.map(row)
                   )}
                 </div>
                 {canManage ? (
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
                     onClick={() => {
                       setDetailId(null);
                       setSheet({ open: true, editing: detail });
                     }}
-                    className="rounded-xl border border-[var(--color-border)] py-3 text-sm font-semibold"
                   >
                     Editar contacto
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             );

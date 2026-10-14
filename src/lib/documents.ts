@@ -235,9 +235,11 @@ export async function convertQuoteToCollection(
   });
 }
 
+// Texto mezclado con el color de estado y el texto base para mantener contraste AA en claro y oscuro.
 export const STATUS_CHIP: Record<DocumentStatus, string> = {
   draft: "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
-  issued: "bg-amber-500/15 text-amber-500",
-  paid: "bg-emerald-500/15 text-emerald-500",
-  void: "bg-red-500/15 text-red-500",
+  issued:
+    "bg-[color-mix(in_srgb,var(--color-warning)_16%,transparent)] text-[color-mix(in_srgb,var(--color-warning)_55%,var(--color-text))]",
+  paid: "bg-[color-mix(in_srgb,var(--color-income)_16%,transparent)] text-[color-mix(in_srgb,var(--color-income)_55%,var(--color-text))]",
+  void: "bg-[color-mix(in_srgb,var(--color-expense)_16%,transparent)] text-[color-mix(in_srgb,var(--color-expense)_55%,var(--color-text))]",
 };

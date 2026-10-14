@@ -9,11 +9,16 @@ import {
   Landmark,
   Plus,
   Smartphone,
+  Archive,
   Trash2,
   type LucideIcon,
 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Skeleton, SkeletonList } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { useFinance } from "@/context/FinanceContext";
 import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
@@ -30,9 +35,8 @@ const KINDS: { value: AccountKind; label: string; icon: LucideIcon }[] = [
 ];
 
 const inputClass =
-  "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)]";
-const labelClass =
-  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]";
+  "w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-base outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40";
+const labelClass = "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]";
 
 function AccountSheet({ editing, onClose }: { editing: Account | null; onClose: () => void }) {
   const { addAccount, updateAccount } = useFinance();
@@ -40,6 +44,7 @@ function AccountSheet({ editing, onClose }: { editing: Account | null; onClose: 
   const [kind, setKind] = useState<AccountKind>(editing?.kind ?? "bank");
   const [opening, setOpening] = useState(editing?.openingBalance ?? 0);
   const [error, setError] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,9 +58,15 @@ function AccountSheet({ editing, onClose }: { editing: Account | null; onClose: 
     onClose();
   }
 
-  function handleArchive() {
+  async function handleArchive() {
     if (!editing) return;
-    if (window.confirm("¿Archivar esta cuenta? Dejará de aparecer, pero sus movimientos se conservan.")) {
+    const ok = await confirm({
+      title: "¿Archivar esta cuenta?",
+      description: "Dejará de aparecer, pero sus movimientos se conservan.",
+      confirmLabel: "Archivar",
+      destructive: true,
+    });
+    if (ok) {
       updateAccount(editing.id, { archived: true });
       onClose();
     }
@@ -64,8 +75,8 @@ function AccountSheet({ editing, onClose }: { editing: Account | null; onClose: 
   return (
     <BottomSheet isOpen onClose={onClose} title={editing ? "Editar cuenta" : "Nueva cuenta"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div>
-          <label className={labelClass}>Nombre</label>
+        <label className="block">
+          <span className={labelClass}>Nombre</span>
           <input
             autoFocus
             type="text"
@@ -75,30 +86,31 @@ function AccountSheet({ editing, onClose }: { editing: Account | null; onClose: 
             placeholder="Ej. Bancolombia, Efectivo..."
             className={inputClass}
           />
-        </div>
-        <div>
-          <label className={labelClass}>Tipo</label>
+        </label>
+        <div role="group" aria-label="Tipo">
+          <p className={labelClass}>Tipo</p>
           <div className="grid grid-cols-4 gap-2">
             {KINDS.map(({ value, label, icon: Icon }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setKind(value)}
+                aria-pressed={kind === value}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-xl border py-2.5 text-xs font-medium transition",
+                  "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl border py-2 text-xs font-medium transition",
                   kind === value
                     ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
-                    : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
+                    : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
                 )}
               >
-                <Icon size={18} />
+                <Icon size={18} aria-hidden />
                 {label}
               </button>
             ))}
           </div>
         </div>
-        <div>
-          <label className={labelClass}>Saldo inicial</label>
+        <label className="block">
+          <span className={labelClass}>Saldo inicial</span>
           <input
             inputMode="numeric"
             placeholder="0"
@@ -106,25 +118,26 @@ function AccountSheet({ editing, onClose }: { editing: Account | null; onClose: 
             onChange={(e) => setOpening(parseAmountInput(e.target.value))}
             className={inputClass}
           />
-        </div>
-        {error ? <p className="text-sm text-[var(--color-expense)]">{error}</p> : null}
+        </label>
+        {error ? (
+          <p role="alert" className="text-sm text-[var(--color-expense)]">
+            {error}
+          </p>
+        ) : null}
         <div className="flex gap-3 pt-1">
           {editing ? (
-            <button
-              type="button"
+            <Button
+              variant="danger"
               onClick={handleArchive}
               aria-label="Archivar cuenta"
-              className="flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-expense)] transition hover:bg-[var(--color-surface-2)]"
+              className="w-12 shrink-0 px-0"
             >
-              <Trash2 size={18} />
-            </button>
+              <Archive size={18} aria-hidden />
+            </Button>
           ) : null}
-          <button
-            type="submit"
-            className="gradient-brand flex-1 rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition active:scale-[0.99]"
-          >
+          <Button type="submit" className="flex-1">
             {editing ? "Guardar cambios" : "Crear cuenta"}
-          </button>
+          </Button>
         </div>
       </form>
     </BottomSheet>
@@ -164,8 +177,8 @@ function TransferSheet({ accounts, onClose }: { accounts: Account[]; onClose: ()
     <BottomSheet isOpen onClose={onClose} title="Transferir entre cuentas">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelClass}>Desde</label>
+          <label className="block">
+            <span className={labelClass}>Desde</span>
             <select value={fromId} onChange={(e) => setFromId(e.target.value)} className={inputClass}>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -173,9 +186,9 @@ function TransferSheet({ accounts, onClose }: { accounts: Account[]; onClose: ()
                 </option>
               ))}
             </select>
-          </div>
-          <div>
-            <label className={labelClass}>Hacia</label>
+          </label>
+          <label className="block">
+            <span className={labelClass}>Hacia</span>
             <select value={toId} onChange={(e) => setToId(e.target.value)} className={inputClass}>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -183,10 +196,10 @@ function TransferSheet({ accounts, onClose }: { accounts: Account[]; onClose: ()
                 </option>
               ))}
             </select>
-          </div>
+          </label>
         </div>
-        <div>
-          <label className={labelClass}>Monto</label>
+        <label className="block">
+          <span className={labelClass}>Monto</span>
           <input
             inputMode="numeric"
             placeholder="0"
@@ -194,13 +207,13 @@ function TransferSheet({ accounts, onClose }: { accounts: Account[]; onClose: ()
             onChange={(e) => setAmount(parseAmountInput(e.target.value))}
             className={inputClass}
           />
-        </div>
-        <div>
-          <label className={labelClass}>Fecha</label>
+        </label>
+        <label className="block">
+          <span className={labelClass}>Fecha</span>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Descripción</label>
+        </label>
+        <label className="block">
+          <span className={labelClass}>Descripción</span>
           <input
             type="text"
             value={description}
@@ -208,14 +221,13 @@ function TransferSheet({ accounts, onClose }: { accounts: Account[]; onClose: ()
             placeholder="Opcional"
             className={inputClass}
           />
-        </div>
-        {error ? <p className="text-sm text-[var(--color-expense)]">{error}</p> : null}
-        <button
-          type="submit"
-          className="gradient-brand rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition active:scale-[0.99]"
-        >
-          Transferir
-        </button>
+        </label>
+        {error ? (
+          <p role="alert" className="text-sm text-[var(--color-expense)]">
+            {error}
+          </p>
+        ) : null}
+        <Button type="submit">Transferir</Button>
       </form>
     </BottomSheet>
   );
@@ -223,6 +235,7 @@ function TransferSheet({ accounts, onClose }: { accounts: Account[]; onClose: ()
 
 export default function CuentasPage() {
   const { state, hydrated, permissions, deleteTransfer } = useFinance();
+  const confirm = useConfirm();
   const { hidden } = usePrivacy();
   const currency = state.settings.currency;
   const [accountSheet, setAccountSheet] = useState<{ open: boolean; editing: Account | null }>({
@@ -234,7 +247,7 @@ export default function CuentasPage() {
   const balances = useMemo(
     () => accountBalances(state),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [state.accounts, state.transactions, state.transfers]
+    [state.accounts, state.transactions, state.transfers],
   );
   const total = balances.reduce((sum, b) => sum + b.balance, 0);
   const canManage = permissions.canEditTransactions;
@@ -248,7 +261,9 @@ export default function CuentasPage() {
     return (
       <>
         <AppHeader />
-        <div className="mx-4 mt-4 h-32 animate-pulse rounded-3xl bg-[var(--color-surface)]" />
+        <PageHeader title="Cuentas" />
+        <Skeleton className="mx-4 mt-4 h-32 rounded-3xl" />
+        <SkeletonList count={3} className="mx-4 mt-5" />
       </>
     );
   }
@@ -256,40 +271,46 @@ export default function CuentasPage() {
   return (
     <>
       <AppHeader />
+      <PageHeader title="Cuentas" subtitle="Cuánta plata tienes en cada lugar." />
 
       <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(138,5,190,0.35)]">
         <span className="text-sm font-medium text-white/80">Saldo total</span>
-        <p className="mt-2 text-4xl font-bold tracking-tight">{money(total)}</p>
+        <p className="mt-2 truncate text-4xl font-bold tracking-tight tabular-nums">{money(total)}</p>
         <p className="mt-1 text-xs text-white/70">
-          {balances.length} cuenta{balances.length === 1 ? "" : "s"} · solo movimientos pagados
+          {balances.length} {balances.length === 1 ? "cuenta" : "cuentas"} · solo cuenta lo que ya está pagado
         </p>
       </div>
 
       {canManage ? (
         <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => setAccountSheet({ open: true, editing: null })}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3.5 text-sm font-semibold transition hover:bg-[var(--color-surface-2)] active:scale-[0.98]"
+            className="rounded-2xl bg-[var(--color-surface)] py-3.5"
           >
-            <Plus size={17} className="text-[var(--color-brand-light)]" />
+            <Plus size={17} className="text-[var(--color-brand-light)]" aria-hidden />
             Agregar cuenta
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => setTransferOpen(true)}
             disabled={activeAccounts.length < 2}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3.5 text-sm font-semibold transition hover:bg-[var(--color-surface-2)] active:scale-[0.98] disabled:opacity-50"
+            className="rounded-2xl bg-[var(--color-surface)] py-3.5"
           >
-            <ArrowLeftRight size={17} className="text-[var(--color-brand-light)]" />
+            <ArrowLeftRight size={17} className="text-[var(--color-brand-light)]" aria-hidden />
             Transferir
-          </button>
+          </Button>
+          {activeAccounts.length < 2 ? (
+            <p className="col-span-2 -mt-1 px-1 text-xs text-[var(--color-text-muted)]">
+              Para transferir necesitas al menos dos cuentas.
+            </p>
+          ) : null}
         </div>
       ) : null}
 
       <section className="mx-4 mt-5">
-        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-faint)]">
-          Cuentas
+        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+          Tus cuentas
         </h2>
         {balances.length === 0 ? (
           <EmptyState
@@ -303,22 +324,24 @@ export default function CuentasPage() {
               const Icon = KINDS.find((k) => k.value === account.kind)?.icon ?? Landmark;
               const content = (
                 <>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]">
                     <Icon size={18} />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{account.name}</span>
-                    <span className="block text-xs text-[var(--color-text-faint)]">
+                    <span className="block text-xs text-[var(--color-text-muted)]">
                       {KINDS.find((k) => k.value === account.kind)?.label}
                     </span>
                   </span>
                   <span
-                    className="shrink-0 text-sm font-semibold"
+                    className="max-w-[45%] shrink-0 truncate text-sm font-semibold tabular-nums"
                     style={{ color: balance < 0 ? "var(--color-expense)" : undefined }}
                   >
                     {money(balance)}
                   </span>
-                  {canManage ? <ChevronRight size={16} className="text-[var(--color-text-faint)]" /> : null}
+                  {canManage ? (
+                    <ChevronRight size={16} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden />
+                  ) : null}
                 </>
               );
               return canManage ? (
@@ -326,7 +349,7 @@ export default function CuentasPage() {
                   key={account.id}
                   type="button"
                   onClick={() => setAccountSheet({ open: true, editing: account })}
-                  className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
+                  className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
                 >
                   {content}
                 </button>
@@ -342,35 +365,43 @@ export default function CuentasPage() {
 
       {recentTransfers.length > 0 ? (
         <section className="mx-4 mt-5 mb-4">
-          <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-faint)]">
+          <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
             Transferencias recientes
           </h2>
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5">
             {recentTransfers.map((t) => (
               <div key={t.id} className="flex items-center gap-3 rounded-2xl px-2 py-2.5">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">
                   <ArrowLeftRight size={17} />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">
                     {accountName(t.fromAccountId)} → {accountName(t.toAccountId)}
                   </span>
-                  <span className="block truncate text-xs text-[var(--color-text-faint)]">
+                  <span className="block truncate text-xs text-[var(--color-text-muted)]">
                     {formatDayLabel(t.date)}
                     {t.description ? ` · ${t.description}` : ""}
                   </span>
                 </span>
-                <span className="shrink-0 text-sm font-semibold">{money(t.amount)}</span>
+                <span className="max-w-[40%] shrink-0 truncate text-sm font-semibold tabular-nums">
+                  {money(t.amount)}
+                </span>
                 {canManage ? (
                   <button
                     type="button"
                     aria-label="Eliminar transferencia"
-                    onClick={() => {
-                      if (window.confirm("¿Eliminar esta transferencia?")) deleteTransfer(t.id);
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: "¿Eliminar esta transferencia?",
+                        description: "El dinero volverá a la cuenta de origen.",
+                        confirmLabel: "Eliminar",
+                        destructive: true,
+                      });
+                      if (ok) deleteTransfer(t.id);
                     }}
-                    className="rounded-full p-1.5 text-[var(--color-text-faint)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-expense)]"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-expense)]"
                   >
-                    <Trash2 size={15} />
+                    <Trash2 size={16} aria-hidden />
                   </button>
                 ) : null}
               </div>
