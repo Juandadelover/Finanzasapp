@@ -37,7 +37,8 @@ export function formatAmount(
     maximumFractionDigits: 0,
   }).format(rounded);
 
-  const sign = signed ? (amount < 0 ? "-" : amount > 0 ? "+" : "") : "";
+  // Un negativo siempre lleva "-": antes se perdía y un balance en rojo se veía positivo.
+  const sign = amount < 0 && rounded > 0 ? "-" : signed && rounded > 0 ? "+" : "";
   const symbolPart = showSymbol ? `${symbol} ` : "";
   return `${sign}${symbolPart}${number}`;
 }

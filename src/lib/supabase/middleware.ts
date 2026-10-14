@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback"];
+// Rutas accesibles sin sesión: login, legales, precios, recuperación de contraseña e invitaciones.
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/legal", "/precios", "/recuperar", "/restablecer", "/invitacion"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));

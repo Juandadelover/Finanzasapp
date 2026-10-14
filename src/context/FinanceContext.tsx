@@ -98,6 +98,8 @@ interface FinanceContextValue {
   exportData: () => string;
   importData: (json: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  /** Vuelve a cargar negocios y datos (p. ej. tras generar recurrentes o aceptar una invitación). */
+  reload: () => Promise<void>;
   isPlatformAdmin: boolean;
 }
 
@@ -713,6 +715,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
+  const reload = useCallback(async () => {
+    if (user) await loadAll(user.id);
+  }, [user, loadAll]);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
   }, [supabase]);
@@ -748,6 +754,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       exportData,
       importData,
       signOut,
+      reload,
       isPlatformAdmin: isPlatformAdmin && !!user,
     }),
     [
@@ -780,6 +787,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       exportData,
       importData,
       signOut,
+      reload,
       isPlatformAdmin,
     ]
   );

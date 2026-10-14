@@ -79,6 +79,14 @@ function render(row: OutboxRow, appUrl: string): { subject: string; html: string
       subject = `Nuevo comprobante por revisar: ${p.reference}`;
       body = `<p>Hay un comprobante nuevo por revisar.</p><p>Referencia <b>${esc(p.reference)}</b> · plan <b>${esc(p.plan)}</b> · esperado <b>${cop(p.amount)}</b> · declarado <b>${cop(p.declared)}</b> · medio <b>${esc(p.channel)}</b>.</p>${boton("Revisar pagos", `${appUrl}/admin/pagos`)}`;
       break;
+    case "invitation": {
+      const roles: Record<string, string> = {
+        admin: "administrador", editor: "editor", accountant: "contador", recorder: "solo registro",
+      };
+      subject = `Te invitaron a ${p.workspace} en Finanzas`;
+      body = `<p>Hola,</p><p>${p.inviter ? `<b>${esc(p.inviter)}</b> te invitó` : "Te invitaron"} a unirte al negocio <b>${esc(p.workspace)}</b> en Finanzas como <b>${esc(roles[String(p.role)] ?? p.role)}</b>.</p><p>La invitación vence en 7 días.</p>${boton("Aceptar invitación", `${appUrl}/invitacion/${encodeURIComponent(String(p.token))}`)}`;
+      break;
+    }
     default:
       throw new Error(`Tipo de correo desconocido: ${row.kind}`);
   }
