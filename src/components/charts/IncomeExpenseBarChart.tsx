@@ -12,7 +12,7 @@ interface IncomeExpenseBarChartProps {
 
 export function IncomeExpenseBarChart({ data, currency }: IncomeExpenseBarChartProps) {
   return (
-    <div className="h-56 w-full">
+    <div className="h-56 w-full" role="img" aria-label="Ingresos y gastos de los últimos 6 meses">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} barGap={3} margin={{ left: -12, right: 8, top: 8 }}>
           <CartesianGrid stroke="var(--color-border)" vertical={false} />

@@ -17,7 +17,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 flex justify-center px-2 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
+    <nav aria-label="Principal" className="fixed bottom-0 left-0 right-0 z-40 flex justify-center px-2 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
       <div className="flex items-center gap-0.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)]/95 px-1.5 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.45)] backdrop-blur">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -26,6 +26,8 @@ export function BottomNav() {
               key={href}
               href={href}
               aria-label={label}
+              aria-current={isActive ? "page" : undefined}
+              title={label}
               className={cn(
                 "flex h-12 w-14 flex-col items-center justify-center gap-0.5 rounded-full text-xs transition-colors",
                 isActive

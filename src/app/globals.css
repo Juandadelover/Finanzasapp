@@ -9,18 +9,23 @@
 
   --color-text: #17151c;
   --color-text-muted: #5c5868;
-  --color-text-faint: #8b8697;
+  --color-text-faint: #6e697a;
 
   --color-brand: #8a05be;
   --color-brand-dark: #560a82;
   --color-brand-light: #7c1fb0;
 
-  --color-income: #059669;
+  --color-income: #047857;
   --color-expense: #dc2626;
-  --color-warning: #d97706;
+  --color-warning: #b45309;
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --shadow-brand-sm: 0 4px 16px rgba(138, 5, 190, 0.35);
+  --shadow-brand-md: 0 8px 24px rgba(138, 5, 190, 0.35);
+  --shadow-brand-lg: 0 16px 40px rgba(138, 5, 190, 0.35);
+  --shadow-brand-fab: 0 10px 30px rgba(138, 5, 190, 0.45);
 
   color-scheme: light;
 }
@@ -34,7 +39,7 @@
 
   --color-text: #f4f6f8;
   --color-text-muted: #97a2b0;
-  --color-text-faint: #5f6b7a;
+  --color-text-faint: #818d9d;
 
   --color-brand: #8a05be;
   --color-brand-dark: #560a82;
@@ -85,6 +90,36 @@ body {
 ::-webkit-scrollbar-thumb {
   background: var(--color-surface-3);
   border-radius: 999px;
+}
+
+/* Foco visible global (teclado) */
+:focus-visible {
+  outline: 2px solid var(--color-brand-light);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-brand) 35%, transparent);
+}
+
+input,
+textarea {
+  caret-color: var(--color-brand-light);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .gradient-brand {

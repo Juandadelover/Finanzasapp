@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import { ArrowDown, ArrowUp, BarChart3, PiggyBank, Target, TrendingDown, TrendingUp } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { StatTile } from "@/components/StatTile";
 import { ChartCard } from "@/components/charts/ChartCard";
 import { BudgetSection } from "@/components/charts/BudgetSection";
@@ -88,6 +90,7 @@ export default function EstadisticasPage() {
   return (
     <>
       <AppHeader />
+      <PageHeader title="Estadísticas" />
       <MonthSelector />
 
       <div className="mx-4 flex gap-2.5">
@@ -121,7 +124,7 @@ export default function EstadisticasPage() {
         {hydrated ? (
           <BudgetSection items={budgetItems} currency={currency} hidden={hidden} />
         ) : (
-          <div className="h-16 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+          <Skeleton className="h-16 rounded-2xl" />
         )}
       </ChartCard>
 
@@ -134,7 +137,7 @@ export default function EstadisticasPage() {
             hidden={hidden}
           />
         ) : (
-          <div className="h-56 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+          <Skeleton className="h-56 rounded-2xl" />
         )}
       </ChartCard>
 
@@ -146,7 +149,7 @@ export default function EstadisticasPage() {
         footer={
           <div className="mt-3 flex items-center justify-center gap-5 text-xs">
             <span className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-              <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-income)]" /> Ingresos
+              <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[var(--color-income)]" /> Ingresos
             </span>
             <span className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
               <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-expense)]" /> Gastos
@@ -157,7 +160,7 @@ export default function EstadisticasPage() {
         {hydrated ? (
           <IncomeExpenseBarChart data={sixMonthPoints} currency={currency} />
         ) : (
-          <div className="h-56 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+          <Skeleton className="h-56 rounded-2xl" />
         )}
       </ChartCard>
 
@@ -170,7 +173,7 @@ export default function EstadisticasPage() {
         {hydrated ? (
           <TrendLineChart data={trendPoints} currency={currency} />
         ) : (
-          <div className="h-52 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+          <Skeleton className="h-52 rounded-2xl" />
         )}
       </ChartCard>
 
@@ -182,7 +185,7 @@ export default function EstadisticasPage() {
         footer={
           <div className="mt-3 flex items-center justify-between border-t border-[var(--color-border)] pt-3 text-sm">
             <span className="text-[var(--color-text-muted)]">Proyectado en 90d</span>
-            <span className="flex items-center gap-1 font-semibold text-[var(--color-text)]">
+            <span className="tabular flex min-w-0 items-center gap-1 font-semibold text-[var(--color-text)]">
               {!hidden ? (
                 <span
                   className="flex h-4 w-4 items-center justify-center rounded-full"
@@ -202,7 +205,7 @@ export default function EstadisticasPage() {
         {hydrated ? (
           <FutureBalanceChart data={projection} currency={currency} />
         ) : (
-          <div className="h-52 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+          <Skeleton className="h-52 rounded-2xl" />
         )}
       </ChartCard>
 

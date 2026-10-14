@@ -677,7 +677,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       setData((prev) => ({
         ...prev,
         categories: prev.categories.filter((c) => c.id !== id),
-        transactions: prev.transactions.filter((t) => t.categoryId !== id),
+        transactions: prev.transactions.map((t) => (t.categoryId === id ? { ...t, categoryId: "" } : t)),
       }));
     },
     [supabase]

@@ -15,30 +15,33 @@ interface BalanceCardProps {
 
 export function BalanceCard({ balance, income, expense, currency }: BalanceCardProps) {
   const { hidden } = usePrivacy();
+  const balanceText = hidden ? MASKED_AMOUNT : formatAmount(balance, currency);
   const availablePct = income > 0 ? Math.max(0, Math.min(100, Math.round((balance / income) * 100))) : 0;
 
   return (
-    <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(138,5,190,0.35)]">
+    <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[var(--shadow-brand-lg)]">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-white/80">Balance Disponible</span>
+        <span className="text-sm font-medium text-white/85">Balance Disponible</span>
         <Link
           href="/cuentas"
-          className="flex items-center gap-0.5 text-xs font-medium text-white/80 hover:text-white"
+          className="-mr-2 flex min-h-11 items-center gap-0.5 px-2 text-xs font-medium text-white/85 hover:text-white"
         >
           Cuentas
           <ChevronRight size={16} />
         </Link>
       </div>
-      <p className="mt-2 text-4xl font-bold tracking-tight">
-        {hidden ? MASKED_AMOUNT : formatAmount(balance, currency)}
+      <p
+        className={`tabular mt-2 break-words font-bold tracking-tight ${balanceText.length > 14 ? "text-2xl" : balanceText.length > 11 ? "text-3xl" : "text-4xl"}`}
+      >
+        {balanceText}
       </p>
 
       <div className="mt-4">
-        <div className="flex items-center justify-between text-xs font-medium text-white/70">
+        <div className="flex items-center justify-between text-xs font-medium text-white/85">
           <span className="uppercase tracking-wide">Disponible</span>
           <span>{availablePct}%</span>
         </div>
-        <div className="mt-1.5 h-2 rounded-full bg-white/20">
+        <div className="mt-1.5 h-2 rounded-full bg-white/20" role="progressbar" aria-label="Disponible" aria-valuemin={0} aria-valuemax={100} aria-valuenow={availablePct}>
           <div
             className="h-2 rounded-full bg-white transition-all"
             style={{ width: `${availablePct}%` }}
@@ -47,21 +50,21 @@ export function BalanceCard({ balance, income, expense, currency }: BalanceCardP
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-white/10 p-3">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-white/70">
+        <div className="min-w-0 rounded-2xl bg-white/10 p-3">
+          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-white/85">
             <TrendingUp size={14} />
             Ingresos
           </div>
-          <p className="mt-1 text-lg font-semibold">
+          <p className="tabular mt-1 truncate text-lg font-semibold">
             {hidden ? MASKED_AMOUNT : formatAmount(income, currency, { signed: true })}
           </p>
         </div>
-        <div className="rounded-2xl bg-black/10 p-3">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-white/70">
+        <div className="min-w-0 rounded-2xl bg-black/10 p-3">
+          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-white/85">
             <TrendingDown size={14} />
             Gastos
           </div>
-          <p className="mt-1 text-lg font-semibold">
+          <p className="tabular mt-1 truncate text-lg font-semibold">
             {hidden ? MASKED_AMOUNT : `-${formatAmount(expense, currency)}`}
           </p>
         </div>

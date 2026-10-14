@@ -15,7 +15,7 @@ export function AppHeader({ actions }: AppHeaderProps) {
   return (
     <header className="flex items-center justify-between px-4 pt-4">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="gradient-brand flex h-10 w-10 items-center justify-center shrink-0 rounded-2xl shadow-[0_4px_16px_rgba(138,5,190,0.35)]">
+        <div className="gradient-brand flex h-10 w-10 items-center justify-center shrink-0 rounded-2xl shadow-[var(--shadow-brand-sm)]">
           <TrendingUp size={20} className="text-white" strokeWidth={2.5} />
         </div>
         <WorkspaceSwitcher />
@@ -25,7 +25,7 @@ export function AppHeader({ actions }: AppHeaderProps) {
           type="button"
           onClick={toggleHidden}
           aria-label={hidden ? "Mostrar montos" : "Ocultar montos"}
-          className="rounded-full p-2 text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
         >
           {hidden ? <EyeOff size={19} /> : <Eye size={19} />}
         </button>

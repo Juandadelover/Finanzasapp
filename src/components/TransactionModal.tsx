@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Repeat, Trash2 } from "lucide-react";
@@ -33,6 +35,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
     reload,
   } = useFinance();
 
+  const confirm = useConfirm();
   const [type, setType] = useState<TransactionType>(editing?.type ?? initialType);
   const [amount, setAmount] = useState(editing?.amount ?? 0);
   const [categoryId, setCategoryId] = useState<string | null>(editing?.categoryId ?? null);
@@ -133,11 +136,17 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
     onClose();
   }
 
-  function handleDelete() {
-    if (editing) {
-      deleteTransaction(editing.id);
-      onClose();
-    }
+  async function handleDelete() {
+    if (!editing) return;
+    const ok = await confirm({
+      title: "¿Eliminar este movimiento?",
+      description: "Esta acción no se puede deshacer.",
+      confirmLabel: "Eliminar",
+      destructive: true,
+    });
+    if (!ok) return;
+    deleteTransaction(editing.id);
+    onClose();
   }
 
   async function handleCreateCategory(data: {
@@ -164,7 +173,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
               setContactId(null);
             }}
             className={cn(
-              "flex-1 rounded-full py-2 text-sm font-medium transition",
+              "min-h-11 flex-1 rounded-full py-2 text-sm font-medium transition",
               type === "expense" ? "bg-[var(--color-expense)] text-white" : "text-[var(--color-text-muted)]"
             )}
           >
@@ -179,7 +188,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
               setContactId(null);
             }}
             className={cn(
-              "flex-1 rounded-full py-2 text-sm font-medium transition",
+              "min-h-11 flex-1 rounded-full py-2 text-sm font-medium transition",
               type === "income" ? "bg-[var(--color-income)] text-white" : "text-[var(--color-text-muted)]"
             )}
           >
@@ -194,6 +203,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
             <span className="text-2xl font-semibold text-[var(--color-text-muted)]">$</span>
             <input
               autoFocus
+              aria-label="Monto"
               inputMode="numeric"
               placeholder="0"
               value={formatAmountInput(amount)}
@@ -222,7 +232,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
               type="button"
               onClick={() => setStatus(value)}
               className={cn(
-                "flex-1 rounded-full py-2 text-sm font-medium transition",
+                "min-h-11 flex-1 rounded-full py-2 text-sm font-medium transition",
                 status === value ? "gradient-brand text-white" : "text-[var(--color-text-muted)]"
               )}
             >
@@ -252,7 +262,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
                   type="button"
                   onClick={() => setAccountId(status === "pending" && accountId === a.id ? null : a.id)}
                   className={cn(
-                    "rounded-full border px-3.5 py-1.5 text-sm font-medium transition",
+                    "inline-flex min-h-11 items-center rounded-full border px-3.5 py-1.5 text-sm font-medium transition",
                     accountId === a.id
                       ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
                       : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
@@ -268,13 +278,13 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
         <div className="flex flex-col gap-3">
           {contacts.length > 0 || contactId ? (
             <div>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
+              <label htmlFor="tx-f1" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
                 {type === "income" ? "Cliente (opcional)" : "Proveedor (opcional)"}
               </label>
-              <select
+              <select id="tx-f1"
                 value={contactId ?? ""}
                 onChange={(e) => setContactId(e.target.value || null)}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
+                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
               >
                 <option value="">Sin contacto</option>
                 {contacts.map((c) => (
@@ -286,53 +296,53 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
             </div>
           ) : null}
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
+            <label htmlFor="tx-f2" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
               Descripción
             </label>
-            <input
+            <input id="tx-f2"
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ej. Almuerzo, Uber, Nómina..."
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)]"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
+            <label htmlFor="tx-f3" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
               Fecha
             </label>
-            <input
+            <input id="tx-f3"
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
             />
           </div>
         </div>
 
         {status === "pending" ? (
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
+            <label htmlFor="tx-f4" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
               Vence (opcional)
             </label>
-            <input
+            <input id="tx-f4"
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
             />
           </div>
         ) : null}
 
         {canRepeat ? (
           <div>
-            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
+            <label htmlFor="tx-f5" className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
               <Repeat size={12} /> Repetir
             </label>
-            <select
+            <select id="tx-f5"
               value={frequency}
               onChange={(e) => setFrequency(e.target.value as Frequency | "none")}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
             >
               <option value="none">No se repite</option>
               {(Object.keys(FREQUENCY_LABEL) as Frequency[]).map((f) => (
@@ -343,15 +353,15 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
             </select>
             {frequency !== "none" ? (
               <div className="mt-3">
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
+                <label htmlFor="tx-f6" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
                   Hasta (opcional)
                 </label>
-                <input
+                <input id="tx-f6"
                   type="date"
                   value={endDate}
                   min={date}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)]"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
                 />
                 <p className="mt-1.5 text-xs text-[var(--color-text-faint)]">
                   Se crea el primero hoy o en la fecha elegida y los siguientes se generan solos.
@@ -374,13 +384,9 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
               <Trash2 size={18} />
             </button>
           ) : null}
-          <button
-            type="submit"
-            disabled={saving}
-            className="gradient-brand flex-1 rounded-xl py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(138,5,190,0.35)] transition active:scale-[0.99] disabled:opacity-60"
-          >
+          <Button type="submit" loading={saving} className="flex-1">
             {editing ? "Guardar cambios" : saving ? "Guardando..." : frequency !== "none" && canRepeat ? "Guardar recurrente" : "Guardar movimiento"}
-          </button>
+          </Button>
         </div>
       </form>
 

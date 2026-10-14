@@ -27,7 +27,7 @@ export function FloatingActionButton() {
           <button
             type="button"
             onClick={() => handleSelect("income")}
-            className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] py-2 pl-4 pr-3 text-sm font-medium text-[var(--color-text)] shadow-lg transition hover:bg-[var(--color-surface-3)]"
+            className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] min-h-11 py-2 pl-4 pr-3 text-sm font-medium text-[var(--color-text)] shadow-lg transition hover:bg-[var(--color-surface-3)]"
           >
             Ingreso
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-income)]/15 text-[var(--color-income)]">
@@ -39,7 +39,7 @@ export function FloatingActionButton() {
           <button
             type="button"
             onClick={() => handleSelect("expense")}
-            className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] py-2 pl-4 pr-3 text-sm font-medium text-[var(--color-text)] shadow-lg transition hover:bg-[var(--color-surface-3)]"
+            className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] min-h-11 py-2 pl-4 pr-3 text-sm font-medium text-[var(--color-text)] shadow-lg transition hover:bg-[var(--color-surface-3)]"
           >
             Gasto
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-expense)]/15 text-[var(--color-expense)]">
@@ -54,8 +54,9 @@ export function FloatingActionButton() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Cerrar menú" : "Agregar movimiento"}
+        aria-expanded={open}
         className={cn(
-          "gradient-brand flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[0_10px_30px_rgba(138,5,190,0.45)] transition-transform",
+          "gradient-brand flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[var(--shadow-brand-fab)] transition-transform motion-reduce:transition-none",
           open && "rotate-45"
         )}
       >

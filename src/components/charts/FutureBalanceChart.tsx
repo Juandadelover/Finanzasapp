@@ -13,7 +13,7 @@ export function FutureBalanceChart({ data, currency }: FutureBalanceChartProps) 
   const points = data.map((p) => ({ ...p, label: p.day === 0 ? "Hoy" : `${p.day}d` }));
 
   return (
-    <div className="h-52 w-full">
+    <div className="h-52 w-full" role="img" aria-label="Proyección del balance a 90 días">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={points} margin={{ left: -12, right: 8, top: 12 }}>
           <defs>

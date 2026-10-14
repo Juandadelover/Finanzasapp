@@ -23,7 +23,7 @@ export function CategoryPieChart({ data, currency, emptyLabel, hidden = false }:
 
   return (
     <div>
-      <div className="h-56 w-full">
+      <div className="h-56 w-full" role="img" aria-label="Gráfico de gastos por categoría; el detalle está en la lista de abajo">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -68,9 +68,9 @@ export function CategoryPieChart({ data, currency, emptyLabel, hidden = false }:
                 <Icon size={16} />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between gap-2 text-sm">
                   <span className="truncate font-medium">{item.category.name}</span>
-                  <span className="shrink-0 text-[var(--color-text-muted)]">
+                  <span className="tabular shrink-0 text-[var(--color-text-muted)]">
                     {hidden ? MASKED_AMOUNT : formatAmount(item.total, currency)}
                   </span>
                 </div>

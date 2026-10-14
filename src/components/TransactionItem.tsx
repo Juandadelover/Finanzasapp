@@ -17,7 +17,7 @@ export function TransactionItem({ transaction, category, currency }: Transaction
   const { openEditTransaction } = useUI();
   const { hidden } = usePrivacy();
   const { permissions } = useFinance();
-  const color = category?.color ?? "#64748b";
+  const color = category?.color ?? "var(--color-text-faint)";
   const isExpense = transaction.type === "expense";
   const isPending = transaction.status === "pending";
 
@@ -25,7 +25,7 @@ export function TransactionItem({ transaction, category, currency }: Transaction
     <>
       <span
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-        style={{ backgroundColor: `${color}22`, color }}
+        style={{ backgroundColor: `color-mix(in oklab, ${color} 13%, transparent)`, color }}
       >
         {(() => {
           const Icon = ICONS[category?.icon ?? "more-horizontal"];
@@ -36,12 +36,12 @@ export function TransactionItem({ transaction, category, currency }: Transaction
         <span className="block truncate text-sm font-medium text-[var(--color-text)]">
           {transaction.description || category?.name || "Movimiento"}
         </span>
-        <span className="block text-xs text-[var(--color-text-faint)]">
+        <span className="block truncate text-xs text-[var(--color-text-faint)]">
           {category?.name ?? "Sin categoría"} · {formatDayLabel(transaction.date)}
           {isPending ? (
             <>
               {" "}
-              <span className="rounded-full bg-[var(--color-brand)]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-brand-light)]">
+              <span className="rounded-full bg-[var(--color-brand)]/15 px-1.5 py-0.5 text-xs font-semibold text-[var(--color-brand-light)]">
                 Pendiente
               </span>
               {transaction.dueDate ? ` · vence ${formatDayLabel(transaction.dueDate)}` : ""}
@@ -50,7 +50,7 @@ export function TransactionItem({ transaction, category, currency }: Transaction
         </span>
       </span>
       <span
-        className={`shrink-0 text-sm font-semibold${isPending ? " opacity-60" : ""}`}
+        className={`tabular max-w-[45%] shrink-0 truncate text-sm font-semibold${isPending ? " opacity-60" : ""}`}
         style={{ color: isExpense ? "var(--color-expense)" : "var(--color-income)" }}
       >
         {hidden ? MASKED_AMOUNT : `${isExpense ? "-" : "+"}${formatAmount(transaction.amount, currency)}`}
@@ -66,7 +66,7 @@ export function TransactionItem({ transaction, category, currency }: Transaction
     <button
       type="button"
       onClick={() => openEditTransaction(transaction)}
-      className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
+      className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-[var(--color-surface-2)]"
     >
       {content}
     </button>

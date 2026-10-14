@@ -32,7 +32,7 @@ export function ThemeToggle() {
           type="button"
           onClick={() => setTheme(value)}
           className={cn(
-            "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition",
+            "flex flex-1 items-center justify-center gap-1.5 min-h-11 rounded-xl py-2 text-xs font-medium transition",
             theme === value
               ? "bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm"
               : "text-[var(--color-text-muted)]"

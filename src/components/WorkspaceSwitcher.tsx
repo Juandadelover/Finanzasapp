@@ -42,7 +42,7 @@ export function WorkspaceSwitcher() {
     <>
       <span className="truncate text-lg font-semibold tracking-tight">{name}</span>
       {currentWorkspace ? (
-        <span className="shrink-0 rounded-full bg-[var(--color-brand)]/15 px-2 py-0.5 text-[10px] font-medium text-[var(--color-brand-light)]">
+        <span className="shrink-0 rounded-full bg-[var(--color-brand)]/15 px-2 py-0.5 text-xs font-medium text-[var(--color-brand-light)]">
           {ROLE_LABELS[currentWorkspace.role]}
         </span>
       ) : null}
@@ -57,7 +57,8 @@ export function WorkspaceSwitcher() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Cambiar de negocio"
-          className="flex min-w-0 items-center gap-2 text-left"
+          aria-haspopup="dialog"
+          className="flex min-h-11 min-w-0 items-center gap-2 text-left"
         >
           {content}
         </button>
@@ -78,7 +79,7 @@ export function WorkspaceSwitcher() {
                   switchWorkspace(w.id);
                 }}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-[var(--color-surface-2)]",
+                  "flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-[var(--color-surface-2)]",
                   active && "bg-[var(--color-surface-2)]"
                 )}
               >
@@ -101,7 +102,7 @@ export function WorkspaceSwitcher() {
                 maxLength={60}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Nombre del nuevo negocio"
-                className="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)]"
+                className="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
               />
               <button
                 type="submit"

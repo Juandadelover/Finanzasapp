@@ -16,7 +16,7 @@ interface TrendLineChartProps {
 
 export function TrendLineChart({ data, currency }: TrendLineChartProps) {
   return (
-    <div className="h-52 w-full">
+    <div className="h-52 w-full" role="img" aria-label="Tendencia de gastos de los últimos meses">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ left: -20, right: 8, top: 12 }}>
           <CartesianGrid stroke="var(--color-border)" vertical={false} />
@@ -25,7 +25,7 @@ export function TrendLineChart({ data, currency }: TrendLineChartProps) {
             tickLine={false}
             axisLine={false}
             interval="preserveStartEnd"
-            tick={{ fill: "var(--color-text-faint)", fontSize: 11 }}
+            tick={{ fill: "var(--color-text-faint)", fontSize: 12 }}
           />
           <Tooltip
             formatter={(value) => [formatAmount(Number(value), currency), "Gastos"]}
