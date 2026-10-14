@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   ChevronRight,
   Database,
   Download,
   Fingerprint,
+  Landmark,
   LogOut,
   Plus,
   Sparkles,
@@ -225,6 +227,24 @@ export default function AjustesPage() {
             <label className="mb-1.5 block text-xs font-medium text-[var(--color-text-faint)]">Apariencia</label>
             <ThemeToggle />
           </div>
+        </div>
+      </section>
+
+      <section className="mx-4 mt-5">
+        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-faint)]">
+          Finanzas
+        </h2>
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5">
+          <Link
+            href="/cuentas"
+            className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm transition hover:bg-[var(--color-surface-2)]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]">
+              <Landmark size={18} />
+            </span>
+            <span className="flex-1 font-medium">Cuentas</span>
+            <ChevronRight size={16} className="text-[var(--color-text-faint)]" />
+          </Link>
         </div>
       </section>
 

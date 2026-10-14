@@ -45,6 +45,44 @@ export interface Transaction {
   description: string;
   date: string; // ISO date (yyyy-MM-dd)
   createdAt: string; // ISO datetime
+  accountId: string | null;
+  contactId: string | null;
+  status: TransactionStatus;
+  dueDate: string | null; // ISO date (yyyy-MM-dd)
+}
+
+export type TransactionStatus = "paid" | "pending";
+
+export type AccountKind = "bank" | "cash" | "card" | "wallet";
+
+export interface Account {
+  id: string;
+  name: string;
+  kind: AccountKind;
+  openingBalance: number;
+  archived: boolean;
+}
+
+export type ContactKind = "client" | "supplier" | "both";
+
+export interface Contact {
+  id: string;
+  kind: ContactKind;
+  name: string;
+  document: string | null;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
+  archived: boolean;
+}
+
+export interface Transfer {
+  id: string;
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  date: string; // ISO date (yyyy-MM-dd)
+  description: string;
 }
 
 export type CurrencyCode = "COP" | "USD" | "EUR" | "MXN" | "ARS" | "PEN" | "CLP";
@@ -67,6 +105,9 @@ export interface Workspace {
 export interface FinanceState {
   transactions: Transaction[];
   categories: Category[];
+  accounts: Account[];
+  contacts: Contact[];
+  transfers: Transfer[];
   settings: Settings;
 }
 

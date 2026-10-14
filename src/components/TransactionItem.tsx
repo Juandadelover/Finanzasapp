@@ -19,6 +19,7 @@ export function TransactionItem({ transaction, category, currency }: Transaction
   const { permissions } = useFinance();
   const color = category?.color ?? "#64748b";
   const isExpense = transaction.type === "expense";
+  const isPending = transaction.status === "pending";
 
   const content = (
     <>
@@ -37,10 +38,19 @@ export function TransactionItem({ transaction, category, currency }: Transaction
         </span>
         <span className="block text-xs text-[var(--color-text-faint)]">
           {category?.name ?? "Sin categoría"} · {formatDayLabel(transaction.date)}
+          {isPending ? (
+            <>
+              {" "}
+              <span className="rounded-full bg-[var(--color-brand)]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-brand-light)]">
+                Pendiente
+              </span>
+              {transaction.dueDate ? ` · vence ${formatDayLabel(transaction.dueDate)}` : ""}
+            </>
+          ) : null}
         </span>
       </span>
       <span
-        className="shrink-0 text-sm font-semibold"
+        className={`shrink-0 text-sm font-semibold${isPending ? " opacity-60" : ""}`}
         style={{ color: isExpense ? "var(--color-expense)" : "var(--color-income)" }}
       >
         {hidden ? MASKED_AMOUNT : `${isExpense ? "-" : "+"}${formatAmount(transaction.amount, currency)}`}

@@ -1,6 +1,7 @@
 "use client";
 
-import { HelpCircle, TrendingDown, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
 import { formatAmount } from "@/lib/format";
 import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import type { CurrencyCode } from "@/types/finance";
@@ -20,7 +21,13 @@ export function BalanceCard({ balance, income, expense, currency }: BalanceCardP
     <div className="gradient-brand mx-4 mt-4 rounded-3xl p-5 text-white shadow-[0_16px_40px_rgba(138,5,190,0.35)]">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-white/80">Balance Disponible</span>
-        <HelpCircle size={18} className="text-white/60" />
+        <Link
+          href="/cuentas"
+          className="flex items-center gap-0.5 text-xs font-medium text-white/80 hover:text-white"
+        >
+          Cuentas
+          <ChevronRight size={16} />
+        </Link>
       </div>
       <p className="mt-2 text-4xl font-bold tracking-tight">
         {hidden ? MASKED_AMOUNT : formatAmount(balance, currency)}

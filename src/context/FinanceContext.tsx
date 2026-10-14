@@ -12,16 +12,34 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { rowToCategory, rowToTransaction, rowToWorkspace } from "@/lib/supabase/mappers";
-import type { CategoryRow, TransactionRow, WorkspaceRow } from "@/lib/supabase/mappers";
+import {
+  rowToAccount,
+  rowToCategory,
+  rowToContact,
+  rowToTransaction,
+  rowToTransfer,
+  rowToWorkspace,
+} from "@/lib/supabase/mappers";
+import type {
+  AccountRow,
+  CategoryRow,
+  ContactRow,
+  TransactionRow,
+  TransferRow,
+  WorkspaceRow,
+} from "@/lib/supabase/mappers";
 import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { permissionsFor } from "@/lib/permissions";
 import type { Permissions } from "@/lib/permissions";
 import type {
+  Account,
   Category,
+  Contact,
   FinanceState,
   Transaction,
+  TransactionStatus,
   TransactionType,
+  Transfer,
   Workspace,
   WorkspaceRole,
 } from "@/types/finance";
@@ -32,7 +50,16 @@ export interface NewTransactionInput {
   categoryId: string;
   description: string;
   date: string;
+  accountId: string | null;
+  contactId: string | null;
+  status: TransactionStatus;
+  dueDate: string | null;
 }
+
+export type NewAccountInput = Pick<Account, "name" | "kind" | "openingBalance">;
+export type NewContactInput = Pick<Contact, "kind" | "name"> &
+  Partial<Pick<Contact, "document" | "email" | "phone" | "notes">>;
+export type NewTransferInput = Omit<Transfer, "id">;
 
 export interface AuthUser {
   id: string;
@@ -57,6 +84,13 @@ interface FinanceContextValue {
   addTransaction: (input: NewTransactionInput) => Promise<void>;
   updateTransaction: (id: string, input: NewTransactionInput) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+  markTransactionPaid: (id: string, input: { accountId: string; date: string }) => Promise<void>;
+  addAccount: (input: NewAccountInput) => Promise<Account | null>;
+  updateAccount: (id: string, updates: Partial<Omit<Account, "id">>) => Promise<void>;
+  addContact: (input: NewContactInput) => Promise<Contact | null>;
+  updateContact: (id: string, updates: Partial<Omit<Contact, "id">>) => Promise<void>;
+  addTransfer: (input: NewTransferInput) => Promise<Transfer | null>;
+  deleteTransfer: (id: string) => Promise<void>;
   addCategory: (category: Omit<Category, "id" | "isDefault">) => Promise<Category | null>;
   updateCategory: (id: string, updates: Partial<Omit<Category, "id">>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
@@ -89,7 +123,7 @@ const FinanceContext = createContext<FinanceContextValue | null>(null);
 type WorkspaceData = Omit<FinanceState, "settings">;
 
 function emptyData(): WorkspaceData {
-  return { transactions: [], categories: [] };
+  return { transactions: [], categories: [], accounts: [], contacts: [], transfers: [] };
 }
 
 interface MembershipRow {
@@ -110,7 +144,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const loadWorkspaceData = useCallback(
     async (workspaceId: string) => {
-      const [categoriesRes, transactionsRes] = await Promise.all([
+      const [categoriesRes, transactionsRes, accountsRes, contactsRes, transfersRes] = await Promise.all([
         supabase
           .from("categories")
           .select("*")
@@ -121,6 +155,21 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           .select("*")
           .eq("workspace_id", workspaceId)
           .order("date", { ascending: false }),
+        supabase
+          .from("accounts")
+          .select("*")
+          .eq("workspace_id", workspaceId)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("contacts")
+          .select("*")
+          .eq("workspace_id", workspaceId)
+          .order("name", { ascending: true }),
+        supabase
+          .from("transfers")
+          .select("*")
+          .eq("workspace_id", workspaceId)
+          .order("date", { ascending: false }),
       ]);
 
       // Ignora respuestas de un negocio que ya no es el actual.
@@ -128,6 +177,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       setData({
         categories: ((categoriesRes.data as CategoryRow[] | null) ?? []).map(rowToCategory),
         transactions: ((transactionsRes.data as TransactionRow[] | null) ?? []).map(rowToTransaction),
+        accounts: ((accountsRes.data as AccountRow[] | null) ?? []).map(rowToAccount),
+        contacts: ((contactsRes.data as ContactRow[] | null) ?? []).map(rowToContact),
+        transfers: ((transfersRes.data as TransferRow[] | null) ?? []).map(rowToTransfer),
       });
     },
     [supabase]
@@ -264,6 +316,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           category_id: input.categoryId,
           description: input.description,
           date: input.date,
+          account_id: input.accountId,
+          contact_id: input.contactId,
+          status: input.status,
+          due_date: input.status === "pending" ? input.dueDate : null,
         })
         .select()
         .single();
@@ -289,6 +345,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           category_id: input.categoryId,
           description: input.description,
           date: input.date,
+          account_id: input.accountId,
+          contact_id: input.contactId,
+          status: input.status,
+          due_date: input.status === "pending" ? input.dueDate : null,
         })
         .eq("id", id)
         .select()
@@ -317,6 +377,178 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         return;
       }
       setData((prev) => ({ ...prev, transactions: prev.transactions.filter((t) => t.id !== id) }));
+    },
+    [supabase]
+  );
+
+  const markTransactionPaid = useCallback(
+    async (id: string, input: { accountId: string; date: string }) => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .update({ status: "paid", account_id: input.accountId, date: input.date, due_date: null })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error("No se pudo marcar como pagado", error);
+        toast.error("No se pudo marcar como pagado. Intenta de nuevo.");
+        return;
+      }
+      const transaction = rowToTransaction(data as TransactionRow);
+      setData((prev) => ({
+        ...prev,
+        transactions: prev.transactions.map((t) => (t.id === id ? transaction : t)),
+      }));
+    },
+    [supabase]
+  );
+
+  const addAccount = useCallback(
+    async (input: NewAccountInput) => {
+      if (!currentId) return null;
+      const { data, error } = await supabase
+        .from("accounts")
+        .insert({
+          workspace_id: currentId,
+          name: input.name,
+          kind: input.kind,
+          opening_balance: input.openingBalance,
+        })
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error("No se pudo crear la cuenta", error);
+        toast.error("No se pudo crear la cuenta. Intenta de nuevo.");
+        return null;
+      }
+      const account = rowToAccount(data as AccountRow);
+      setData((prev) => ({ ...prev, accounts: [...prev.accounts, account] }));
+      return account;
+    },
+    [supabase, currentId]
+  );
+
+  const updateAccount = useCallback(
+    async (id: string, updates: Partial<Omit<Account, "id">>) => {
+      const { data, error } = await supabase
+        .from("accounts")
+        .update({
+          ...(updates.name !== undefined ? { name: updates.name } : {}),
+          ...(updates.kind !== undefined ? { kind: updates.kind } : {}),
+          ...(updates.openingBalance !== undefined ? { opening_balance: updates.openingBalance } : {}),
+          ...(updates.archived !== undefined ? { archived: updates.archived } : {}),
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error("No se pudo actualizar la cuenta", error);
+        toast.error("No se pudo actualizar la cuenta. Intenta de nuevo.");
+        return;
+      }
+      const account = rowToAccount(data as AccountRow);
+      setData((prev) => ({ ...prev, accounts: prev.accounts.map((a) => (a.id === id ? account : a)) }));
+    },
+    [supabase]
+  );
+
+  const addContact = useCallback(
+    async (input: NewContactInput) => {
+      if (!currentId) return null;
+      const { data, error } = await supabase
+        .from("contacts")
+        .insert({
+          workspace_id: currentId,
+          kind: input.kind,
+          name: input.name,
+          document: input.document ?? null,
+          email: input.email ?? null,
+          phone: input.phone ?? null,
+          notes: input.notes ?? null,
+        })
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error("No se pudo crear el contacto", error);
+        toast.error("No se pudo crear el contacto. Intenta de nuevo.");
+        return null;
+      }
+      const contact = rowToContact(data as ContactRow);
+      setData((prev) => ({ ...prev, contacts: [...prev.contacts, contact] }));
+      return contact;
+    },
+    [supabase, currentId]
+  );
+
+  const updateContact = useCallback(
+    async (id: string, updates: Partial<Omit<Contact, "id">>) => {
+      const { data, error } = await supabase
+        .from("contacts")
+        .update({
+          ...(updates.kind !== undefined ? { kind: updates.kind } : {}),
+          ...(updates.name !== undefined ? { name: updates.name } : {}),
+          ...(updates.document !== undefined ? { document: updates.document } : {}),
+          ...(updates.email !== undefined ? { email: updates.email } : {}),
+          ...(updates.phone !== undefined ? { phone: updates.phone } : {}),
+          ...(updates.notes !== undefined ? { notes: updates.notes } : {}),
+          ...(updates.archived !== undefined ? { archived: updates.archived } : {}),
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error("No se pudo actualizar el contacto", error);
+        toast.error("No se pudo actualizar el contacto. Intenta de nuevo.");
+        return;
+      }
+      const contact = rowToContact(data as ContactRow);
+      setData((prev) => ({ ...prev, contacts: prev.contacts.map((c) => (c.id === id ? contact : c)) }));
+    },
+    [supabase]
+  );
+
+  const addTransfer = useCallback(
+    async (input: NewTransferInput) => {
+      if (!currentId) return null;
+      const { data, error } = await supabase
+        .from("transfers")
+        .insert({
+          workspace_id: currentId,
+          from_account_id: input.fromAccountId,
+          to_account_id: input.toAccountId,
+          amount: input.amount,
+          date: input.date,
+          description: input.description,
+        })
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error("No se pudo registrar la transferencia", error);
+        toast.error("No se pudo registrar la transferencia. Intenta de nuevo.");
+        return null;
+      }
+      const transfer = rowToTransfer(data as TransferRow);
+      setData((prev) => ({ ...prev, transfers: [transfer, ...prev.transfers] }));
+      return transfer;
+    },
+    [supabase, currentId]
+  );
+
+  const deleteTransfer = useCallback(
+    async (id: string) => {
+      const { error } = await supabase.from("transfers").delete().eq("id", id);
+      if (error) {
+        console.error("No se pudo eliminar la transferencia", error);
+        toast.error("No se pudo eliminar la transferencia. Intenta de nuevo.");
+        return;
+      }
+      setData((prev) => ({ ...prev, transfers: prev.transfers.filter((t) => t.id !== id) }));
     },
     [supabase]
   );
@@ -488,6 +720,13 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       addTransaction,
       updateTransaction,
       deleteTransaction,
+      markTransactionPaid,
+      addAccount,
+      updateAccount,
+      addContact,
+      updateContact,
+      addTransfer,
+      deleteTransfer,
       addCategory,
       updateCategory,
       deleteCategory,
@@ -512,6 +751,13 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       addTransaction,
       updateTransaction,
       deleteTransaction,
+      markTransactionPaid,
+      addAccount,
+      updateAccount,
+      addContact,
+      updateContact,
+      addTransfer,
+      deleteTransfer,
       addCategory,
       updateCategory,
       deleteCategory,

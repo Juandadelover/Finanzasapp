@@ -1,5 +1,5 @@
 import { isSameMonth } from "@/lib/format";
-import type { Category, Transaction } from "@/types/finance";
+import type { Account, Category, FinanceState, Transaction } from "@/types/finance";
 
 export function transactionsForMonth(
   transactions: Transaction[],
@@ -17,11 +17,17 @@ export interface MonthTotals {
   balance: number;
 }
 
+// Los movimientos pendientes no afectan saldos, totales, gráficas ni proyecciones.
+export function paidOnly(transactions: Transaction[]): Transaction[] {
+  return transactions.filter((t) => t.status === "paid");
+}
+
 export function computeTotals(transactions: Transaction[]): MonthTotals {
-  const income = transactions
+  const paid = paidOnly(transactions);
+  const income = paid
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + t.amount, 0);
-  const expense = transactions
+  const expense = paid
     .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + t.amount, 0);
   return { income, expense, balance: income - expense };
@@ -38,7 +44,7 @@ export function categoryBreakdown(
   categories: Category[],
   type: "income" | "expense"
 ): CategoryBreakdownItem[] {
-  const filtered = transactions.filter((t) => t.type === type);
+  const filtered = paidOnly(transactions).filter((t) => t.type === type);
   const total = filtered.reduce((sum, t) => sum + t.amount, 0);
 
   const byCategory = new Map<string, number>();
@@ -68,7 +74,7 @@ export interface BudgetProgressItem {
 
 export function budgetProgress(transactions: Transaction[], categories: Category[]): BudgetProgressItem[] {
   const spentByCategory = new Map<string, number>();
-  for (const t of transactions) {
+  for (const t of paidOnly(transactions)) {
     if (t.type !== "expense") continue;
     spentByCategory.set(t.categoryId, (spentByCategory.get(t.categoryId) ?? 0) + t.amount);
   }
@@ -121,4 +127,29 @@ export function projectFutureBalance(
     points.push({ day, balance: currentBalance + avgDailyNet * day });
   }
   return points;
+}
+
+export interface AccountBalance {
+  account: Account;
+  balance: number;
+}
+
+// Saldo inicial + ingresos pagados - gastos pagados + transferencias recibidas - enviadas.
+export function accountBalances(state: Pick<FinanceState, "accounts" | "transactions" | "transfers">): AccountBalance[] {
+  const balances = new Map<string, number>();
+  for (const a of state.accounts) balances.set(a.id, a.openingBalance);
+
+  for (const t of paidOnly(state.transactions)) {
+    if (!t.accountId || !balances.has(t.accountId)) continue;
+    const delta = t.type === "income" ? t.amount : -t.amount;
+    balances.set(t.accountId, (balances.get(t.accountId) ?? 0) + delta);
+  }
+  for (const tr of state.transfers) {
+    if (balances.has(tr.fromAccountId)) balances.set(tr.fromAccountId, (balances.get(tr.fromAccountId) ?? 0) - tr.amount);
+    if (balances.has(tr.toAccountId)) balances.set(tr.toAccountId, (balances.get(tr.toAccountId) ?? 0) + tr.amount);
+  }
+
+  return state.accounts
+    .filter((a) => !a.archived)
+    .map((account) => ({ account, balance: balances.get(account.id) ?? 0 }));
 }
