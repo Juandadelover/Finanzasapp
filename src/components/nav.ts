@@ -1,13 +1,15 @@
 import {
   BarChart3,
+  CreditCard,
+  LayoutDashboard,
   FileText,
   HandCoins,
   Home,
   Landmark,
+  LineChart,
   Receipt,
   Repeat,
   Settings,
-  Shield,
   Users,
   Wallet,
   type LucideIcon,
@@ -38,9 +40,21 @@ export const SECONDARY_NAV: NavItem[] = [
   { href: "/ajustes", label: "Ajustes", icon: Settings },
 ];
 
-export const ADMIN_NAV: NavItem = { href: "/admin", label: "Admin", icon: Shield };
+/** Consola del operador (admin de la plataforma): reemplaza por completo la navegación de la app de clientes. */
+export const ADMIN_CONSOLE_NAV: NavItem[] = [
+  { href: "/admin", label: "Resumen", icon: LayoutDashboard },
+  { href: "/admin/pagos", label: "Pagos", icon: CreditCard },
+  { href: "/admin/clientes", label: "Clientes", icon: Users },
+  { href: "/admin/ingresos", label: "Ingresos", icon: LineChart },
+  { href: "/admin/configuracion", label: "Configuración", icon: Settings },
+];
+
+/** Rutas que un admin de plataforma puede usar: la consola y su cuenta. El resto es la app de clientes. */
+export function isTenantPath(pathname: string): boolean {
+  return !(/^\/(admin|cuenta)(\/|$)/.test(pathname));
+}
 
 /** Segment-aware: "/cuenta" must not match "/cuentas". */
 export function isActivePath(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+  return href === "/" || href === "/admin" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }

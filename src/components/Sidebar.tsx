@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Eye, EyeOff, TrendingUp } from "lucide-react";
+import { Eye, EyeOff, LogOut, TrendingUp } from "lucide-react";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
-import { ADMIN_NAV, PRIMARY_NAV, SECONDARY_NAV, isActivePath, type NavItem } from "@/components/nav";
+import { ADMIN_CONSOLE_NAV, PRIMARY_NAV, SECONDARY_NAV, isActivePath, type NavItem } from "@/components/nav";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
 import { usePrivacy } from "@/context/PrivacyContext";
 import { cn } from "@/lib/cn";
@@ -35,9 +37,20 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, isPlatformAdmin } = useFinance();
+  const { user, isPlatformAdmin, adminResolved, signOut } = useFinance();
   const { hidden, toggleHidden } = usePrivacy();
-  const secondary = isPlatformAdmin ? [...SECONDARY_NAV, ADMIN_NAV] : SECONDARY_NAV;
+  const confirm = useConfirm();
+  const secondary = SECONDARY_NAV;
+  const pending = !adminResolved;
+
+  async function handleSignOut() {
+    const ok = await confirm({
+      title: "¿Cerrar sesión?",
+      description: "Saldrás de la consola de administración.",
+      confirmLabel: "Cerrar sesión",
+    });
+    if (ok) await signOut();
+  }
   const displayName = user?.name || user?.email || "Mi cuenta";
   const accountActive = isActivePath(pathname, "/cuenta");
 
@@ -53,26 +66,54 @@ export function Sidebar() {
         <span className="text-lg font-bold tracking-tight">Finanzas</span>
       </div>
 
-      <div className="px-3 pb-2">
-        <WorkspaceSwitcher variant="sidebar" />
-      </div>
+      {pending ? (
+        <div role="status" className="flex flex-1 flex-col gap-2 px-3 py-4">
+          <span className="sr-only">Cargando menú...</span>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 rounded-xl" />
+          ))}
+        </div>
+      ) : isPlatformAdmin ? (
+        <>
+          <div className="px-5 pb-2">
+            <span className="inline-flex items-center rounded-full bg-[var(--color-brand)]/15 px-2.5 py-1 text-xs font-semibold text-[var(--color-brand-light)]">
+              Administración
+            </span>
+          </div>
+          <nav aria-label="Principal" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3">
+            <ul className="flex flex-col gap-0.5">
+              {ADMIN_CONSOLE_NAV.map((item) => (
+                <li key={item.href}>
+                  <NavLink item={item} pathname={pathname} />
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </>
+      ) : (
+        <>
+          <div className="px-3 pb-2">
+            <WorkspaceSwitcher variant="sidebar" />
+          </div>
 
-      <nav aria-label="Principal" className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-3 py-3">
-        <ul className="flex flex-col gap-0.5">
-          {PRIMARY_NAV.map((item) => (
-            <li key={item.href}>
-              <NavLink item={item} pathname={pathname} />
-            </li>
-          ))}
-        </ul>
-        <ul className="flex flex-col gap-0.5 border-t border-[var(--color-border)] pt-4" aria-label="Más secciones">
-          {secondary.map((item) => (
-            <li key={item.href}>
-              <NavLink item={item} pathname={pathname} />
-            </li>
-          ))}
-        </ul>
-      </nav>
+          <nav aria-label="Principal" className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-3 py-3">
+            <ul className="flex flex-col gap-0.5">
+              {PRIMARY_NAV.map((item) => (
+                <li key={item.href}>
+                  <NavLink item={item} pathname={pathname} />
+                </li>
+              ))}
+            </ul>
+            <ul className="flex flex-col gap-0.5 border-t border-[var(--color-border)] pt-4" aria-label="Más secciones">
+              {secondary.map((item) => (
+                <li key={item.href}>
+                  <NavLink item={item} pathname={pathname} />
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </>
+      )}
 
       <div className="flex items-center gap-1 border-t border-[var(--color-border)] p-3">
         <Link
@@ -94,15 +135,27 @@ export function Sidebar() {
             <span className="block text-xs text-[var(--color-text-faint)]">Mi cuenta</span>
           </span>
         </Link>
-        <button
-          type="button"
-          onClick={toggleHidden}
-          aria-label={hidden ? "Mostrar montos" : "Ocultar montos"}
-          aria-pressed={hidden}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] active:scale-[0.95]"
-        >
-          {hidden ? <EyeOff size={19} /> : <Eye size={19} />}
-        </button>
+        {isPlatformAdmin ? (
+          <button
+            type="button"
+            onClick={() => void handleSignOut()}
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] active:scale-[0.95]"
+          >
+            <LogOut size={19} aria-hidden />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={toggleHidden}
+            aria-label={hidden ? "Mostrar montos" : "Ocultar montos"}
+            aria-pressed={hidden}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] active:scale-[0.95]"
+          >
+            {hidden ? <EyeOff size={19} /> : <Eye size={19} />}
+          </button>
+        )}
       </div>
     </aside>
   );

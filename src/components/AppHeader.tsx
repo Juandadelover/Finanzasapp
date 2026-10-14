@@ -1,9 +1,11 @@
 "use client";
 
-import { Eye, EyeOff, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { Eye, EyeOff, TrendingUp, UserRound } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { NewTransactionButton } from "@/components/NewTransactionButton";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
+import { useFinance } from "@/context/FinanceContext";
 import { usePrivacy } from "@/context/PrivacyContext";
 
 /**
@@ -17,6 +19,7 @@ interface AppHeaderProps {
 
 export function AppHeader({ actions }: AppHeaderProps) {
   const { hidden, toggleHidden } = usePrivacy();
+  const { isPlatformAdmin } = useFinance();
   // Material solo cuando el contenido pasa por debajo (borde de scroll).
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -32,9 +35,18 @@ export function AppHeader({ actions }: AppHeaderProps) {
         <div className="gradient-brand flex h-10 w-10 items-center justify-center shrink-0 rounded-2xl shadow-[var(--shadow-brand-sm)]">
           <TrendingUp size={20} className="text-white" strokeWidth={2.5} />
         </div>
-        <WorkspaceSwitcher />
+        {isPlatformAdmin ? <span className="truncate text-sm font-semibold">Administración</span> : <WorkspaceSwitcher />}
       </div>
       <div className="flex items-center gap-2">
+        {isPlatformAdmin ? (
+          <Link
+            href="/cuenta"
+            aria-label="Mi cuenta"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-muted)] transition active:scale-[0.95] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] lg:hidden"
+          >
+            <UserRound size={19} aria-hidden />
+          </Link>
+        ) : (
         <button
           type="button"
           onClick={toggleHidden}
@@ -43,10 +55,13 @@ export function AppHeader({ actions }: AppHeaderProps) {
         >
           {hidden ? <EyeOff size={19} /> : <Eye size={19} />}
         </button>
+        )}
         {actions ? <div className="flex items-center gap-3">{actions}</div> : null}
-        <div className="hidden lg:block">
-          <NewTransactionButton />
-        </div>
+        {isPlatformAdmin ? null : (
+          <div className="hidden lg:block">
+            <NewTransactionButton />
+          </div>
+        )}
       </div>
     </header>
   );

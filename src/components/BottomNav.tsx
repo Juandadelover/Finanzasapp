@@ -4,10 +4,12 @@ import { useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Wallet, HandCoins, BarChart3, Settings } from "lucide-react";
+import { ADMIN_CONSOLE_NAV, isActivePath } from "@/components/nav";
+import { useFinance } from "@/context/FinanceContext";
 import { cn } from "@/lib/cn";
 import { SPRINGS, createSpring, useReducedMotion, type Spring } from "@/components/ui/motion";
 
-const NAV_ITEMS = [
+const TENANT_ITEMS = [
   { href: "/", label: "Inicio", icon: Home },
   { href: "/movimientos", label: "Movimientos", icon: Wallet },
   { href: "/cartera", label: "Cartera", icon: HandCoins },
@@ -17,10 +19,12 @@ const NAV_ITEMS = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { isPlatformAdmin } = useFinance();
+  const NAV_ITEMS = isPlatformAdmin ? ADMIN_CONSOLE_NAV : TENANT_ITEMS;
   const reduced = useReducedMotion();
   const pill = useRef<HTMLSpanElement>(null);
   const spring = useRef<Spring | null>(null);
-  const activeIndex = NAV_ITEMS.findIndex(({ href }) => (href === "/" ? pathname === "/" : pathname.startsWith(href)));
+  const activeIndex = NAV_ITEMS.findIndex(({ href }) => isActivePath(pathname, href));
 
   // El indicador activo se desliza con un resorte (item 56px + gap 2px = 58px).
   useLayoutEffect(() => {
@@ -49,7 +53,7 @@ export function BottomNav() {
           className="pointer-events-none absolute left-1.5 top-2 h-12 w-14 rounded-full bg-[var(--color-surface-3)] transition-opacity duration-(--duration-fast)"
         />
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
+          const isActive = isActivePath(pathname, href);
           return (
             <Link
               key={href}
