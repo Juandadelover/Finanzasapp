@@ -1,3 +1,4 @@
+import { signOutAndReset } from "@/lib/session";
 import { createClient } from "@/lib/supabase/client";
 
 export interface AccountProfile {
@@ -44,7 +45,7 @@ export async function requestAccountDeletion(
 }
 
 export async function signOutEverywhere(): Promise<void> {
-  await createClient().auth.signOut({ scope: "global" });
+  await signOutAndReset("global");
 }
 
 export function deletionDate(requestedAt: string): Date {

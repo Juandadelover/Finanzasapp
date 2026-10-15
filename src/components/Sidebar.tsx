@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Eye, EyeOff, LogOut, TrendingUp } from "lucide-react";
+import { LogOut, TrendingUp } from "lucide-react";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { ADMIN_CONSOLE_NAV, PRIMARY_NAV, SECONDARY_NAV, isActivePath, type NavItem } from "@/components/nav";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
-import { usePrivacy } from "@/context/PrivacyContext";
 import { cn } from "@/lib/cn";
 
 /**
@@ -38,7 +37,6 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
 export function Sidebar() {
   const pathname = usePathname();
   const { user, isPlatformAdmin, adminResolved, signOut } = useFinance();
-  const { hidden, toggleHidden } = usePrivacy();
   const confirm = useConfirm();
   const secondary = SECONDARY_NAV;
   const pending = !adminResolved;
@@ -46,7 +44,9 @@ export function Sidebar() {
   async function handleSignOut() {
     const ok = await confirm({
       title: "¿Cerrar sesión?",
-      description: "Saldrás de la consola de administración.",
+      description: isPlatformAdmin
+        ? "Saldrás de la consola de administración."
+        : "Volverás a la pantalla de inicio de sesión en este dispositivo.",
       confirmLabel: "Cerrar sesión",
     });
     if (ok) await signOut();
@@ -135,27 +135,15 @@ export function Sidebar() {
             <span className="block text-xs text-[var(--color-text-faint)]">Mi cuenta</span>
           </span>
         </Link>
-        {isPlatformAdmin ? (
-          <button
-            type="button"
-            onClick={() => void handleSignOut()}
-            aria-label="Cerrar sesión"
-            title="Cerrar sesión"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] active:scale-[0.95]"
-          >
-            <LogOut size={19} aria-hidden />
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={toggleHidden}
-            aria-label={hidden ? "Mostrar montos" : "Ocultar montos"}
-            aria-pressed={hidden}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] active:scale-[0.95]"
-          >
-            {hidden ? <EyeOff size={19} /> : <Eye size={19} />}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => void handleSignOut()}
+          aria-label="Cerrar sesión"
+          title="Cerrar sesión"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-expense)]/10 hover:text-[var(--color-expense)] active:scale-[0.95]"
+        >
+          <LogOut size={19} aria-hidden />
+        </button>
       </div>
     </aside>
   );

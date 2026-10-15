@@ -6,6 +6,7 @@ import { TrendingUp } from "lucide-react";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { createClient } from "@/lib/supabase/client";
+import { signOutAndReset } from "@/lib/session";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { acceptInvitation, errorMessage, getInvitation, type InvitationInfo } from "@/lib/team";
 
@@ -62,8 +63,7 @@ export default function InvitacionPage({ params }: { params: Promise<{ token: st
     !!info && !!sessionEmail && sessionEmail.toLowerCase() !== info.email.toLowerCase();
 
   async function switchAccount() {
-    await supabase.auth.signOut();
-    window.location.href = `/login?${loginQs}`; // eslint-disable-line @next/next/no-location-assign-relative-destination
+    await signOutAndReset("local", `/login?${loginQs}`);
   }
 
   const btn = buttonClass({ fullWidth: true });
