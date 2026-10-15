@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accountBalances, budgetProgress, categoryBreakdown, computeTotals } from "@/lib/selectors";
+import { accountBalances, accountStatement, budgetProgress, categoryBreakdown, computeTotals } from "@/lib/selectors";
 import type { Account, Category, Transaction, Transfer } from "@/types/finance";
 
 let n = 0;
@@ -82,5 +82,40 @@ describe("accountBalances", () => {
     });
     expect(r).toHaveLength(1);
     expect(r[0].balance).toBe(150);
+  });
+});
+
+describe("accountStatement", () => {
+  const accounts = [acc({ id: "a1", openingBalance: 1000 }), acc({ id: "a2", archived: true })];
+  const tr = (o: Partial<Transfer>): Transfer => ({
+    id: `tr${++n}`, fromAccountId: "a1", toAccountId: "a2", amount: 0, date: "2026-10-01", description: "", ...o,
+  });
+
+  it("returns null for an unknown account", () => {
+    expect(accountStatement({ accounts, transactions: [], transfers: [] }, "nope")).toBeNull();
+  });
+
+  it("matches accountBalances and lists only this account's movements, newest first", () => {
+    const transactions = [
+      tx({ id: "old", accountId: "a1", type: "income", amount: 500, date: "2026-09-01" }),
+      tx({ id: "new", accountId: "a1", type: "expense", amount: 200, date: "2026-10-05" }),
+      tx({ id: "pend", accountId: "a1", type: "income", amount: 9999, status: "pending", date: "2026-10-06" }),
+      tx({ id: "other", accountId: "a2", type: "income", amount: 77 }),
+      tx({ id: "none", accountId: null, type: "income", amount: 55 }),
+    ];
+    const transfers = [tr({ id: "t-out", amount: 100, date: "2026-10-03" })];
+    const s = accountStatement({ accounts, transactions, transfers }, "a1")!;
+    expect(s.balance).toBe(1000 + 500 - 200 - 100);
+    expect(s.balance).toBe(accountBalances({ accounts, transactions, transfers })[0].balance);
+    expect(s.entries.map((e) => (e.kind === "transaction" ? e.transaction.id : e.transfer.id))).toEqual([
+      "pend", "new", "t-out", "old",
+    ]);
+  });
+
+  it("marks transfer direction and works for archived accounts", () => {
+    const transfers = [tr({ id: "x", amount: 300 })];
+    const s = accountStatement({ accounts, transactions: [], transfers }, "a2")!;
+    expect(s.balance).toBe(300);
+    expect(s.entries).toEqual([{ kind: "transfer", transfer: transfers[0], direction: "in" }]);
   });
 });

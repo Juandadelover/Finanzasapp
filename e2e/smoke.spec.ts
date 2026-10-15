@@ -104,3 +104,15 @@ test.describe("otros roles", () => {
     }
   });
 });
+
+test.describe("detalle de cuenta", () => {
+  test("al tocar una cuenta se ven sus movimientos", async ({ page }) => {
+    await login(page, "dueno@finanzasapp.test");
+    await page.goto("/cuentas");
+    await page.getByRole("link", { name: /ver movimientos/i }).first().click();
+    await expect(page).toHaveURL(/\/cuentas\/[0-9a-f-]+$/);
+    await expect(page.getByRole("heading", { name: "Movimientos de esta cuenta" })).toBeVisible();
+    await expect(page.getByText("Saldo de la cuenta")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Editar", exact: true }).first()).toBeVisible();
+  });
+});
