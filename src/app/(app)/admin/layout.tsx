@@ -70,8 +70,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="pb-8">
       <AppHeader />
       <div className="w-full">
-        {section ? <PageHeader title={section.title} subtitle={section.subtitle} className="mx-4 lg:mx-0" /> : null}
-        <div className="mx-4 mt-4 lg:mx-0">{children}</div>
+        {section ? <PageHeader title={section.title} subtitle={section.subtitle} className="mx-4 lg:mx-0 lg:mt-8" /> : null}
+        <div className="mx-4 mt-4 lg:mx-0 lg:mt-6">{children}</div>
       </div>
     </div>
   );
