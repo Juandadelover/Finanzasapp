@@ -146,3 +146,19 @@ Los límites por plan de la sección anterior siguen sirviendo con cualquiera de
 ## Fuentes
 - [Gemini API Pricing 2026 (MorphLLM)](https://www.morphllm.com/gemini-api-pricing) · [Gemini pricing 2026 (CloudZero)](https://www.cloudzero.com/blog/gemini-pricing/) · [Gemini API Pricing, octubre 2026 (BenchLM)](https://benchlm.ai/google/api-pricing) · [Gemini API Pricing 2026 (Opslyft)](https://www.opslyft.com/blog/google-gemini-api-pricing-2026) · [Gemini API Pricing 2026 (AIFreeAPI)](https://www.aifreeapi.com/en/posts/gemini-api-pricing-2026)
 - Capa gratuita y uso de datos: [Gemini API pricing changes (AgentDeals)](https://agentdeals.dev/gemini-api-pricing-changes) · [Gemini API Free Plan (CostBench)](https://www.costbench.com/software/llm-api-providers/google-gemini-api/free-plan/)
+
+---
+
+# Resumen: costo mensual para 100 clientes (COP)
+
+Dólar a $4.000. Mezcla supuesta: 80 usuarios normales y 20 intensivos. Son estimaciones; el precio del audio de Gemini 2.5 Flash-Lite no está confirmado.
+
+| Escenario | Gemini 2.5 Flash-Lite | Claude Haiku 5.5 |
+|---|---|---|
+| 100 usuarios normales | ≈ $ 10.400 | ≈ $ 13.500 |
+| 100 usuarios intensivos | ≈ $ 48.200 | ≈ $ 63.000 |
+| Mezcla (80 normales, 20 intensivos) | ≈ $ 18.000 | ≈ $ 23.400 |
+
+- **Ingreso de referencia:** 100 clientes en el plan Emprendedor ($ 24.900) = $ 2.490.000 al mes.
+- Con la mezcla, la IA con Gemini Flash-Lite equivale a cerca del **0,7 %** de ese ingreso (con Haiku, cerca del 0,9 %).
+- Costo por usuario promedio de la mezcla: ≈ $ 180 (Gemini) o ≈ $ 234 (Haiku) al mes.
