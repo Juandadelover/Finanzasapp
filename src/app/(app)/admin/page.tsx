@@ -52,6 +52,7 @@ function RevenueSparkline({ points }: { points: RevenuePoint[] }) {
             tickLine={false}
             axisLine={false}
             interval={0}
+            padding={{ left: 14, right: 14 }}
             tick={{ fill: "var(--color-text-faint)", fontSize: 11 }}
           />
           <Tooltip
@@ -312,10 +313,12 @@ export default function AdminResumenPage() {
           </dl>
         </div>
         <div className="relative mt-4">
-          {series.length > 0 ? (
+          {revenue6 > 0 ? (
             <RevenueSparkline points={series} />
           ) : (
-            <p className="text-sm text-[var(--color-text-faint)]">Sin datos de ingresos todavía.</p>
+            <p className="flex h-28 items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] text-sm text-[var(--color-text-faint)]">
+              Cuando apruebes pagos verás aquí la tendencia de ingresos.
+            </p>
           )}
         </div>
         <Link

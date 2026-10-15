@@ -107,7 +107,7 @@ export function Kpi({
   );
   const inner = (
     <>
-      <p className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-muted)]">
+      <p className={cn("flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-muted)]", href && "pr-5")}>
         {tone !== "neutral" ? (
           <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--kpi-tone)]" />
         ) : null}
@@ -164,7 +164,7 @@ export const SUBSCRIPTION_TONE: Record<string, Tone> = {
 };
 
 export function StatusBadge({ status }: { status: string | null | undefined }) {
-  if (!status) return <span className="text-sm text-[var(--color-text-faint)]">Sin suscripción</span>;
+  if (!status) return <span className="text-xs text-[var(--color-text-faint)]">Sin suscripción</span>;
   return <Badge tone={SUBSCRIPTION_TONE[status] ?? "neutral"}>{STATUS_LABEL[status] ?? status}</Badge>;
 }
 

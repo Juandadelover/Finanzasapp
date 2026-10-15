@@ -184,7 +184,7 @@ function PlanCard({ plan, onSaved }: { plan: PlanRow; onSaved: () => void }) {
   const [active, setActive] = useState(plan.active);
   const [busy, setBusy] = useState(false);
   const uid = useId();
-  const free = plan.code === "free";
+  const free = plan.code === "gratis";
 
   const dirty = active !== plan.active || (!free && (monthly !== plan.monthly_price || annual !== plan.annual_price));
 
