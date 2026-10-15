@@ -2,8 +2,9 @@
 // and give the app shell a little resilience on flaky connections.
 // It intentionally does NOT cache anything from Supabase or the auth
 // flow — that data is always fetched fresh.
-const CACHE_NAME = "finanzas-shell-v1";
-const APP_SHELL = ["/", "/login"];
+// v2: las páginas de la app (con sesión) ya no se guardan en caché.
+const CACHE_NAME = "finanzas-shell-v2";
+const APP_SHELL = ["/login"];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -33,16 +34,10 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (isBypassed(url)) return;
 
+  // Navegación: siempre a la red. Sin conexión se muestra el login guardado;
+  // nunca una página de la app con datos de una sesión.
   if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => caches.match(request).then((cached) => cached ?? caches.match("/")))
-    );
+    event.respondWith(fetch(request).catch(() => caches.match("/login")));
     return;
   }
 

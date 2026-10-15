@@ -1,27 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Building2, RefreshCw, ShieldCheck } from "lucide-react";
+import { Building2, ChevronLeft, RefreshCw, ShieldCheck } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { SubscriptionSheet } from "@/components/admin/SubscriptionSheet";
-import {
-  PAYMENT_STATUS_CHIP,
-  PAYMENT_STATUS_LABEL,
-  STATUS_LABEL,
-  cycleLabel,
-  fmtDateTime,
-  fmtDay,
-} from "@/components/admin/shared";
+import { Badge, DefinitionRow, Initials, Panel, PaymentBadge, StatusBadge, type Tone } from "@/components/admin/AdminUI";
+import { STATUS_LABEL, cycleLabel, fmtDateTime, fmtDay } from "@/components/admin/shared";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/ui/DataTable";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { ResponsiveGrid } from "@/components/ui/ResponsiveGrid";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   fetchAdminCustomerDetail,
   fetchPlans,
   type AdminCustomerDetail,
   type CustomerPayment,
+  type CustomerSubscription,
   type CustomerWorkspace,
   type PlanRow,
 } from "@/lib/admin";
@@ -29,30 +23,65 @@ import { cn } from "@/lib/cn";
 import { formatAmount } from "@/lib/format";
 
 const cardClass = "rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4";
-const chipClass = "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium";
+const DAY_MS = 86_400_000;
 
-function Fact({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+const cap = (s: string | null | undefined) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "—");
+
+function dayDiff(iso: string, now: number): number {
+  const a = new Date(iso);
+  const b = new Date(now);
+  a.setHours(0, 0, 0, 0);
+  b.setHours(0, 0, 0, 0);
+  return Math.round((a.getTime() - b.getTime()) / DAY_MS);
+}
+
+function plural(n: number): string {
+  return n === 1 ? "1 día" : `${n} días`;
+}
+
+/** Resumen del periodo vigente: fecha clave, cuenta regresiva y tono. */
+function periodSummary(sub: CustomerSubscription, now: number): { text: string; tone: Tone } | null {
+  const status = sub.status;
+  const target =
+    status === "trial" ? sub.trial_end : status === "grace" ? (sub.grace_until ?? sub.current_period_end) : sub.current_period_end;
+  if (!target || status === "free") return null;
+  const d = dayDiff(target, now);
+  const label = status === "trial" ? "La prueba termina el" : status === "grace" ? "La gracia termina el" : "Vence el";
+  const date = fmtDay(target);
+  if (d < 0) {
+    return {
+      text: status === "expired" ? `Venció el ${date} · hace ${plural(-d)}` : `${label} ${date} · pasaron ${plural(-d)}`,
+      tone: "negative",
+    };
+  }
+  if (d === 0) return { text: `${label} ${date} · es hoy`, tone: "warning" };
+  return { text: `${label} ${date} · faltan ${plural(d)}`, tone: d <= 7 ? "warning" : "neutral" };
+}
+
+function Count({ value }: { value: number }) {
+  return <span className={cn("tabular", value === 0 && "text-[var(--color-text-faint)]")}>{value}</span>;
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div
-      className={cn(
-        "rounded-2xl border p-3.5",
-        highlight
-          ? "border-[var(--color-warning)] bg-[var(--color-warning)]/10"
-          : "border-[var(--color-border)] bg-[var(--color-surface)]"
-      )}
-    >
-      <p className="text-xs font-medium text-[var(--color-text-muted)]">{label}</p>
-      <p className="tabular mt-1 text-sm font-semibold">{value}</p>
-    </div>
+    <span>
+      {label}:{" "}
+      <strong className={cn("tabular font-semibold", value === 0 ? "text-[var(--color-text-faint)]" : "text-[var(--color-text)]")}>
+        {value}
+      </strong>
+    </span>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function BackLink() {
   return (
-    <div className="flex items-baseline justify-between gap-3 py-2 text-sm">
-      <dt className="text-[var(--color-text-muted)]">{label}</dt>
-      <dd className="tabular text-right font-medium">{value}</dd>
-    </div>
+    <Link
+      href="/admin/clientes"
+      className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-xl px-2 text-sm text-[var(--color-text-muted)] transition duration-(--duration-fast) ease-(--ease-out) hover:text-[var(--color-text)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-light)]"
+    >
+      <ChevronLeft size={18} aria-hidden />
+      Clientes
+    </Link>
   );
 }
 
@@ -62,6 +91,7 @@ export default function AdminClienteDetallePage({ params }: { params: Promise<{ 
   const [plans, setPlans] = useState<PlanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [now] = useState(() => Date.now());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,33 +108,33 @@ export default function AdminClienteDetallePage({ params }: { params: Promise<{ 
     fetchPlans().then((p) => setPlans(p ?? []));
   }, []);
 
-  const back = { backHref: "/admin/clientes", backLabel: "Clientes" } as const;
-
   if (loading) {
     return (
-      <>
-        <PageHeader title="Cliente" {...back} className="mx-4 lg:mx-0" />
-        <div role="status" className="mx-4 mt-4 flex flex-col gap-3 lg:mx-0">
+      <div className="mx-4 mt-2 flex flex-col gap-4 lg:mx-0">
+        <BackLink />
+        <h1 className="sr-only">Cliente</h1>
+        <div role="status" className="flex flex-col gap-3">
           <span className="sr-only">Cargando cliente...</span>
           <Skeleton className="h-20 rounded-2xl" />
           <Skeleton className="h-32 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
         </div>
-      </>
+      </div>
     );
   }
 
   if (!detail) {
     return (
-      <>
-        <PageHeader title="Cliente" {...back} className="mx-4 lg:mx-0" />
-        <div role="alert" className={cn(cardClass, "mx-4 mt-4 lg:mx-0")}>
+      <div className="mx-4 mt-2 flex flex-col gap-4 lg:mx-0">
+        <BackLink />
+        <h1 className="sr-only">Cliente</h1>
+        <div role="alert" className={cardClass}>
           <p className="text-sm text-[var(--color-text-muted)]">No se pudo cargar el cliente.</p>
           <Button variant="secondary" size="sm" className="mt-3" onClick={() => void load()}>
             <RefreshCw size={14} aria-hidden /> Reintentar
           </Button>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -112,35 +142,47 @@ export default function AdminClienteDetallePage({ params }: { params: Promise<{ 
   const name = detail.full_name || detail.email || "Cliente";
   const plan = detail.effective_plan ?? sub?.plan_code ?? "free";
   const status = sub?.status ?? null;
+  const period = sub ? periodSummary(sub, now) : null;
+  const contractedDiffers = !!sub?.plan_code && sub.plan_code !== plan;
 
   const wsColumns = [
     { key: "name", header: "Negocio", cell: (w: CustomerWorkspace) => <span className="font-medium">{w.name}</span> },
-    { key: "members", header: "Miembros", align: "right" as const, cell: (w: CustomerWorkspace) => w.members },
+    { key: "members", header: "Miembros", align: "right" as const, cell: (w: CustomerWorkspace) => <Count value={w.members} /> },
     {
       key: "month",
       header: "Movimientos del mes",
       align: "right" as const,
-      cell: (w: CustomerWorkspace) => w.transactions_this_month,
+      cell: (w: CustomerWorkspace) => <Count value={w.transactions_this_month} />,
     },
-    { key: "total", header: "Movimientos totales", align: "right" as const, cell: (w: CustomerWorkspace) => w.transactions_total },
+    {
+      key: "total",
+      header: "Movimientos totales",
+      align: "right" as const,
+      cell: (w: CustomerWorkspace) => <Count value={w.transactions_total} />,
+    },
     {
       key: "docs",
       header: "Cobros del mes",
       align: "right" as const,
-      cell: (w: CustomerWorkspace) => w.collection_docs_this_month,
+      cell: (w: CustomerWorkspace) => <Count value={w.collection_docs_this_month} />,
     },
-    { key: "last", header: "Última actividad", cell: (w: CustomerWorkspace) => fmtDay(w.last_activity_at) },
+    {
+      key: "last",
+      header: "Última actividad",
+      align: "right" as const,
+      cell: (w: CustomerWorkspace) => <span className="whitespace-nowrap">{fmtDay(w.last_activity_at)}</span>,
+    },
   ];
 
   const payColumns = [
-    { key: "date", header: "Fecha", cell: (p: CustomerPayment) => fmtDateTime(p.created_at) },
+    { key: "date", header: "Fecha", cell: (p: CustomerPayment) => <span className="whitespace-nowrap">{fmtDateTime(p.created_at)}</span> },
     { key: "ref", header: "Referencia", cell: (p: CustomerPayment) => p.reference ?? "—" },
     {
       key: "plan",
       header: "Plan",
       cell: (p: CustomerPayment) => (
-        <span className="capitalize">
-          {p.plan_code} · {cycleLabel(p.billing_cycle).toLowerCase()}
+        <span>
+          {cap(p.plan_code)} · {cycleLabel(p.billing_cycle).toLowerCase()}
         </span>
       ),
     },
@@ -154,88 +196,87 @@ export default function AdminClienteDetallePage({ params }: { params: Promise<{ 
       key: "declared",
       header: "Declarado",
       align: "right" as const,
-      cell: (p: CustomerPayment) => (p.declared_amount == null ? "—" : formatAmount(p.declared_amount, "COP")),
+      cell: (p: CustomerPayment) =>
+        p.declared_amount == null ? (
+          <span className="text-[var(--color-text-faint)]">—</span>
+        ) : (
+          formatAmount(p.declared_amount, "COP")
+        ),
     },
     { key: "channel", header: "Medio", cell: (p: CustomerPayment) => p.channel ?? "—" },
-    {
-      key: "status",
-      header: "Estado",
-      cell: (p: CustomerPayment) => (
-        <span className={cn(chipClass, PAYMENT_STATUS_CHIP[p.status])}>{PAYMENT_STATUS_LABEL[p.status] ?? p.status}</span>
-      ),
-    },
+    { key: "status", header: "Estado", cell: (p: CustomerPayment) => <PaymentBadge status={p.status} /> },
   ];
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader
-        title={name}
-        subtitle={detail.full_name ? (detail.email ?? undefined) : undefined}
-        {...back}
-        className="mx-4 lg:mx-0"
-        actions={
-          <>
-            <span className={cn(chipClass, "bg-[var(--color-brand)]/15 capitalize text-[var(--color-brand-light)]")}>
-              {plan}
-            </span>
-            {status ? (
-              <span className={cn(chipClass, "bg-[var(--color-surface-3)] text-[var(--color-text)]")}>
-                {STATUS_LABEL[status] ?? status}
-              </span>
-            ) : null}
-          </>
-        }
-      />
+      <div className="mx-4 mt-2 flex flex-col gap-2 lg:mx-0">
+        <BackLink />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-3.5">
+            <Initials name={name} className="h-14 w-14 text-base" />
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-bold leading-snug">{name}</h1>
+              {detail.full_name && detail.email ? (
+                <p className="truncate text-sm text-[var(--color-text-muted)]">{detail.email}</p>
+              ) : null}
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <Badge tone="brand">Plan {cap(plan)}</Badge>
+                <StatusBadge status={status} />
+                {detail.deletion_requested_at ? <Badge tone="warning">Pidió eliminar su cuenta</Badge> : null}
+              </div>
+            </div>
+          </div>
+          <Button onClick={() => setEditing(true)} className="w-full lg:w-auto">
+            Activar o extender
+          </Button>
+        </div>
+      </div>
 
       <div className="mx-4 flex flex-col gap-5 lg:mx-0">
-        {detail.deletion_requested_at ? (
-          <div
-            role="alert"
-            className="flex items-start gap-3 rounded-2xl border border-[var(--color-warning)] bg-[var(--color-warning)]/10 p-4 text-sm"
-          >
-            <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[var(--color-warning)]" aria-hidden />
-            <p>
-              <strong>Solicitó eliminar su cuenta</strong> el {fmtDay(detail.deletion_requested_at)}.
-            </p>
-          </div>
-        ) : null}
-
-        <ResponsiveGrid variant="stats">
-          <Fact label="Registro" value={fmtDay(detail.created_at)} />
-          <Fact label="Último ingreso" value={fmtDateTime(detail.last_sign_in_at)} />
-          <Fact label="Términos aceptados" value={fmtDay(detail.terms_accepted_at)} />
-          <Fact
-            label="Solicitud de eliminación"
-            value={detail.deletion_requested_at ? fmtDay(detail.deletion_requested_at) : "Ninguna"}
-            highlight={!!detail.deletion_requested_at}
-          />
-        </ResponsiveGrid>
-
-        <section aria-labelledby="sub-title" className={cardClass}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 id="sub-title" className="text-sm font-semibold">
-              Suscripción
-            </h2>
-            <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
-              Activar o extender
-            </Button>
-          </div>
-          {sub ? (
-            <dl className="mt-2 divide-y divide-[var(--color-border)] lg:grid lg:grid-cols-2 lg:gap-x-8 lg:divide-y-0">
-              <Row label="Plan contratado" value={sub.plan_code ? sub.plan_code.charAt(0).toUpperCase() + sub.plan_code.slice(1) : "—"} />
-              <Row label="Plan vigente" value={plan.charAt(0).toUpperCase() + plan.slice(1)} />
-              <Row label="Ciclo" value={cycleLabel(sub.billing_cycle)} />
-              <Row label="Estado" value={status ? (STATUS_LABEL[status] ?? status) : "—"} />
-              <Row label="Fin de la prueba" value={fmtDay(sub.trial_end)} />
-              <Row label="Vence el" value={fmtDay(sub.current_period_end)} />
-              <Row label="Gracia hasta" value={fmtDay(sub.grace_until)} />
-              <Row label="Acceso provisional hasta" value={fmtDay(sub.provisional_until)} />
-              <Row label="Cancela al terminar el periodo" value={sub.cancel_at_period_end ? "Sí" : "No"} />
+        <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+          <Panel id="cuenta" title="Cuenta">
+            <dl>
+              <DefinitionRow label="Registro">{fmtDay(detail.created_at)}</DefinitionRow>
+              <DefinitionRow label="Último ingreso">{fmtDateTime(detail.last_sign_in_at)}</DefinitionRow>
+              <DefinitionRow label="Términos aceptados">{fmtDay(detail.terms_accepted_at)}</DefinitionRow>
+              <DefinitionRow label="Solicitud de eliminación">
+                {detail.deletion_requested_at ? (
+                  <Badge tone="warning">{fmtDay(detail.deletion_requested_at)}</Badge>
+                ) : (
+                  <span className="font-normal text-[var(--color-text-faint)]">Ninguna</span>
+                )}
+              </DefinitionRow>
             </dl>
-          ) : (
-            <p className="mt-2 text-sm text-[var(--color-text-muted)]">Este cliente aún no tiene suscripción.</p>
-          )}
-        </section>
+          </Panel>
+
+          <Panel id="sub" title="Suscripción">
+            {sub ? (
+              <>
+                {period ? (
+                  <p className="mb-2 flex items-center gap-2 rounded-xl bg-[var(--color-surface-2)] px-3 py-2 text-sm font-medium">
+                    <Badge tone={period.tone === "neutral" ? "positive" : period.tone} className="shrink-0">
+                      {period.tone === "negative" ? "Atrasado" : period.tone === "warning" ? "Por vencer" : "Al día"}
+                    </Badge>
+                    <span className="tabular min-w-0">{period.text}</span>
+                  </p>
+                ) : null}
+                <dl>
+                  <DefinitionRow label="Plan vigente">{cap(plan)}</DefinitionRow>
+                  {contractedDiffers ? <DefinitionRow label="Plan contratado">{cap(sub.plan_code)}</DefinitionRow> : null}
+                  <DefinitionRow label="Ciclo">{cycleLabel(sub.billing_cycle)}</DefinitionRow>
+                  <DefinitionRow label="Estado">{status ? (STATUS_LABEL[status] ?? status) : "—"}</DefinitionRow>
+                  <DefinitionRow label="Fin de la prueba">{fmtDay(sub.trial_end)}</DefinitionRow>
+                  <DefinitionRow label="Vence el">{fmtDay(sub.current_period_end)}</DefinitionRow>
+                  <DefinitionRow label="Gracia hasta">{fmtDay(sub.grace_until)}</DefinitionRow>
+                  <DefinitionRow label="Acceso provisional hasta">{fmtDay(sub.provisional_until)}</DefinitionRow>
+                  <DefinitionRow label="Cancela al terminar el periodo">{sub.cancel_at_period_end ? "Sí" : "No"}</DefinitionRow>
+                </dl>
+              </>
+            ) : (
+              <p className="text-sm text-[var(--color-text-muted)]">Este cliente aún no tiene suscripción.</p>
+            )}
+          </Panel>
+        </div>
 
         <section aria-labelledby="ws-title" className="flex flex-col gap-3">
           <h2 id="ws-title" className="text-sm font-semibold">
@@ -252,20 +293,12 @@ export default function AdminClienteDetallePage({ params }: { params: Promise<{ 
               <div className={cardClass}>
                 <p className="text-sm font-semibold">{w.name}</p>
                 <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)]">
-                  <span>
-                    Miembros: <strong className="text-[var(--color-text)]">{w.members}</strong>
-                  </span>
-                  <span>
-                    Cobros del mes: <strong className="text-[var(--color-text)]">{w.collection_docs_this_month}</strong>
-                  </span>
-                  <span>
-                    Movimientos del mes: <strong className="text-[var(--color-text)]">{w.transactions_this_month}</strong>
-                  </span>
-                  <span>
-                    Totales: <strong className="text-[var(--color-text)]">{w.transactions_total}</strong>
-                  </span>
+                  <Stat label="Miembros" value={w.members} />
+                  <Stat label="Cobros del mes" value={w.collection_docs_this_month} />
+                  <Stat label="Movimientos del mes" value={w.transactions_this_month} />
+                  <Stat label="Totales" value={w.transactions_total} />
                   <span className="col-span-2">
-                    Última actividad: <strong className="text-[var(--color-text)]">{fmtDay(w.last_activity_at)}</strong>
+                    Última actividad: <strong className="font-semibold text-[var(--color-text)]">{fmtDay(w.last_activity_at)}</strong>
                   </span>
                 </div>
               </div>
@@ -289,13 +322,11 @@ export default function AdminClienteDetallePage({ params }: { params: Promise<{ 
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="tabular text-sm font-semibold">{formatAmount(p.expected_amount, "COP")}</p>
-                    <p className="text-xs capitalize text-[var(--color-text-muted)]">
-                      {p.plan_code} · {cycleLabel(p.billing_cycle).toLowerCase()}
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      {cap(p.plan_code)} · {cycleLabel(p.billing_cycle).toLowerCase()}
                     </p>
                   </div>
-                  <span className={cn(chipClass, "shrink-0", PAYMENT_STATUS_CHIP[p.status])}>
-                    {PAYMENT_STATUS_LABEL[p.status] ?? p.status}
-                  </span>
+                  <PaymentBadge status={p.status} />
                 </div>
                 <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                   {fmtDateTime(p.created_at)}

@@ -27,7 +27,7 @@ const labelClass = "mb-1.5 block text-xs font-medium uppercase tracking-wide tex
 const cardClass = "rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4";
 
 export default function CuentaPage() {
-  const { user } = useFinance();
+  const { user, signOut } = useFinance();
   const confirm = useConfirm();
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [profileState, setProfileState] = useState<"loading" | "ok" | "error">("loading");
@@ -89,11 +89,19 @@ export default function CuentaPage() {
     setBusy(true);
     try {
       await signOutEverywhere();
-      window.location.href = "/login"; // eslint-disable-line @next/next/no-location-assign-relative-destination
     } catch {
       setBusy(false);
       toast.error("No se pudo cerrar las sesiones. Intenta de nuevo.");
     }
+  }
+
+  async function signOutHere() {
+    const ok = await confirm({
+      title: "¿Cerrar sesión?",
+      description: "Volverás a la pantalla de inicio de sesión en este dispositivo.",
+      confirmLabel: "Cerrar sesión",
+    });
+    if (ok) await signOut();
   }
 
   async function toggleDeletion(cancel: boolean) {
@@ -209,11 +217,14 @@ export default function CuentaPage() {
         <section className={cardClass}>
           <h2 className="text-sm font-semibold">Sesiones</h2>
           <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-            Cierra tu sesión en todos los dispositivos donde la tengas abierta.
+            Al cerrar sesión se borran los datos guardados en este dispositivo.
           </p>
-          <Button variant="secondary" onClick={signOutAll} loading={busy} className="mt-3">
-            Cerrar sesión en todos los dispositivos
-          </Button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button onClick={signOutHere}>Cerrar sesión</Button>
+            <Button variant="secondary" onClick={signOutAll} loading={busy}>
+              Cerrar sesión en todos los dispositivos
+            </Button>
+          </div>
         </section>
 
         <section className={`${cardClass} border-[var(--color-expense)]`}>

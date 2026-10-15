@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { Panel } from "@/components/admin/AdminUI";
+import { adminInputClass, fmtDateTime } from "@/components/admin/shared";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/cn";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   fetchAuditLog,
@@ -18,24 +21,65 @@ import {
 } from "@/lib/admin";
 import { formatAmountInput, parseAmountInput } from "@/lib/format";
 
-const KINDS: { kind: PaymentMethodKind; label: string; valueLabel: string }[] = [
-  { kind: "nequi", label: "Nequi", valueLabel: "Número" },
-  { kind: "bancolombia", label: "Bancolombia", valueLabel: "Número de cuenta" },
-  { kind: "breb", label: "Llave Bre-B", valueLabel: "Llave" },
+const KINDS: {
+  kind: PaymentMethodKind;
+  label: string;
+  valueLabel: string;
+  valuePlaceholder: string;
+}[] = [
+  { kind: "nequi", label: "Nequi", valueLabel: "Número", valuePlaceholder: "300 123 4567" },
+  { kind: "bancolombia", label: "Bancolombia", valueLabel: "Número de cuenta", valuePlaceholder: "Ahorros 123-456789-01" },
+  { kind: "breb", label: "Llave Bre-B", valueLabel: "Llave", valuePlaceholder: "@tunegocio o celular" },
 ];
 
-const inputClass =
-  "w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-base outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40";
-const labelClass =
-  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]";
-const cardClass = "rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4";
+const AUDIT_LABEL: Record<string, string> = {
+  approve_payment: "Pago aprobado",
+  reject_payment: "Pago rechazado",
+  set_subscription: "Suscripción ajustada",
+  save_payment_method: "Medio de pago guardado",
+  update_plan: "Plan actualizado",
+};
+const ENTITY_LABEL: Record<string, string> = {
+  payment: "Pago",
+  subscription: "Suscripción",
+  payment_method: "Medio de pago",
+  plan: "Plan",
+};
+
+const inputClass = adminInputClass;
+const labelClass = "mb-1.5 block text-sm font-medium";
+
+function auditLabel(action: string): string {
+  if (AUDIT_LABEL[action]) return AUDIT_LABEL[action];
+  const t = action.replace(/_/g, " ");
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
 
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <label className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-5 w-5 accent-[var(--color-brand)]" />
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-5 w-5 accent-[var(--color-brand)]"
+      />
       {label}
     </label>
+  );
+}
+
+function SaveRow({ dirty, busy, onSave, children }: { dirty: boolean; busy: boolean; onSave: () => void; children?: ReactNode }) {
+  return (
+    <div className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--color-border)] pt-3">
+      <div className="min-w-0 text-xs text-[var(--color-text-muted)]" aria-live="polite">
+        {dirty ? "Cambios sin guardar" : "Sin cambios"}
+      </div>
+      {children}
+      <Button size="sm" variant={dirty ? "primary" : "secondary"} onClick={onSave} loading={busy} disabled={!dirty}>
+        {busy ? "Guardando..." : "Guardar"}
+      </Button>
+    </div>
   );
 }
 
@@ -43,6 +87,7 @@ function MethodCard({
   kind,
   label,
   valueLabel,
+  valuePlaceholder,
   existing,
   index,
   onSaved,
@@ -50,6 +95,7 @@ function MethodCard({
   kind: PaymentMethodKind;
   label: string;
   valueLabel: string;
+  valuePlaceholder: string;
   existing: PaymentMethodConfig | undefined;
   index: number;
   onSaved: () => void;
@@ -59,6 +105,13 @@ function MethodCard({
   const [details, setDetails] = useState(existing?.details ?? "");
   const [active, setActive] = useState(existing?.active ?? true);
   const [busy, setBusy] = useState(false);
+  const uid = useId();
+
+  const dirty =
+    holder.trim() !== (existing?.holder_name ?? "").trim() ||
+    value.trim() !== (existing?.value ?? "").trim() ||
+    details.trim() !== (existing?.details ?? "").trim() ||
+    active !== (existing?.active ?? true);
 
   async function save() {
     if (!value.trim()) {
@@ -77,35 +130,51 @@ function MethodCard({
     if (ok) onSaved();
   }
 
+  const preview = [label, value.trim(), holder.trim()].filter(Boolean).join(" · ");
+
   return (
-    <div className={cardClass}>
-      <p className="mb-3 text-sm font-semibold">{label}</p>
+    <Panel title={label} description={active ? "Visible al pagar" : "Oculto para clientes"} id={`${uid}-panel`}>
       <div className="flex flex-col gap-3">
-        <label className="block">
-          <span className={labelClass}>Titular</span>
-          <input className={inputClass} value={holder} onChange={(e) => setHolder(e.target.value)} />
-        </label>
-        <label className="block">
-          <span className={labelClass}>{valueLabel}</span>
-          <input className={inputClass} value={value} onChange={(e) => setValue(e.target.value)} />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Detalles</span>
+        <div>
+          <label htmlFor={`${uid}-holder`} className={labelClass}>Titular</label>
           <input
+            id={`${uid}-holder`}
+            className={inputClass}
+            value={holder}
+            placeholder="Nombre como aparece en la cuenta"
+            onChange={(e) => setHolder(e.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor={`${uid}-value`} className={labelClass}>{valueLabel}</label>
+          <input
+            id={`${uid}-value`}
+            className={inputClass}
+            value={value}
+            placeholder={valuePlaceholder}
+            onChange={(e) => setValue(e.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor={`${uid}-details`} className={labelClass}>Detalles</label>
+          <input
+            id={`${uid}-details`}
             className={inputClass}
             value={details}
             placeholder="Ej. Cuenta de ahorros"
             onChange={(e) => setDetails(e.target.value)}
           />
-        </label>
-        <div className="flex items-center justify-between gap-3">
-          <Toggle checked={active} onChange={setActive} label="Visible para clientes" />
-          <Button onClick={save} loading={busy}>
-            {busy ? "Guardando..." : "Guardar"}
-          </Button>
         </div>
+        <Toggle checked={active} onChange={setActive} label="Visible para clientes" />
+        {value.trim() ? (
+          <p className="rounded-xl bg-[var(--color-surface-2)] px-3 py-2 text-xs text-[var(--color-text-muted)]">
+            <span className="font-medium text-[var(--color-text)]">Así lo ven:</span> {preview}
+            {details.trim() ? ` (${details.trim()})` : ""}
+          </p>
+        ) : null}
       </div>
-    </div>
+      <SaveRow dirty={dirty} busy={busy} onSave={save} />
+    </Panel>
   );
 }
 
@@ -114,6 +183,10 @@ function PlanCard({ plan, onSaved }: { plan: PlanRow; onSaved: () => void }) {
   const [annual, setAnnual] = useState(plan.annual_price);
   const [active, setActive] = useState(plan.active);
   const [busy, setBusy] = useState(false);
+  const uid = useId();
+  const free = plan.code === "gratis";
+
+  const dirty = active !== plan.active || (!free && (monthly !== plan.monthly_price || annual !== plan.annual_price));
 
   async function save() {
     setBusy(true);
@@ -122,36 +195,49 @@ function PlanCard({ plan, onSaved }: { plan: PlanRow; onSaved: () => void }) {
     if (ok) onSaved();
   }
 
+  const months = monthly > 0 && annual > 0 ? annual / monthly : null;
+  const monthsText = months === null ? null : new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(months);
+
   return (
-    <div className={cardClass}>
-      <p className="mb-3 text-sm font-semibold">{plan.name}</p>
-      <div className="grid grid-cols-2 gap-3">
-        <label className="block">
-          <span className={labelClass}>Mensual (COP)</span>
-          <input
-            inputMode="numeric"
-            className={inputClass}
-            value={formatAmountInput(monthly)}
-            onChange={(e) => setMonthly(parseAmountInput(e.target.value))}
-          />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Anual (COP)</span>
-          <input
-            inputMode="numeric"
-            className={inputClass}
-            value={formatAmountInput(annual)}
-            onChange={(e) => setAnnual(parseAmountInput(e.target.value))}
-          />
-        </label>
-      </div>
-      <div className="mt-3 flex items-center justify-between gap-3">
+    <Panel title={plan.name} description={active ? "Disponible para clientes" : "Plan desactivado"} id={`${uid}-panel`}>
+      {free ? (
+        <p className="tabular rounded-xl bg-[var(--color-surface-2)] px-3 py-2.5 text-sm">
+          $ 0 <span className="text-[var(--color-text-muted)]">· Sin costo</span>
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <div>
+            <label htmlFor={`${uid}-m`} className={labelClass}>Precio mensual (COP)</label>
+            <input
+              id={`${uid}-m`}
+              inputMode="numeric"
+              className={cn(inputClass, "tabular")}
+              placeholder="0"
+              value={formatAmountInput(monthly)}
+              onChange={(e) => setMonthly(parseAmountInput(e.target.value))}
+            />
+          </div>
+          <div>
+            <label htmlFor={`${uid}-a`} className={labelClass}>Precio anual (COP)</label>
+            <input
+              id={`${uid}-a`}
+              inputMode="numeric"
+              className={cn(inputClass, "tabular")}
+              placeholder="0"
+              value={formatAmountInput(annual)}
+              onChange={(e) => setAnnual(parseAmountInput(e.target.value))}
+            />
+            {monthsText ? (
+              <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">= {monthsText} meses de pago mensual</p>
+            ) : null}
+          </div>
+        </div>
+      )}
+      <div className="mt-3">
         <Toggle checked={active} onChange={setActive} label="Plan activo" />
-        <Button onClick={save} loading={busy}>
-          {busy ? "Guardando..." : "Guardar"}
-        </Button>
       </div>
-    </div>
+      <SaveRow dirty={dirty} busy={busy} onSave={save} />
+    </Panel>
   );
 }
 
@@ -189,7 +275,7 @@ export default function AdminConfiguracionPage() {
   return (
     <div className="flex flex-col gap-6">
       {failed ? (
-        <div role="alert" className={cardClass}>
+        <div role="alert" className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
           <p className="text-sm text-[var(--color-text-muted)]">
             No se pudo cargar parte de la configuración. Lo que ves puede estar incompleto: no guardes cambios hasta
             recargar.
@@ -200,11 +286,13 @@ export default function AdminConfiguracionPage() {
         </div>
       ) : null}
       <section className="flex flex-col gap-3" aria-labelledby="cfg-medios">
-        <h2 id="cfg-medios" className="text-sm font-semibold">Medios de pago</h2>
-        <p className="-mt-1 text-xs text-[var(--color-text-muted)]">
-          Los clientes ven estos datos al pagar su suscripción.
-        </p>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div>
+          <h2 id="cfg-medios" className="text-base font-semibold">Medios de pago</h2>
+          <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+            Los clientes ven estos datos al pagar su suscripción.
+          </p>
+        </div>
+        <div className="grid gap-3 lg:grid-cols-3">
           {KINDS.map((k, i) => (
             <MethodCard
               key={`${k.kind}-${version}`}
@@ -218,40 +306,40 @@ export default function AdminConfiguracionPage() {
       </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="cfg-planes">
-        <h2 id="cfg-planes" className="text-sm font-semibold">Precios de planes</h2>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <h2 id="cfg-planes" className="text-base font-semibold">Precios de planes</h2>
+          <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">Los cambios aplican a los pagos nuevos.</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {plans.map((p) => (
             <PlanCard key={`${p.code}-${version}`} plan={p} onSaved={load} />
           ))}
         </div>
       </section>
 
-      <section className="flex flex-col gap-3" aria-labelledby="cfg-audit">
-        <h2 id="cfg-audit" className="text-sm font-semibold">Auditoría (últimos 50)</h2>
+      <Panel title="Auditoría" description="Últimos 50 cambios registrados." id="cfg-audit">
         {audit.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-muted)]">Sin registros.</p>
+          <p className="py-4 text-center text-sm text-[var(--color-text-muted)]">Aún no hay cambios registrados.</p>
         ) : (
-          <ul className={`${cardClass} divide-y divide-[var(--color-border)] p-0`}>
+          <ul className="-mx-4 divide-y divide-[var(--color-border)] lg:-mx-5">
             {audit.map((a) => (
-              <li key={a.id} className="px-4 py-3 text-xs">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold">{a.action}</span>
-                  <span className="text-[var(--color-text-muted)]">
-                    {new Date(a.created_at).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })}
-                  </span>
-                </div>
-                <p className="mt-0.5 text-[var(--color-text-muted)]">
-                  {a.entity}
+              <li
+                key={a.id}
+                className="flex flex-col gap-0.5 px-4 py-2.5 text-sm lg:grid lg:grid-cols-[11rem_1fr_auto] lg:items-center lg:gap-4 lg:px-5"
+              >
+                <time dateTime={a.created_at} className="tabular text-xs text-[var(--color-text-muted)]">
+                  {fmtDateTime(a.created_at)}
+                </time>
+                <span className="font-medium">{auditLabel(a.action)}</span>
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  {ENTITY_LABEL[a.entity] ?? a.entity}
                   {a.entity_id ? ` · ${a.entity_id.slice(0, 8)}` : ""}
-                </p>
-                {Object.keys(a.details ?? {}).length > 0 ? (
-                  <p className="mt-0.5 break-all text-[var(--color-text-muted)]">{JSON.stringify(a.details)}</p>
-                ) : null}
+                </span>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </Panel>
     </div>
   );
 }

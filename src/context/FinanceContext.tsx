@@ -12,6 +12,7 @@ import {
 } from "react";
 import { fetchIsPlatformAdmin, toastDbError } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/client";
+import { signOutAndReset } from "@/lib/session";
 import {
   rowToAccount,
   rowToCategory,
@@ -781,8 +782,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   }, [user, loadAll]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-  }, [supabase]);
+    // Cierre completo: sesión, datos locales, caché y redirección a /login.
+    await signOutAndReset("local");
+  }, []);
 
   const value = useMemo<FinanceContextValue>(
     () => ({

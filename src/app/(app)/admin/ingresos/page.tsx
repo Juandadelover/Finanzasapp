@@ -6,7 +6,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -14,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ChartCard } from "@/components/charts/ChartCard";
+import { Badge, Kpi, Panel } from "@/components/admin/AdminUI";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/ui/DataTable";
 import { ResponsiveGrid } from "@/components/ui/ResponsiveGrid";
@@ -63,21 +62,24 @@ function longMonth(iso: string): string {
   return `${name.charAt(0).toUpperCase()}${name.slice(1)} de ${y}`;
 }
 
-function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Zero({ value }: { value: number }) {
+  return <span className={value === 0 ? "text-[var(--color-text-faint)]" : undefined}>{value}</span>;
+}
+
+function LegendItem({ label, color, dashed }: { label: string; color: string; dashed?: boolean }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
-      <p className="text-xs font-medium text-[var(--color-text-muted)]">{label}</p>
-      <p title={value} className="tabular mt-1 truncate text-xl font-semibold">
-        {value}
-      </p>
-      {hint ? <p className="mt-0.5 text-xs text-[var(--color-text-faint)]">{hint}</p> : null}
-    </div>
+    <span className="inline-flex items-center gap-2">
+      <svg width="20" height="8" aria-hidden>
+        <line x1="1" y1="4" x2="19" y2="4" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeDasharray={dashed ? "4 3" : undefined} />
+      </svg>
+      {label}
+    </span>
   );
 }
 
 function ChartEmpty({ children }: { children: string }) {
   return (
-    <div className="flex h-56 items-center justify-center rounded-2xl border border-dashed border-[var(--color-border)] px-4 text-center text-sm text-[var(--color-text-muted)]">
+    <div className="flex h-56 items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-4 text-center text-sm text-[var(--color-text-muted)]">
       {children}
     </div>
   );
@@ -90,6 +92,12 @@ export default function AdminIngresosPage() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const reduced = useReducedMotion();
+  const [hoverBars, setHoverBars] = useState(false);
+  const [hoverLines, setHoverLines] = useState(false);
+  const [currentMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
 
   const load = useCallback(async (p: Period) => {
     setLoading(true);
@@ -122,6 +130,7 @@ export default function AdminIngresosPage() {
     [rows]
   );
   const conversion = totals.started > 0 ? `${Math.round((totals.converted / totals.started) * 100)} %` : "—";
+  const isCurrent = (r: RevenuePoint) => r.month.slice(0, 7) === currentMonth;
   const noRevenue = rows.every((r) => r.revenue === 0);
   const noSignups = rows.every((r) => r.new_signups === 0 && r.new_paying === 0);
 
@@ -167,85 +176,116 @@ export default function AdminIngresosPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-            <Kpi label="Ingresos del periodo" value={formatAmount(totals.revenue, "COP")} hint={`Últimos ${period} meses`} />
-            <Kpi label="MRR actual" value={formatAmount(metrics?.mrr ?? 0, "COP")} hint="Ingreso recurrente al mes" />
-            <Kpi label="Clientes nuevos" value={String(totals.signups)} />
+            <Kpi
+              label="Ingresos del periodo"
+              value={formatAmount(totals.revenue, "COP")}
+              hint={`Últimos ${period} meses`}
+              className="col-span-2 lg:col-span-1"
+            />
+            <Kpi label="MRR actual" value={formatAmount(metrics?.mrr ?? 0, "COP")} hint="Recurrente al mes" />
+            <Kpi label="Clientes nuevos" value={String(totals.signups)} hint={`En ${period} meses`} />
             <Kpi
               label="Conversión prueba a pago"
               value={conversion}
               hint={totals.started > 0 ? `${totals.converted} de ${totals.started} pruebas` : "Sin pruebas en el periodo"}
             />
-            <Kpi label="Vencidos" value={String(totals.expired)} />
+            <Kpi
+              label="Vencidos"
+              value={String(totals.expired)}
+              hint={totals.expired > 0 ? "Clientes que perdieron el plan" : "Nadie se venció"}
+              tone={totals.expired > 0 ? "negative" : "neutral"}
+            />
           </div>
 
           <section aria-label="Gráficas de ingresos">
             <ResponsiveGrid variant="pair">
-              <div className="[&>section]:mx-0 [&>section]:mt-0">
-                <ChartCard
-                  icon={BarChart3}
-                  accent="var(--color-brand-light)"
-                  title="Ingresos por mes"
-                  subtitle="Pagos aprobados, en pesos colombianos"
-                >
-                  {noRevenue ? (
-                    <ChartEmpty>Aún no hay pagos aprobados</ChartEmpty>
-                  ) : (
-                    <div className="h-56 w-full" role="img" aria-label={`Ingresos por mes de los últimos ${period} meses`}>
+              <Panel
+                id="chart-ingresos"
+                icon={BarChart3}
+                title="Ingresos por mes"
+                description="Pagos aprobados, en pesos colombianos"
+              >
+                {noRevenue ? (
+                  <ChartEmpty>Aún no hay pagos aprobados</ChartEmpty>
+                ) : (
+                  <div
+                    className="h-56 w-full"
+                    role="img"
+                    aria-label={`Ingresos por mes de los últimos ${period} meses`}
+                    onMouseEnter={() => setHoverBars(true)}
+                    onMouseLeave={() => setHoverBars(false)}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} margin={{ left: 0, right: 8, top: 8 }} accessibilityLayer={false}>
+                        <CartesianGrid stroke="var(--color-border)" vertical={false} />
+                        <XAxis dataKey="label" tickLine={false} axisLine={false} tick={AXIS_TICK} interval="preserveStartEnd" />
+                        <YAxis
+                          width={64}
+                          tickLine={false}
+                          axisLine={false}
+                          tick={AXIS_TICK}
+                          tickFormatter={(v) => formatCompactAmount(Number(v), "COP")}
+                        />
+                        <Tooltip
+                          active={hoverBars ? undefined : false}
+                          cursor={{ fill: "var(--color-surface-2)" }}
+                          contentStyle={TOOLTIP_STYLE}
+                          labelFormatter={(_, p) => (p?.[0]?.payload?.month ? longMonth(p[0].payload.month) : "")}
+                          formatter={(value) => [formatAmount(Number(value), "COP"), "Ingresos"]}
+                        />
+                        <Bar
+                          dataKey="revenue"
+                          name="Ingresos"
+                          fill="var(--color-brand-light)"
+                          radius={[4, 4, 0, 0]}
+                          maxBarSize={36}
+                          isAnimationActive={!reduced}
+                          animationDuration={300}
+                          animationEasing="ease-out"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </Panel>
+
+              <Panel
+                id="chart-altas"
+                icon={Users}
+                title="Altas y clientes que pagan"
+                description="Registros nuevos frente a primeros pagos"
+              >
+                {noSignups ? (
+                  <ChartEmpty>Aún no hay registros en este periodo</ChartEmpty>
+                ) : (
+                  <>
+                    <p className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-text-muted)]">
+                      <LegendItem label="Registros nuevos" color="var(--color-text-muted)" dashed />
+                      <LegendItem label="Nuevos que pagan" color="var(--color-brand-light)" />
+                    </p>
+                    <div
+                      className="h-48 w-full"
+                      role="img"
+                      aria-label={`Registros nuevos y clientes nuevos que pagan, últimos ${period} meses`}
+                      onMouseEnter={() => setHoverLines(true)}
+                      onMouseLeave={() => setHoverLines(false)}
+                    >
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ left: 0, right: 8, top: 8 }}>
+                        <LineChart data={chartData} margin={{ left: -12, right: 8, top: 8 }} accessibilityLayer={false}>
                           <CartesianGrid stroke="var(--color-border)" vertical={false} />
                           <XAxis dataKey="label" tickLine={false} axisLine={false} tick={AXIS_TICK} interval="preserveStartEnd" />
                           <YAxis
-                            width={64}
+                            allowDecimals={false}
+                            domain={[0, (max: number) => Math.max(3, Math.ceil(max))]}
                             tickLine={false}
                             axisLine={false}
                             tick={AXIS_TICK}
-                            tickFormatter={(v) => formatCompactAmount(Number(v), "COP")}
                           />
                           <Tooltip
-                            cursor={{ fill: "var(--color-surface-2)" }}
-                            contentStyle={TOOLTIP_STYLE}
-                            labelFormatter={(_, p) => (p?.[0]?.payload?.month ? longMonth(p[0].payload.month) : "")}
-                            formatter={(value) => [formatAmount(Number(value), "COP"), "Ingresos"]}
-                          />
-                          <Bar
-                            dataKey="revenue"
-                            name="Ingresos"
-                            fill="var(--color-brand-light)"
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={36}
-                            isAnimationActive={!reduced}
-                            animationDuration={300}
-                            animationEasing="ease-out"
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  )}
-                </ChartCard>
-              </div>
-
-              <div className="[&>section]:mx-0 [&>section]:mt-0">
-                <ChartCard
-                  icon={Users}
-                  accent="var(--color-brand-light)"
-                  title="Altas y clientes que pagan"
-                  subtitle="Registros nuevos frente a primeros pagos"
-                >
-                  {noSignups ? (
-                    <ChartEmpty>Aún no hay registros en este periodo</ChartEmpty>
-                  ) : (
-                    <div className="h-56 w-full" role="img" aria-label={`Registros nuevos y clientes nuevos que pagan, últimos ${period} meses`}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData} margin={{ left: -12, right: 8, top: 8 }}>
-                          <CartesianGrid stroke="var(--color-border)" vertical={false} />
-                          <XAxis dataKey="label" tickLine={false} axisLine={false} tick={AXIS_TICK} interval="preserveStartEnd" />
-                          <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={AXIS_TICK} />
-                          <Tooltip
+                            active={hoverLines ? undefined : false}
                             contentStyle={TOOLTIP_STYLE}
                             labelFormatter={(_, p) => (p?.[0]?.payload?.month ? longMonth(p[0].payload.month) : "")}
                           />
-                          <Legend iconType="plainline" wrapperStyle={{ fontSize: 12, color: "var(--color-text-muted)" }} />
                           <Line
                             type="monotone"
                             dataKey="new_signups"
@@ -254,6 +294,7 @@ export default function AdminIngresosPage() {
                             strokeWidth={2}
                             strokeDasharray="5 4"
                             dot={{ r: 3 }}
+                            activeDot={{ r: 5 }}
                             isAnimationActive={!reduced}
                             animationDuration={300}
                           />
@@ -264,15 +305,16 @@ export default function AdminIngresosPage() {
                             stroke="var(--color-brand-light)"
                             strokeWidth={2.5}
                             dot={{ r: 3 }}
+                            activeDot={{ r: 5 }}
                             isAnimationActive={!reduced}
                             animationDuration={300}
                           />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
-                  )}
-                </ChartCard>
-              </div>
+                  </>
+                )}
+              </Panel>
             </ResponsiveGrid>
           </section>
 
@@ -286,37 +328,68 @@ export default function AdminIngresosPage() {
               getRowKey={(r) => r.month}
               mobileClassName="flex flex-col gap-2"
               columns={[
-                { key: "month", header: "Mes", cell: (r) => <span>{longMonth(r.month)}</span> },
-                { key: "rev", header: "Ingresos", align: "right", cell: (r) => formatAmount(r.revenue, "COP") },
-                { key: "pay", header: "Pagos aprobados", align: "right", cell: (r) => r.approved_payments },
-                { key: "sig", header: "Registros", align: "right", cell: (r) => r.new_signups },
-                { key: "np", header: "Nuevos que pagan", align: "right", cell: (r) => r.new_paying },
-                { key: "ts", header: "Pruebas", align: "right", cell: (r) => r.trials_started },
-                { key: "tc", header: "Convertidas", align: "right", cell: (r) => r.trials_converted },
-                { key: "ex", header: "Vencidos", align: "right", cell: (r) => r.expired },
+                {
+                  key: "month",
+                  header: "Mes",
+                  cell: (r) => (
+                    <span className="inline-flex items-center gap-2">
+                      {longMonth(r.month)}
+                      {isCurrent(r) ? <Badge tone="brand">Actual</Badge> : null}
+                    </span>
+                  ),
+                },
+                {
+                  key: "rev",
+                  header: "Ingresos",
+                  align: "right",
+                  cell: (r) => (
+                    <span className={r.revenue === 0 ? "text-[var(--color-text-faint)]" : "font-medium"}>
+                      {formatAmount(r.revenue, "COP")}
+                    </span>
+                  ),
+                },
+                { key: "pay", header: "Pagos aprobados", align: "right", cell: (r) => <Zero value={r.approved_payments} /> },
+                { key: "sig", header: "Registros", align: "right", cell: (r) => <Zero value={r.new_signups} /> },
+                { key: "np", header: "Nuevos que pagan", align: "right", cell: (r) => <Zero value={r.new_paying} /> },
+                { key: "ts", header: "Pruebas", align: "right", cell: (r) => <Zero value={r.trials_started} /> },
+                { key: "tc", header: "Convertidas", align: "right", cell: (r) => <Zero value={r.trials_converted} /> },
+                { key: "ex", header: "Vencidos", align: "right", cell: (r) => <Zero value={r.expired} /> },
               ]}
               renderMobile={(r) => (
-                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+                <div
+                  className={
+                    isCurrent(r)
+                      ? "rounded-2xl border border-[color-mix(in_oklab,var(--color-brand)_45%,var(--color-border))] bg-[var(--color-surface)] p-4"
+                      : "rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+                  }
+                >
                   <div className="flex items-baseline justify-between gap-3">
-                    <p className="text-sm font-semibold">{longMonth(r.month)}</p>
-                    <p className="tabular text-sm font-semibold">{formatAmount(r.revenue, "COP")}</p>
+                    <p className="flex items-center gap-2 text-sm font-semibold">
+                      {longMonth(r.month)}
+                      {isCurrent(r) ? <Badge tone="brand">Actual</Badge> : null}
+                    </p>
+                    <p
+                      className={`tabular text-sm font-semibold ${r.revenue === 0 ? "text-[var(--color-text-faint)]" : ""}`}
+                    >
+                      {formatAmount(r.revenue, "COP")}
+                    </p>
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)]">
+                  <div className="tabular mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)]">
                     <span>
-                      Pagos: <strong className="tabular text-[var(--color-text)]">{r.approved_payments}</strong>
+                      Pagos: <strong className="text-[var(--color-text)]"><Zero value={r.approved_payments} /></strong>
                     </span>
                     <span>
-                      Registros: <strong className="tabular text-[var(--color-text)]">{r.new_signups}</strong>
+                      Registros: <strong className="text-[var(--color-text)]"><Zero value={r.new_signups} /></strong>
                     </span>
                     <span>
-                      Nuevos que pagan: <strong className="tabular text-[var(--color-text)]">{r.new_paying}</strong>
+                      Nuevos que pagan: <strong className="text-[var(--color-text)]"><Zero value={r.new_paying} /></strong>
                     </span>
                     <span>
-                      Vencidos: <strong className="tabular text-[var(--color-text)]">{r.expired}</strong>
+                      Vencidos: <strong className="text-[var(--color-text)]"><Zero value={r.expired} /></strong>
                     </span>
                     <span className="col-span-2">
-                      Pruebas: <strong className="tabular text-[var(--color-text)]">{r.trials_started}</strong>, convertidas:{" "}
-                      <strong className="tabular text-[var(--color-text)]">{r.trials_converted}</strong>
+                      Pruebas: <strong className="text-[var(--color-text)]"><Zero value={r.trials_started} /></strong>, convertidas:{" "}
+                      <strong className="text-[var(--color-text)]"><Zero value={r.trials_converted} /></strong>
                     </span>
                   </div>
                 </div>
