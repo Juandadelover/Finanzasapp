@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Download, FileText, Inbox, RefreshCw } from "lucide-react";
+import { CheckCircle2, Clock, Download, FileText, Inbox, RefreshCw, Receipt } from "lucide-react";
 import { toast } from "sonner";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { EmptyState } from "@/components/EmptyState";
+import { Badge, Initials, PaymentBadge } from "@/components/admin/AdminUI";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { fmtDateTime } from "@/components/admin/shared";
 import { cn } from "@/lib/cn";
 import {
   approvePayment,
@@ -26,31 +27,39 @@ const FILTERS: { value: PaymentFilter; label: string }[] = [
   { value: "all", label: "Todos" },
 ];
 
-const STATUS_LABEL: Record<string, string> = {
-  in_review: "En revisión",
-  awaiting_receipt: "Esperando comprobante",
-  approved: "Aprobado",
-  rejected: "Rechazado",
-};
-
 const QUICK_REASONS = ["El pago no llegó", "Monto incorrecto", "Comprobante ilegible"];
 
 const inputClass =
   "w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-base outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40";
-const labelClass =
-  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]";
+const labelClass = "mb-1.5 block text-xs font-medium text-[var(--color-text-muted)]";
 
-const STATUS_CHIP: Record<string, string> = {
-  in_review: "bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]",
-  awaiting_receipt: "bg-[var(--color-warning)]/15 text-[var(--color-warning)]",
-  approved: "bg-[var(--color-income)]/15 text-[var(--color-income)]",
-  rejected: "bg-[var(--color-expense)]/15 text-[var(--color-expense)]",
+const EMPTY_COPY: Record<PaymentFilter, { icon: typeof Inbox; title: string; description: string }> = {
+  in_review: {
+    icon: CheckCircle2,
+    title: "No hay comprobantes por revisar",
+    description: "No hay pagos en esta vista. Cuando un cliente suba un comprobante aparecerá aquí.",
+  },
+  awaiting_receipt: {
+    icon: Clock,
+    title: "Nadie está esperando comprobante",
+    description: "No hay pagos en esta vista. Aquí verás a quienes iniciaron un pago y aún no lo envían.",
+  },
+  approved: {
+    icon: Receipt,
+    title: "Aún no hay pagos aprobados",
+    description: "No hay pagos en esta vista. Los pagos que apruebes quedarán aquí.",
+  },
+  rejected: {
+    icon: Inbox,
+    title: "No hay pagos rechazados",
+    description: "No hay pagos en esta vista. Los pagos que rechaces quedarán aquí con su motivo.",
+  },
+  all: {
+    icon: Inbox,
+    title: "Todavía no hay pagos",
+    description: "No hay pagos en esta vista. Cuando los clientes paguen aparecerán aquí.",
+  },
 };
-
-function fmtDate(iso: string | null): string {
-  if (!iso) return "";
-  return new Date(iso).toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short" });
-}
 
 function cycleLabel(c: string): string {
   return c === "annual" ? "anual" : c === "monthly" ? "mensual" : c;
@@ -210,23 +219,32 @@ function Actions({
   onReceipt,
   onApprove,
   onReject,
+  stretch = false,
 }: {
   p: AdminPayment;
   onReceipt: () => void;
   onApprove: () => void;
   onReject: () => void;
+  stretch?: boolean;
 }) {
   const who = p.full_name || p.email || "este cliente";
+  const review = p.status === "in_review";
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className={cn("flex flex-wrap gap-2", stretch && "flex-col")}>
       {p.receipt_path ? (
-        <Button variant="secondary" size="sm" onClick={onReceipt} aria-label={`Ver comprobante de ${who}`}>
-          Ver comprobante
+        <Button
+          variant={review && stretch ? "secondary" : "ghost"}
+          size="sm"
+          onClick={onReceipt}
+          aria-label={`Ver comprobante de ${who}`}
+          className={cn(!stretch && "px-2 underline-offset-2 hover:underline", stretch && "w-full")}
+        >
+          <FileText size={14} aria-hidden /> Ver comprobante
         </Button>
       ) : null}
-      {p.status === "in_review" ? (
-        <>
-          <Button size="sm" onClick={onApprove} aria-label={`Aprobar pago de ${who}`}>
+      {review ? (
+        <div className={cn("flex gap-2", stretch && "w-full")}>
+          <Button size="sm" onClick={onApprove} aria-label={`Aprobar pago de ${who}`} className={cn(stretch && "flex-1")}>
             Aprobar
           </Button>
           <Button
@@ -234,11 +252,11 @@ function Actions({
             size="sm"
             onClick={onReject}
             aria-label={`Rechazar pago de ${who}`}
-            className="border-[var(--color-expense)]"
+            className={cn(stretch && "flex-1")}
           >
             Rechazar
           </Button>
-        </>
+        </div>
       ) : null}
     </div>
   );
@@ -253,6 +271,7 @@ export default function AdminPagosPage() {
   const [rejecting, setRejecting] = useState<AdminPayment | null>(null);
   const [confirming, setConfirming] = useState<AdminPayment | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<number | null>(null);
 
   const load = useCallback(async (f: PaymentFilter) => {
     setLoading(true);
@@ -260,6 +279,13 @@ export default function AdminPagosPage() {
     setFailed(data === null);
     setRows(data ?? []);
     setLoading(false);
+    if (f === "in_review") {
+      if (data) setPending(data.length);
+    } else {
+      void fetchAdminPayments("in_review").then((d) => {
+        if (d) setPending(d.length);
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -278,10 +304,17 @@ export default function AdminPagosPage() {
     }
   }
 
+  const empty = EMPTY_COPY[filter];
+  const EmptyIcon = empty.icon;
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-3">
-        <div role="group" aria-label="Filtrar pagos por estado" className="no-scrollbar flex gap-2 overflow-x-auto">
+      <div className="flex items-center gap-2">
+        <div
+          role="group"
+          aria-label="Filtrar pagos por estado"
+          className="no-scrollbar -ml-4 flex min-w-0 flex-1 gap-2 overflow-x-auto px-4 py-1 lg:ml-0 lg:px-0"
+        >
           {FILTERS.map((f) => (
             <button
               key={f.value}
@@ -289,13 +322,20 @@ export default function AdminPagosPage() {
               aria-pressed={filter === f.value}
               onClick={() => setFilter(f.value)}
               className={cn(
-                "min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition active:scale-[0.97]",
+                "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-[background-color,color,transform] duration-(--duration-fast) ease-(--ease-out) active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand)]",
                 filter === f.value
                   ? "border-[var(--color-brand)] bg-[var(--color-brand)]/15 text-[var(--color-brand-light)]"
-                  : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]",
+                  : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
               )}
             >
               {f.label}
+              {f.value === "in_review" && pending ? (
+                <span className="tabular min-w-5 rounded-full bg-[var(--color-brand)] px-1.5 text-center text-xs font-semibold leading-5 text-white">
+                  <span className="sr-only">(</span>
+                  {pending}
+                  <span className="sr-only"> por revisar)</span>
+                </span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -304,10 +344,10 @@ export default function AdminPagosPage() {
           size="sm"
           disabled={!rows || rows.length === 0}
           onClick={() => rows && exportCsv(rows)}
+          aria-label="Exportar CSV"
           className="shrink-0"
         >
-          <Download size={14} aria-hidden /> <span className="hidden sm:inline">Exportar CSV</span>
-          <span className="sr-only sm:hidden">Exportar CSV</span>
+          <Download size={16} aria-hidden /> <span className="hidden sm:inline">Exportar CSV</span>
         </Button>
       </div>
 
@@ -325,11 +365,24 @@ export default function AdminPagosPage() {
           </Button>
         </div>
       ) : !rows || rows.length === 0 ? (
-        <EmptyState
-          icon={Inbox}
-          title="No hay pagos en esta vista"
-          description={filter === "in_review" ? "Cuando un cliente suba un comprobante aparecerá aquí." : "Prueba con otro filtro."}
-        />
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-[var(--color-border)] px-6 py-12 text-center">
+          <span
+            aria-hidden
+            className={cn(
+              "flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-surface-2)]",
+              filter === "in_review" ? "text-[var(--color-income)]" : "text-[var(--color-text-faint)]"
+            )}
+          >
+            <EmptyIcon size={22} />
+          </span>
+          <p className="text-sm font-semibold">{empty.title}</p>
+          <p className="max-w-xs text-xs text-[var(--color-text-muted)]">{empty.description}</p>
+          {filter !== "all" ? (
+            <Button variant="ghost" size="sm" className="mt-1" onClick={() => setFilter("all")}>
+              Ver todos los pagos
+            </Button>
+          ) : null}
+        </div>
       ) : (
         <>
           {/* Wide screens: table */}
@@ -351,37 +404,51 @@ export default function AdminPagosPage() {
               <tbody className="divide-y divide-[var(--color-border)]">
                 {rows.map((p) => {
                   const mismatch = p.declared_amount != null && p.declared_amount !== p.expected_amount;
+                  const name = p.full_name || p.email || "Sin nombre";
                   return (
                     <tr key={p.id} className="align-top">
-                      <td className="max-w-[14rem] px-4 py-3">
-                        <p className="truncate font-medium">{p.full_name || p.email || "Sin nombre"}</p>
-                        {p.full_name && p.email ? (
-                          <p className="truncate text-xs text-[var(--color-text-muted)]">{p.email}</p>
-                        ) : null}
+                      <td className="max-w-[15rem] px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <Initials name={name} />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">{name}</p>
+                            {p.full_name && p.email ? (
+                              <p className="truncate text-xs text-[var(--color-text-muted)]">{p.email}</p>
+                            ) : null}
+                          </div>
+                        </div>
                       </td>
                       <td className="px-3 py-3 capitalize">
                         {p.plan_code} · {cycleLabel(p.billing_cycle)}
                         <p className="text-xs text-[var(--color-text-muted)]">Actual: {p.current_plan ?? "—"}</p>
                       </td>
                       <td className="tabular px-3 py-3 text-right">{formatAmount(p.expected_amount, "COP")}</td>
-                      <td className={cn("tabular px-3 py-3 text-right", mismatch && "font-semibold text-[var(--color-expense)]")}>
-                        {p.declared_amount == null ? "—" : formatAmount(p.declared_amount, "COP")}
-                        {mismatch ? <p className="text-xs font-normal">No coincide</p> : null}
+                      <td className="tabular px-3 py-3 text-right">
+                        <span className={cn(mismatch && "font-semibold")}>
+                          {p.declared_amount == null ? "—" : formatAmount(p.declared_amount, "COP")}
+                        </span>
+                        {mismatch ? (
+                          <div className="mt-1">
+                            <Badge tone="warning">Monto distinto</Badge>
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-3 py-3">
                         <p className="break-all">{p.reference ?? "—"}</p>
                         <p className="text-xs capitalize text-[var(--color-text-muted)]">{p.channel ?? "—"}</p>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-3 text-xs text-[var(--color-text-muted)]">{fmtDate(p.created_at)}</td>
+                      <td className="whitespace-nowrap px-3 py-3 text-xs text-[var(--color-text-muted)]">
+                        {fmtDateTime(p.created_at)}
+                      </td>
                       <td className="px-3 py-3">
-                        <span className={cn("inline-block rounded-full px-2.5 py-1 text-xs font-medium", STATUS_CHIP[p.status])}>
-                          {STATUS_LABEL[p.status] ?? p.status}
-                        </span>
+                        <PaymentBadge status={p.status} />
                         {p.status === "rejected" && p.rejection_reason ? (
-                          <p className="mt-1 max-w-[12rem] text-xs text-[var(--color-expense)]">Motivo: {p.rejection_reason}</p>
+                          <p className="mt-1 max-w-[12rem] text-xs text-[var(--color-text-muted)]">
+                            Motivo: {p.rejection_reason}
+                          </p>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-2">
                         <Actions
                           p={p}
                           onReceipt={() => setReceipt(p)}
@@ -400,20 +467,21 @@ export default function AdminPagosPage() {
           <ul className="flex flex-col gap-3 md:hidden">
             {rows.map((p) => {
               const mismatch = p.declared_amount != null && p.declared_amount !== p.expected_amount;
+              const name = p.full_name || p.email || "Sin nombre";
               return (
                 <li key={p.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">{p.full_name || p.email || "Sin nombre"}</p>
-                      {p.full_name && p.email ? (
-                        <p className="truncate text-xs text-[var(--color-text-muted)]">{p.email}</p>
-                      ) : null}
+                  <div className="flex items-center gap-3">
+                    <Initials name={name} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{name}</p>
+                      <p className="truncate text-xs text-[var(--color-text-muted)]">
+                        {p.full_name && p.email ? `${p.email} · ` : ""}
+                        {fmtDateTime(p.created_at)}
+                      </p>
                     </div>
-                    <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-xs font-medium", STATUS_CHIP[p.status])}>
-                      {STATUS_LABEL[p.status] ?? p.status}
-                    </span>
+                    <PaymentBadge status={p.status} />
                   </div>
-                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 border-t border-[var(--color-border)] pt-3 text-xs">
                     <div>
                       <dt className="text-[var(--color-text-muted)]">Plan</dt>
                       <dd className="font-medium capitalize">
@@ -430,12 +498,12 @@ export default function AdminPagosPage() {
                     </div>
                     <div>
                       <dt className="text-[var(--color-text-muted)]">Declarado</dt>
-                      <dd className={cn("tabular font-medium", mismatch && "text-[var(--color-expense)]")}>
+                      <dd className="tabular flex flex-wrap items-center gap-1.5 font-medium">
                         {p.declared_amount == null ? "—" : formatAmount(p.declared_amount, "COP")}
-                        {mismatch ? " (no coincide)" : ""}
+                        {mismatch ? <Badge tone="warning">Monto distinto</Badge> : null}
                       </dd>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <dt className="text-[var(--color-text-muted)]">Referencia</dt>
                       <dd className="break-all font-medium">{p.reference ?? "—"}</dd>
                     </div>
@@ -444,18 +512,20 @@ export default function AdminPagosPage() {
                       <dd className="font-medium capitalize">{p.channel ?? "—"}</dd>
                     </div>
                   </dl>
-                  <p className="mt-2 text-xs text-[var(--color-text-muted)]">{fmtDate(p.created_at)}</p>
                   {p.status === "rejected" && p.rejection_reason ? (
-                    <p className="mt-1 text-xs text-[var(--color-expense)]">Motivo: {p.rejection_reason}</p>
+                    <p className="mt-2 text-xs text-[var(--color-text-muted)]">Motivo: {p.rejection_reason}</p>
                   ) : null}
-                  <div className="mt-3">
-                    <Actions
-                      p={p}
-                      onReceipt={() => setReceipt(p)}
-                      onApprove={() => setConfirming(p)}
-                      onReject={() => setRejecting(p)}
-                    />
-                  </div>
+                  {p.receipt_path || p.status === "in_review" ? (
+                    <div className="mt-3">
+                      <Actions
+                        p={p}
+                        stretch
+                        onReceipt={() => setReceipt(p)}
+                        onApprove={() => setConfirming(p)}
+                        onReject={() => setRejecting(p)}
+                      />
+                    </div>
+                  ) : null}
                 </li>
               );
             })}
