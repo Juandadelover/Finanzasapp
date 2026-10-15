@@ -91,3 +91,58 @@ Con estos supuestos, la IA cuesta en promedio **menos de $ 300 al mes por usuari
 - Precios de Claude: tabla de modelos de la API de Anthropic (consultada el 6 de octubre de 2026).
 - Voz a texto: [precios de APIs de voz a texto en 2026](https://convertaudiototext.com/blog/speech-to-text-api-pricing-2026), [Deepgram vs Whisper](https://costbench.com/compare/deepgram-vs-openai-whisper/), [precios de OpenAI Whisper en 2026](https://diyai.io/ai-tools/speech-to-text/openai-whisper-api-pricing-2026/).
 - WhatsApp: [precios de WhatsApp Business Platform (Meta)](https://developers.facebook.com/docs/whatsapp/pricing), [guía de costos 2026 (Leadsales)](https://leadsales.io/?p=21532).
+
+---
+
+# Anexo: costos con modelos de Google (Gemini)
+
+Mismos supuestos y mismo uso que arriba (USD 1 = $ 4.000). Los precios de Gemini salen de comparadores de terceros que **no coinciden entre sí** (hay modelos con nombres distintos según la fuente), así que hay que confirmarlos en la página oficial de Google antes de decidir.
+
+## Precios usados (USD por millón de tokens)
+
+| Modelo | Entrada | Salida | Nota |
+|---|---|---|---|
+| Gemini 2.5 Flash-Lite | 0,10 | 0,40 | El más barato |
+| Gemini 3.1 Flash-Lite | 0,25 | 1,50 | Más nuevo |
+| Gemini 2.5 Flash | 0,30 (audio 1,00) | 2,50 | Nivel medio |
+
+- **Lote (Batch):** 50 % menos, igual que en Claude.
+- **Audio:** Gemini lo recibe directamente, sin servicio de voz a texto aparte. Esto simplifica la nota de voz y quita ese costo.
+- Supuesto sin verificar: el audio ocupa unos 32 tokens por segundo (15 s ≈ 480 tokens). Para Flash-Lite no encontré el precio del audio y usé USD 1,00 como estimación prudente.
+- Los modelos con "razonamiento" cuentan esos tokens como salida. Hay que fijar un presupuesto de razonamiento bajo para que no se disparen.
+
+## Costo por operación
+
+| Operación | Gemini 2.5 Flash-Lite | Gemini 3.1 Flash-Lite | Gemini 2.5 Flash | Claude Haiku 5.5 (referencia) |
+|---|---|---|---|---|
+| Foto de recibo | ≈ $ 1,5 | ≈ $ 4,3 | ≈ $ 6,0 | ≈ $ 1,6 |
+| Nota de voz de 15 s → movimiento | ≈ $ 2,4 | ≈ $ 3,5 | ≈ $ 4,4 | ≈ $ 3,7 (con transcripción aparte) |
+| Resumen semanal (lote) | ≈ $ 1,0 | ≈ $ 3,0 | ≈ $ 4,3 | ≈ $ 1,1 |
+| Pregunta "¿cómo voy?" | ≈ $ 2,2 | ≈ $ 6,4 | ≈ $ 8,8 | ≈ $ 2,4 |
+
+## Costo mensual por usuario
+
+| Perfil | 2.5 Flash-Lite | 3.1 Flash-Lite | 2.5 Flash | Claude Haiku 5.5 |
+|---|---|---|---|---|
+| Normal (20 recibos, 20 notas, 4 resúmenes, 10 preguntas) | ≈ $ 104 (0,4 % del plan Emprendedor) | ≈ $ 232 (0,9 %) | ≈ $ 313 (1,3 %) | ≈ $ 135 (0,5 %) |
+| Intensivo (100 recibos, 100 notas, 4 resúmenes, 40 preguntas) | ≈ $ 482 (1,9 %) | ≈ $ 1.050 (4,2 %) | ≈ $ 1.410 (5,7 %) | ≈ $ 630 (2,5 %) |
+
+## Conclusiones
+
+1. **Gemini 2.5 Flash-Lite es el más barato**, con un 20 a 25 % menos que Claude Haiku 5.5, y recibe audio directo. Casi todo el ahorro viene de ahí.
+2. **Los modelos más nuevos (3.1 Flash-Lite y 2.5 Flash) cuestan más que Claude Haiku 5.5.** No conviene usarlos para tareas simples de leer un recibo.
+3. **La diferencia entre proveedores es pequeña frente al precio del plan** (menos de $ 150 al mes por usuario normal). Importa más la **calidad de lectura en recibos colombianos** (letra de impresoras térmicas, fotos torcidas, montos con puntos) que el precio. Hay que probar ambos con los mismos 50 recibos y 50 notas de voz.
+4. **No usar el plan gratuito de Gemini con datos de clientes:** según las fuentes, lo que se envía en el nivel gratis puede usarse para mejorar los productos de Google. Para datos financieros hay que usar el nivel de pago y revisar sus términos de datos.
+5. **Verificar que los modelos 2.5 sigan disponibles** en la fecha de lanzamiento. Los modelos más baratos suelen retirarse y se reemplazan por los nuevos, que cuestan más.
+
+## Recomendación
+
+Hacer el piloto con los dos: **Gemini 2.5 Flash-Lite** y **Claude Haiku 5.5**, con los mismos recibos y notas de voz. Elegir el que lea mejor. Si empatan:
+- **Un solo proveedor (Gemini):** más simple, porque resuelve recibo, voz y resumen sin servicio de transcripción aparte.
+- **Dos proveedores:** Claude para recibos y resúmenes, y Gemini solo para el audio. Más piezas que mantener para un ahorro pequeño.
+
+Los límites por plan de la sección anterior siguen sirviendo con cualquiera de los dos.
+
+## Fuentes
+- [Gemini API Pricing 2026 (MorphLLM)](https://www.morphllm.com/gemini-api-pricing) · [Gemini pricing 2026 (CloudZero)](https://www.cloudzero.com/blog/gemini-pricing/) · [Gemini API Pricing, octubre 2026 (BenchLM)](https://benchlm.ai/google/api-pricing) · [Gemini API Pricing 2026 (Opslyft)](https://www.opslyft.com/blog/google-gemini-api-pricing-2026) · [Gemini API Pricing 2026 (AIFreeAPI)](https://www.aifreeapi.com/en/posts/gemini-api-pricing-2026)
+- Capa gratuita y uso de datos: [Gemini API pricing changes (AgentDeals)](https://agentdeals.dev/gemini-api-pricing-changes) · [Gemini API Free Plan (CostBench)](https://www.costbench.com/software/llm-api-providers/google-gemini-api/free-plan/)
