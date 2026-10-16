@@ -1,5 +1,5 @@
 import { isSameMonth } from "@/lib/format";
-import type { Account, Category, FinanceState, Transaction } from "@/types/finance";
+import type { Account, Category, FinanceState, Transaction, Transfer } from "@/types/finance";
 
 export function transactionsForMonth(
   transactions: Transaction[],
@@ -152,4 +152,45 @@ export function accountBalances(state: Pick<FinanceState, "accounts" | "transact
   return state.accounts
     .filter((a) => !a.archived)
     .map((account) => ({ account, balance: balances.get(account.id) ?? 0 }));
+}
+
+export type AccountEntry =
+  | { kind: "transaction"; transaction: Transaction }
+  | { kind: "transfer"; transfer: Transfer; direction: "in" | "out" };
+
+export interface AccountStatement {
+  /** Saldo inicial + lo pagado + transferencias (lo pendiente no cuenta, igual que accountBalances). */
+  balance: number;
+  /** Movimientos y transferencias de la cuenta, del más reciente al más antiguo. */
+  entries: AccountEntry[];
+}
+
+/** Estado de una cuenta: su saldo y todo lo que la mueve. Sirve también para cuentas archivadas. */
+export function accountStatement(
+  state: Pick<FinanceState, "accounts" | "transactions" | "transfers">,
+  accountId: string,
+): AccountStatement | null {
+  const account = state.accounts.find((a) => a.id === accountId);
+  if (!account) return null;
+
+  const rows: { entry: AccountEntry; date: string; at: string }[] = [];
+  let balance = account.openingBalance;
+
+  for (const t of state.transactions) {
+    if (t.accountId !== accountId) continue;
+    if (t.status === "paid") balance += t.type === "income" ? t.amount : -t.amount;
+    rows.push({ entry: { kind: "transaction", transaction: t }, date: t.date, at: t.createdAt });
+  }
+  for (const tr of state.transfers) {
+    const out = tr.fromAccountId === accountId;
+    const inn = tr.toAccountId === accountId;
+    if (!out && !inn) continue;
+    if (out) balance -= tr.amount;
+    if (inn) balance += tr.amount;
+    // Una transferencia a la misma cuenta no mueve nada; se muestra una sola vez como salida.
+    rows.push({ entry: { kind: "transfer", transfer: tr, direction: out ? "out" : "in" }, date: tr.date, at: tr.date });
+  }
+
+  rows.sort((a, b) => (a.date === b.date ? b.at.localeCompare(a.at) : b.date.localeCompare(a.date)));
+  return { balance, entries: rows.map((r) => r.entry) };
 }
