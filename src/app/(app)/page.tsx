@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BarChart3, ChevronRight, Receipt } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { MonthSelector } from "@/components/MonthSelector";
@@ -10,6 +10,7 @@ import { QuickActions } from "@/components/QuickActions";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { GettingStarted } from "@/components/GettingStarted";
+import { LowStockCard } from "@/components/inventory/LowStockCard";
 import { cn } from "@/lib/cn";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { DataTable } from "@/components/ui/DataTable";
@@ -22,12 +23,32 @@ import { useFinance } from "@/context/FinanceContext";
 import { useUI } from "@/context/UIContext";
 import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import { formatAmount } from "@/lib/format";
+import { needsRestock } from "@/components/inventory/StockBadge";
+import { listProducts } from "@/lib/inventory/api";
+import type { Product } from "@/types/inventory";
 import { pendingTransactions, sumAmount } from "@/lib/cartera";
 import { accountBalances, computeTotals, lastNMonths, transactionsForMonth } from "@/lib/selectors";
 import { monthShortLabel } from "@/lib/format";
 
 export default function HomePage() {
-  const { state, hydrated, selectedYear, selectedMonth, permissions } = useFinance();
+  const { state, hydrated, selectedYear, selectedMonth, permissions, currentWorkspace } = useFinance();
+  const workspaceId = currentWorkspace?.id ?? null;
+  const [lowStock, setLowStock] = useState<Product[]>([]);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    let cancelled = false;
+    listProducts(workspaceId)
+      .then((all) => {
+        if (!cancelled) setLowStock(all.filter(needsRestock));
+      })
+      .catch(() => {
+        // El aviso de stock es opcional: si falla, no se muestra.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId]);
   const { openNewTransaction, openEditTransaction } = useUI();
 
   const monthTransactions = useMemo(
@@ -129,6 +150,9 @@ export default function HomePage() {
       </div>
       <div className="empty:hidden lg:col-start-2">
         <GettingStarted />
+      </div>
+      <div className="empty:hidden lg:col-start-2">
+        <LowStockCard products={lowStock} />
       </div>
 
       <div className="lg:col-start-1">

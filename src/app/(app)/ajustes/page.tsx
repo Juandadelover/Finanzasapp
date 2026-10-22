@@ -13,6 +13,7 @@ import {
   Landmark,
   LineChart,
   LogOut,
+  Package,
   Palette,
   Plus,
   ShieldCheck,
@@ -314,6 +315,7 @@ export default function AjustesPage() {
         <NavRow href="/negocio" icon={Briefcase} label="Datos del negocio" hint="Nombre, NIT y régimen" />
         <NavRow href="/equipo" icon={Users} label="Equipo" hint="Invitaciones y roles" />
         <NavRow href="/cuentas" icon={Landmark} label="Cuentas" hint="Nequi, bancos y efectivo" />
+        <NavRow href="/inventario" icon={Package} label="Inventario" hint="Productos, existencias y entradas" />
         <NavRow href="#categorias" icon={Tags} label="Categorías" hint="De gastos e ingresos" />
       </Group>
 
