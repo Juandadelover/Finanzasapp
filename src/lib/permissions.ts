@@ -9,6 +9,13 @@ export interface Permissions {
   canManageCategories: boolean;
   canImport: boolean;
   canResetData: boolean;
+  // Inventario (ver spec 2026-10-22-inventario-design.md, tabla de permisos)
+  canViewCosts: boolean;
+  canManageProducts: boolean;
+  canReceiveStock: boolean;
+  canReceiveWithCost: boolean;
+  canAdjustStock: boolean;
+  canImportProducts: boolean;
 }
 
 const NONE: Permissions = {
@@ -18,6 +25,12 @@ const NONE: Permissions = {
   canManageCategories: false,
   canImport: false,
   canResetData: false,
+  canViewCosts: false,
+  canManageProducts: false,
+  canReceiveStock: false,
+  canReceiveWithCost: false,
+  canAdjustStock: false,
+  canImportProducts: false,
 };
 
 export function permissionsFor(role: WorkspaceRole | null): Permissions {
@@ -30,12 +43,46 @@ export function permissionsFor(role: WorkspaceRole | null): Permissions {
         canManageCategories: true,
         canImport: true,
         canResetData: true,
+        canViewCosts: true,
+        canManageProducts: true,
+        canReceiveStock: true,
+        canReceiveWithCost: true,
+        canAdjustStock: true,
+        canImportProducts: true,
       };
     case "admin":
+      return {
+        ...NONE,
+        canCreateIncome: true,
+        canCreateExpense: true,
+        canEditTransactions: true,
+        canManageCategories: true,
+        canImport: true,
+        canViewCosts: true,
+        canManageProducts: true,
+        canReceiveStock: true,
+        canReceiveWithCost: true,
+        canAdjustStock: true,
+        canImportProducts: true,
+      };
     case "editor":
-      return { ...NONE, canCreateIncome: true, canCreateExpense: true, canEditTransactions: true, canManageCategories: true, canImport: true };
+      return {
+        ...NONE,
+        canCreateIncome: true,
+        canCreateExpense: true,
+        canEditTransactions: true,
+        canManageCategories: true,
+        canImport: true,
+        canViewCosts: true,
+        canManageProducts: true,
+        canReceiveStock: true,
+        canReceiveWithCost: true,
+        canImportProducts: true,
+      };
+    case "accountant":
+      return { ...NONE, canViewCosts: true };
     case "recorder":
-      return { ...NONE, canCreateExpense: true };
+      return { ...NONE, canCreateExpense: true, canReceiveStock: true };
     default:
       return NONE;
   }

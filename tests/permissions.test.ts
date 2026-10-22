@@ -11,14 +11,25 @@ describe("permissionsFor", () => {
       expect(p).toMatchObject({ canCreateIncome: true, canCreateExpense: true, canEditTransactions: true, canManageCategories: true, canImport: true, canResetData: false });
     }
   });
-  it("recorder only creates expenses", () => {
+  it("recorder only creates expenses (and receives stock without cost)", () => {
     const p = permissionsFor("recorder");
     expect(p.canCreateExpense).toBe(true);
-    expect(Object.entries(p).filter(([k, v]) => v && k !== "canCreateExpense")).toEqual([]);
+    expect(Object.entries(p).filter(([k, v]) => v && k !== "canCreateExpense").map(([k]) => k)).toEqual(["canReceiveStock"]);
   });
   it("accountant and null are read-only", () => {
-    expect(Object.values(permissionsFor("accountant")).some(Boolean)).toBe(false);
+    expect(Object.entries(permissionsFor("accountant")).filter(([k, v]) => v && k !== "canViewCosts")).toEqual([]);
     expect(Object.values(permissionsFor(null)).some(Boolean)).toBe(false);
+  });
+  it("inventory permissions follow the spec table", () => {
+    const keys = ["canViewCosts", "canManageProducts", "canReceiveStock", "canReceiveWithCost", "canAdjustStock", "canImportProducts"] as const;
+    const pick = (r: Parameters<typeof permissionsFor>[0]) => Object.fromEntries(keys.map((k) => [k, permissionsFor(r)[k]]));
+    const all = { canViewCosts: true, canManageProducts: true, canReceiveStock: true, canReceiveWithCost: true, canAdjustStock: true, canImportProducts: true };
+    expect(pick("owner")).toEqual(all);
+    expect(pick("admin")).toEqual(all);
+    expect(pick("editor")).toEqual({ ...all, canAdjustStock: false });
+    expect(pick("accountant")).toEqual({ canViewCosts: true, canManageProducts: false, canReceiveStock: false, canReceiveWithCost: false, canAdjustStock: false, canImportProducts: false });
+    expect(pick("recorder")).toEqual({ canViewCosts: false, canManageProducts: false, canReceiveStock: true, canReceiveWithCost: false, canAdjustStock: false, canImportProducts: false });
+    expect(pick(null)).toEqual({ canViewCosts: false, canManageProducts: false, canReceiveStock: false, canReceiveWithCost: false, canAdjustStock: false, canImportProducts: false });
   });
   it("has labels for all roles", () => {
     expect(Object.keys(ROLE_LABELS).sort()).toEqual(["accountant", "admin", "editor", "owner", "recorder"]);
