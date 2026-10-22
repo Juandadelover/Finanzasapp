@@ -305,10 +305,12 @@ export default function InventarioPage() {
               />
             </div>
 
-            {(permissions.canReceiveStock || permissions.canImportProducts) ? (
+            {(permissions.canViewCosts || permissions.canReceiveStock || permissions.canImportProducts) ? (
               <div className="mx-4 mb-4 flex flex-wrap gap-2 lg:mx-0">
-                {permissions.canReceiveStock ? (
+                {permissions.canViewCosts ? (
                   <Link href="/inventario/entradas" className={buttonClass({ variant: "secondary", size: "sm" })}>Entradas</Link>
+                ) : permissions.canReceiveStock ? (
+                  <Link href="/inventario/entradas/nueva" className={buttonClass({ variant: "secondary", size: "sm" })}>Nueva entrada</Link>
                 ) : null}
                 {permissions.canImportProducts ? (
                   <Link href="/inventario/importar" className={buttonClass({ variant: "secondary", size: "sm" })}>Importar catálogo</Link>

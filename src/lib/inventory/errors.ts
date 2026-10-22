@@ -7,6 +7,13 @@ const MESSAGES: Record<string, string> = {
   MOTIVO_REQUERIDO: "Escribe el motivo del ajuste.",
   PRODUCTO_CON_MOVIMIENTOS: "Este producto ya tiene movimientos. Usa una entrada o un ajuste.",
   CODIGO_DUPLICADO: "Ya existe un producto con ese código.",
+  STOCK_SOLO_POR_FUNCION: "El stock solo cambia con una entrada o un ajuste.",
+  PRODUCTO_NO_ENCONTRADO: "Uno de los productos ya no existe en este negocio.",
+  COSTO_INVALIDO: "El costo no es válido.",
+  COSTO_REQUERIDO: "Falta el costo de uno o más productos.",
+  CUENTA_REQUERIDA: "Elige la cuenta desde la que pagaste.",
+  ENTRADA_COMPLETA: "Esta entrada ya tiene todos sus costos.",
+  ESTADO_INVALIDO: "El estado del pago no es válido.",
   "LIMITE_PLAN:max_active_products": "Llegaste al límite de 30 productos activos del plan Gratis.",
 };
 

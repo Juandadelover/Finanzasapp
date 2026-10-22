@@ -81,7 +81,8 @@ export default function ImportarProductosPage() {
         setParsed(null);
         setFileName("");
       } else {
-        setServerErrors(res.errors);
+        // El servidor numera por posición en `valid`; se traduce a la fila del archivo.
+        setServerErrors(res.errors.map((er) => ({ ...er, row: parsed.validRowNumbers[er.row - 1] ?? er.row })));
         toast.error("Hay filas con errores. No se guardó nada.");
       }
     } catch (err) {

@@ -187,14 +187,15 @@ function NuevaEntrada() {
         },
       });
       toast.success("Entrada registrada.");
-      router.push(typeof id === "string" ? `/inventario/entradas/${id}` : "/inventario/entradas");
+      // Solo quien puede ver entradas (stock_receipts por RLS) va al detalle; "solo registro" vuelve al inventario.
+      router.push(permissions.canViewCosts && typeof id === "string" ? `/inventario/entradas/${id}` : "/inventario");
     } catch (err) {
       setError(inventoryErrorMessage(err));
       setSaving(false);
     }
   }, [
     saving, workspaceId, lines, productById, expenseOn, payStatus, accountId, dueDate, supplierId,
-    newSupplier, addContact, date, withCost, router,
+    newSupplier, addContact, date, withCost, router, permissions.canViewCosts,
   ]);
 
   useEffect(() => {

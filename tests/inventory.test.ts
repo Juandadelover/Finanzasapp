@@ -52,6 +52,13 @@ describe("units", () => {
   });
 });
 
+describe("parseImportRows row numbers", () => {
+  it("maps each valid row to its file row, skipping empty rows", () => {
+    const r = parseImportRows([{ nombre: "A" }, { nombre: "" }, { nombre: "B" }]);
+    expect(r.validRowNumbers).toEqual([2, 4]);
+  });
+});
+
 describe("parseImportRows", () => {
   it("parses a valid row with Colombian numbers and flexible headers", () => {
     const { valid, errors } = parseImportRows([
@@ -145,6 +152,16 @@ describe("inventoryErrorMessage", () => {
     expect(inventoryErrorMessage(new Error("SIN_PERMISO"))).toMatch(/permiso/i);
     expect(inventoryErrorMessage({ message: "LIMITE_PLAN:max_active_products" })).toMatch(/30 productos/);
     expect(inventoryErrorMessage({ message: "CODIGO_DUPLICADO" })).toMatch(/código/i);
+  });
+  it("translates every code raised by the inventory migration", () => {
+    const codes = [
+      "STOCK_SOLO_POR_FUNCION", "PRODUCTO_NO_ENCONTRADO", "COSTO_INVALIDO", "COSTO_REQUERIDO", "CUENTA_REQUERIDA",
+      "ENTRADA_COMPLETA", "ESTADO_INVALIDO", "SIN_PERMISO", "STOCK_NEGATIVO", "CANTIDAD_INVALIDA",
+      "MOTIVO_REQUERIDO", "PRODUCTO_CON_MOVIMIENTOS", "CODIGO_DUPLICADO",
+    ];
+    for (const code of codes) {
+      expect(inventoryErrorMessage({ message: code }), code).not.toBe("No se pudo completar la acción. Intenta de nuevo.");
+    }
   });
   it("falls back", () => {
     expect(inventoryErrorMessage({ message: "boom" })).toBe("No se pudo completar la acción. Intenta de nuevo.");

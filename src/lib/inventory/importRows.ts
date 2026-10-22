@@ -73,8 +73,10 @@ UNIT_LOOKUP.set("metros", "metro");
 UNIT_LOOKUP.set("kilogramo", "kg");
 UNIT_LOOKUP.set("gramo", "g");
 
-export function parseImportRows(rows: Record<string, string>[]): { valid: ImportRow[]; errors: ImportError[] } {
+/** `validRowNumbers[i]` es la fila del archivo de `valid[i]` (el servidor numera por posición dentro de `valid`). */
+export function parseImportRows(rows: Record<string, string>[]): { valid: ImportRow[]; validRowNumbers: number[]; errors: ImportError[] } {
   const valid: ImportRow[] = [];
+  const validRowNumbers: number[] = [];
   const errors: ImportError[] = [];
   const seen = new Map<string, number>();
 
@@ -134,6 +136,7 @@ export function parseImportRows(rows: Record<string, string>[]): { valid: Import
       errors.push({ row: rowNum, message: problems.join(" ") });
       return;
     }
+    validRowNumbers.push(rowNum);
     valid.push({
       barcode,
       name,
@@ -147,7 +150,7 @@ export function parseImportRows(rows: Record<string, string>[]): { valid: Import
     });
   });
 
-  return { valid, errors };
+  return { valid, validRowNumbers, errors };
 }
 
 /** Lee un .csv (papaparse) o .xlsx (read-excel-file) como filas con encabezados. */
