@@ -7,6 +7,7 @@ import {
   Home,
   Landmark,
   LineChart,
+  Package,
   Receipt,
   Repeat,
   Settings,
@@ -32,6 +33,7 @@ export const PRIMARY_NAV: NavItem[] = [
 
 /** Sidebar (lg+) secondary group. */
 export const SECONDARY_NAV: NavItem[] = [
+  { href: "/inventario", label: "Inventario", icon: Package },
   { href: "/cuentas", label: "Cuentas", icon: Landmark },
   { href: "/contactos", label: "Contactos", icon: Users },
   { href: "/cobros", label: "Cobros", icon: Receipt },
