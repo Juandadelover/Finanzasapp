@@ -23,6 +23,7 @@ import { useFinance } from "@/context/FinanceContext";
 import { useUI } from "@/context/UIContext";
 import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import { formatAmount } from "@/lib/format";
+import { needsRestock } from "@/components/inventory/StockBadge";
 import { listProducts } from "@/lib/inventory/api";
 import type { Product } from "@/types/inventory";
 import { pendingTransactions, sumAmount } from "@/lib/cartera";
@@ -39,7 +40,7 @@ export default function HomePage() {
     let cancelled = false;
     listProducts(workspaceId)
       .then((all) => {
-        if (!cancelled) setLowStock(all.filter((p) => p.active && p.stock <= p.min_stock));
+        if (!cancelled) setLowStock(all.filter(needsRestock));
       })
       .catch(() => {
         // El aviso de stock es opcional: si falla, no se muestra.

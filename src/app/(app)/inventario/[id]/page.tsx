@@ -71,7 +71,8 @@ export default function ProductoPage() {
       setStatus("ready");
     } catch (err) {
       if (run !== loadId.current) return;
-      setStatus("error");
+      // Si ya había un producto en pantalla (recarga tras una acción), se conserva y solo sale el aviso.
+      setStatus((prev) => (prev === "ready" ? prev : "error"));
       toast.error(inventoryErrorMessage(err));
     }
   }, [id, workspaceId, canViewCosts]);

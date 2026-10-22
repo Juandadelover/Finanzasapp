@@ -8,6 +8,11 @@ export function stockLevel(stock: number, minStock: number): StockLevel {
   return "ok";
 }
 
+/** Productos activos que piden atención en Inicio: mismo criterio que `stockLevel` (la pantalla de Inventario). */
+export function needsRestock(p: { active: boolean; stock: number; min_stock: number }): boolean {
+  return p.active && stockLevel(p.stock, p.min_stock) !== "ok";
+}
+
 const LABEL: Record<StockLevel, string> = { ok: "Disponible", low: "Stock bajo", out: "Agotado" };
 const TONE: Record<StockLevel, string> = {
   ok: "bg-[var(--color-income)]/15 text-[var(--color-income)]",

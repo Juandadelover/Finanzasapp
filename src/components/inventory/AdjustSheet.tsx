@@ -171,7 +171,7 @@ export function AdjustSheet({
               {error}
             </p>
           ) : null}
-          <Button type="submit" loading={saving}>
+          <Button type="submit" loading={saving} disabled={diff === 0}>
             {saving ? "Guardando..." : mode === "count" ? "Guardar conteo" : "Registrar salida"}
           </Button>
         </form>

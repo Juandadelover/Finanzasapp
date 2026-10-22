@@ -10,7 +10,9 @@ import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { SkeletonList } from "@/components/ui/Skeleton";
 import { useFinance } from "@/context/FinanceContext";
+import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import { formatAmount } from "@/lib/format";
 import { inventoryErrorMessage, listProducts } from "@/lib/inventory/api";
 import { isValidGtin } from "@/lib/inventory/gtin";
@@ -32,11 +34,21 @@ function BarcodeSvg({ code }: { code: string }) {
   return <svg ref={ref} className="max-w-full" role="img" aria-label={`Código de barras ${code}`} />;
 }
 
-function Label({ product, currency }: { product: Product; currency: string }) {
+function Label({ product, currency, hidden }: { product: Product; currency: string; hidden: boolean }) {
   return (
     <div className="label flex break-inside-avoid flex-col items-center gap-1 rounded-lg border border-[var(--color-border)] bg-white p-2 text-center text-black">
       <p className="line-clamp-2 text-xs font-semibold leading-tight">{product.name}</p>
-      <p className="text-base font-bold">{formatAmount(product.price_cash, currency as never)}</p>
+      {/* En pantalla respeta el modo privacidad; al imprimir sale el precio real. */}
+      <p className="text-base font-bold">
+        {hidden ? (
+          <>
+            <span className="print:hidden">{MASKED_AMOUNT}</span>
+            <span className="hidden print:inline">{formatAmount(product.price_cash, currency as never)}</span>
+          </>
+        ) : (
+          formatAmount(product.price_cash, currency as never)
+        )}
+      </p>
       {product.barcode ? <BarcodeSvg code={product.barcode} /> : <p className="text-[10px]">Sin código</p>}
     </div>
   );
@@ -44,7 +56,8 @@ function Label({ product, currency }: { product: Product; currency: string }) {
 
 function Etiquetas() {
   const params = useSearchParams();
-  const { currentWorkspace } = useFinance();
+  const { currentWorkspace, hydrated } = useFinance();
+  const { hidden } = usePrivacy();
   const workspaceId = currentWorkspace?.id ?? null;
   const currency = currentWorkspace?.currency ?? "COP";
   const idsKey = params.get("ids") ?? "";
@@ -52,6 +65,8 @@ function Etiquetas() {
   const [copies, setCopies] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -59,6 +74,7 @@ function Etiquetas() {
     listProducts(workspaceId)
       .then((list) => {
         if (cancelled) return;
+        setLoadError(false);
         const active = list.filter((p) => p.active);
         setProducts(active);
         const wanted = idsKey ? idsKey.split(",").filter(Boolean) : [];
@@ -66,14 +82,14 @@ function Etiquetas() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setProducts([]);
+          setLoadError(true);
           toast.error(inventoryErrorMessage(err));
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [workspaceId, idsKey]);
+  }, [workspaceId, idsKey, reloadKey]);
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -124,7 +140,23 @@ function Etiquetas() {
           }
         />
         <div className="mx-4 mt-4 flex flex-col gap-4">
-          {products && products.length === 0 ? (
+          {!hydrated || (products === null && !loadError) ? (
+            <SkeletonList count={4} />
+          ) : loadError && products === null ? (
+            <EmptyState
+              icon={Tags}
+              tone="error"
+              title="No pudimos cargar los productos"
+              description="Revisa tu conexión e inténtalo de nuevo."
+              action={{
+                label: "Reintentar",
+                onClick: () => {
+                  setLoadError(false);
+                  setReloadKey((k) => k + 1);
+                },
+              }}
+            />
+          ) : products && products.length === 0 ? (
             <EmptyState icon={Tags} title="Aún no tienes productos activos." />
           ) : (
             <>
@@ -142,12 +174,12 @@ function Etiquetas() {
                     key={p.id}
                     className="flex min-h-11 items-center gap-3 border-b border-[var(--color-border)] px-3 py-1 last:border-b-0"
                   >
-                    <label className="flex min-w-0 flex-1 items-center gap-3 py-2">
+                    <label className="flex min-h-11 min-w-0 flex-1 items-center gap-3 py-2">
                       <input
                         type="checkbox"
                         checked={selected.has(p.id)}
                         onChange={() => toggle(p.id)}
-                        className="h-5 w-5 accent-[var(--color-brand)]"
+                        className="h-5 w-5 shrink-0 accent-[var(--color-brand)]"
                       />
                       <span className="truncate text-sm">{p.name}</span>
                     </label>
@@ -176,7 +208,7 @@ function Etiquetas() {
 
           <div id="labels-print" className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
             {labels.map((l) => (
-              <Label key={l.key} product={l.product} currency={currency} />
+              <Label key={l.key} product={l.product} currency={currency} hidden={hidden} />
             ))}
           </div>
         </div>

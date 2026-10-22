@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PackagePlus, PackageCheck } from "lucide-react";
+import { PackagePlus, PackageCheck, PackageX } from "lucide-react";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { buttonClass } from "@/components/ui/buttonStyles";
 import { DataTable } from "@/components/ui/DataTable";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { SkeletonList } from "@/components/ui/Skeleton";
@@ -45,27 +46,35 @@ export default function EntradasPage() {
   const workspaceId = currentWorkspace?.id ?? null;
   const [receipts, setReceipts] = useState<StockReceipt[] | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!workspaceId || !permissions.canViewCosts) return;
     let cancelled = false;
     listReceipts(workspaceId)
       .then((list) => {
-        if (!cancelled) setReceipts(list);
+        if (cancelled) return;
+        setReceipts(list);
+        setLoadError(false);
       })
       .catch((err) => {
         if (cancelled) return;
         toast.error(inventoryErrorMessage(err));
-        setReceipts([]);
+        setLoadError(true);
       });
     return () => {
       cancelled = true;
     };
-  }, [workspaceId, permissions.canViewCosts]);
+  }, [workspaceId, permissions.canViewCosts, reloadKey]);
+
+  const retry = useCallback(() => {
+    setLoadError(false);
+    setReloadKey((k) => k + 1);
+  }, []);
 
   const header = (
     <>
-      <AppHeader />
       <PageHeader
         title="Entradas"
         subtitle="Mercancía que ha llegado al negocio."
@@ -82,11 +91,14 @@ export default function EntradasPage() {
     </>
   );
 
-  if (!hydrated || (permissions.canViewCosts && receipts === null)) {
+  if (!hydrated || (permissions.canViewCosts && receipts === null && !loadError)) {
     return (
       <>
-        {header}
-        <SkeletonList count={3} className="mx-4 mt-5" />
+        <AppHeader />
+        <PageContainer size="medium">
+          {header}
+          <SkeletonList count={3} className="mx-4 mt-5" />
+        </PageContainer>
       </>
     );
   }
@@ -94,13 +106,36 @@ export default function EntradasPage() {
   if (!permissions.canViewCosts) {
     return (
       <>
-        {header}
-        <p className="mx-4 mt-5 text-sm text-[var(--color-text-muted)]">No tienes permiso para ver las entradas.</p>
+        <AppHeader />
+        <PageContainer size="medium">
+          {header}
+          <p className="mx-4 mt-5 text-sm text-[var(--color-text-muted)]">No tienes permiso para ver las entradas.</p>
+        </PageContainer>
       </>
     );
   }
 
-  const all = receipts ?? [];
+  if (loadError || receipts === null) {
+    return (
+      <>
+        <AppHeader />
+        <PageContainer size="medium">
+          {header}
+          <div className="mx-4 mt-5">
+            <EmptyState
+              icon={PackageX}
+              tone="error"
+              title="No pudimos cargar las entradas"
+              description="Revisa tu conexión e inténtalo de nuevo."
+              action={{ label: "Reintentar", onClick: retry }}
+            />
+          </div>
+        </PageContainer>
+      </>
+    );
+  }
+
+  const all = receipts;
   const rows = filter === "pending" ? all.filter((r) => r.status === "pending_cost") : all;
   const supplierName = (id: string | null) => (id && state.contacts.find((c) => c.id === id)?.name) || "Sin proveedor";
   const money = (v: number | null) => (v === null ? "—" : hidden ? MASKED_AMOUNT : formatAmount(v, currency));
@@ -115,6 +150,8 @@ export default function EntradasPage() {
 
   return (
     <>
+      <AppHeader />
+      <PageContainer size="medium">
       {header}
       <div className="mx-4 mt-4">
         <SegmentedControl<Filter>
@@ -166,6 +203,7 @@ export default function EntradasPage() {
           )}
         />
       </div>
+      </PageContainer>
     </>
   );
 }

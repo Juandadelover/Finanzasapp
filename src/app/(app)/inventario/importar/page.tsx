@@ -6,9 +6,11 @@ import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/Button";
+import { DataTable } from "@/components/ui/DataTable";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useFinance } from "@/context/FinanceContext";
+import { MASKED_AMOUNT, usePrivacy } from "@/context/PrivacyContext";
 import { formatAmount } from "@/lib/format";
 import { importProducts, inventoryErrorMessage } from "@/lib/inventory/api";
 import { IMPORT_HEADERS, parseImportRows, readImportFile } from "@/lib/inventory/importRows";
@@ -33,7 +35,9 @@ export default function ImportarProductosPage() {
   const [serverErrors, setServerErrors] = useState<{ row: number; message: string }[]>([]);
   const [reading, setReading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { hidden } = usePrivacy();
   const currency = currentWorkspace?.currency ?? "COP";
+  const money = (v: number) => (hidden ? MASKED_AMOUNT : formatAmount(v, currency));
 
   if (hydrated && !permissions.canImportProducts) {
     return (
@@ -77,7 +81,7 @@ export default function ImportarProductosPage() {
     try {
       const res = await importProducts(currentWorkspace.id, parsed.valid);
       if (res.ok) {
-        toast.success(`Importaste ${res.created} productos.`);
+        toast.success(res.created === 1 ? "Importaste 1 producto." : `Importaste ${res.created} productos.`);
         setParsed(null);
         setFileName("");
       } else {
@@ -143,36 +147,39 @@ export default function ImportarProductosPage() {
           {parsed && parsed.valid.length > 0 ? (
             <>
               <p className="text-sm text-[var(--color-text-muted)]">
-                {parsed.valid.length} productos listos para importar.
+                {parsed.valid.length === 1 ? "1 producto listo" : `${parsed.valid.length} productos listos`} para importar.
               </p>
-              <div className="overflow-x-auto rounded-2xl border border-[var(--color-border)]">
-                <table className="w-full min-w-[640px] text-left text-sm">
-                  <thead className="bg-[var(--color-surface-2)] text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
-                    <tr>
-                      <th className="px-3 py-2">Código</th>
-                      <th className="px-3 py-2">Nombre</th>
-                      <th className="px-3 py-2">Categoría</th>
-                      <th className="px-3 py-2">Unidad</th>
-                      <th className="px-3 py-2 text-right">Contado</th>
-                      <th className="px-3 py-2 text-right">Crédito</th>
-                      <th className="px-3 py-2 text-right">Stock</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parsed.valid.map((r, i) => (
-                      <tr key={i} className="border-t border-[var(--color-border)]">
-                        <td className="px-3 py-2">{r.barcode ?? ""}</td>
-                        <td className="px-3 py-2">{r.name}</td>
-                        <td className="px-3 py-2">{r.category ?? ""}</td>
-                        <td className="px-3 py-2">{r.unit}</td>
-                        <td className="px-3 py-2 text-right">{formatAmount(r.price_cash, currency)}</td>
-                        <td className="px-3 py-2 text-right">{formatAmount(r.price_credit, currency)}</td>
-                        <td className="px-3 py-2 text-right">{r.stock}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                caption="Productos a importar"
+                rows={parsed.valid.map((r, i) => ({ ...r, key: String(i) }))}
+                getRowKey={(r) => r.key}
+                mobileClassName="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5"
+                columns={[
+                  { key: "barcode", header: "Código", cell: (r) => r.barcode ?? "" },
+                  { key: "name", header: "Nombre", cell: (r) => r.name },
+                  { key: "category", header: "Categoría", cell: (r) => r.category ?? "" },
+                  { key: "unit", header: "Unidad", cell: (r) => r.unit },
+                  { key: "cash", header: "Contado", align: "right", cell: (r) => money(r.price_cash) },
+                  { key: "credit", header: "Crédito", align: "right", cell: (r) => money(r.price_credit) },
+                  { key: "stock", header: "Stock", align: "right", cell: (r) => r.stock },
+                ]}
+                renderMobile={(r) => (
+                  <div className="rounded-2xl px-2 py-2.5">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="min-w-0 truncate text-sm font-medium">{r.name}</span>
+                      <span className="shrink-0 text-xs text-[var(--color-text-muted)]">
+                        Stock {r.stock} · {r.unit}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      {[r.barcode, r.category].filter(Boolean).join(" · ") || "Sin código ni categoría"}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      Contado {money(r.price_cash)} · Crédito {money(r.price_credit)}
+                    </p>
+                  </div>
+                )}
+              />
             </>
           ) : null}
 

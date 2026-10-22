@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { PackageX } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { SkeletonList } from "@/components/ui/Skeleton";
@@ -40,6 +41,7 @@ export default function EntradaDetallePage({ params }: { params: Promise<{ id: s
   const [detail, setDetail] = useState<Detail | null>(null);
   const [products, setProducts] = useState<Map<string, Product>>(new Map());
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [costs, setCosts] = useState<Record<string, number>>({});
   const [recordExpense, setRecordExpense] = useState(true);
   const [accountId, setAccountId] = useState("");
@@ -54,9 +56,11 @@ export default function EntradaDetallePage({ params }: { params: Promise<{ id: s
       const [d, list] = await Promise.all([getReceipt(id), listProducts(workspaceId)]);
       setDetail(d as Detail | null);
       setProducts(new Map(list.map((p) => [p.id, p])));
+      setLoadError(false);
     } catch (err) {
       toast.error(inventoryErrorMessage(err));
-      setDetail(null);
+      // Si ya había una entrada en pantalla (recarga tras guardar), se conserva y solo sale el aviso.
+      setLoadError(true);
     }
     setLoaded(true);
   }, [id, workspaceId]);
@@ -75,24 +79,48 @@ export default function EntradaDetallePage({ params }: { params: Promise<{ id: s
     return (
       <>
         <AppHeader />
-        <PageHeader title="Entrada" backHref={backHref} />
-        <SkeletonList count={3} className="mx-4 mt-5" />
+        <PageContainer size="narrow">
+          <PageHeader title="Entrada" backHref={backHref} />
+          <SkeletonList count={3} className="mx-4 mt-5" />
+        </PageContainer>
       </>
     );
   }
 
   if (!canView || !detail) {
+    const failed = canView && loadError;
     return (
       <>
         <AppHeader />
-        <PageHeader title="Entrada" backHref={backHref} />
-        <div className="mx-4 mt-5">
-          <EmptyState
-            icon={PackageX}
-            title={canView ? "No encontramos esta entrada" : "No tienes permiso para ver esta entrada"}
-            action={{ label: "Volver a entradas", href: backHref }}
-          />
-        </div>
+        <PageContainer size="narrow">
+          <PageHeader title="Entrada" backHref={backHref} />
+          <div className="mx-4 mt-5">
+            <EmptyState
+              icon={PackageX}
+              tone={failed ? "error" : "empty"}
+              title={
+                !canView
+                  ? "No tienes permiso para ver esta entrada"
+                  : failed
+                    ? "No pudimos cargar esta entrada"
+                    : "No encontramos esta entrada"
+              }
+              description={failed ? "Revisa tu conexión e inténtalo de nuevo." : undefined}
+              action={
+                failed
+                  ? {
+                      label: "Reintentar",
+                      onClick: () => {
+                        setLoadError(false);
+                        setLoaded(false);
+                        void load();
+                      },
+                    }
+                  : { label: "Volver a entradas", href: backHref }
+              }
+            />
+          </div>
+        </PageContainer>
       </>
     );
   }
@@ -143,12 +171,13 @@ export default function EntradaDetallePage({ params }: { params: Promise<{ id: s
   return (
     <>
       <AppHeader />
+      <PageContainer size="narrow">
       <PageHeader
         title={`Entrada #${receipt.number}`}
         subtitle={`${formatDayLabel(receipt.date)} · ${supplier ?? "Sin proveedor"}`}
         backHref={backHref}
       />
-      <div className="mx-4 mt-5 flex max-w-2xl flex-col gap-5 pb-24">
+      <div className="mx-4 mt-5 flex flex-col gap-5 pb-24">
         <div className="flex items-center justify-between rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
           <span className="text-sm text-[var(--color-text-muted)]">{pending ? "Falta costo" : "Total"}</span>
           <span className="text-lg font-bold">{money(receipt.total_cost)}</span>
@@ -246,6 +275,7 @@ export default function EntradaDetallePage({ params }: { params: Promise<{ id: s
           <p className="text-sm text-[var(--color-text-muted)]">Quien administra el negocio debe completar el costo de esta entrada.</p>
         ) : null}
       </div>
+      </PageContainer>
     </>
   );
 }

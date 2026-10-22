@@ -102,6 +102,8 @@ export function ProductSheet({
         const cat = await createCategory(workspaceId, newCategory.trim());
         onCategoryCreated(cat);
         catId = cat.id;
+        // Si guardar el producto falla, un reintento usa esta categoría en vez de crearla otra vez.
+        setCategoryId(cat.id);
       }
       const saved = await saveProduct({
         id: product?.id,
@@ -141,7 +143,7 @@ export function ProductSheet({
 
         <div>
           <label htmlFor="product-barcode" className={labelClass}>Código de barras (opcional)</label>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               id="product-barcode"
               type="text"

@@ -72,7 +72,13 @@ export function KardexTable({ movements, showCosts, currency = "COP", currentUse
       renderMobile={(m) => (
         <div className="rounded-2xl px-2 py-2.5">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-sm font-medium">{KIND_LABEL[m.kind]}</span>
+            {m.receipt_id ? (
+              <Link href={`/inventario/entradas/${m.receipt_id}`} className="text-sm font-medium text-[var(--color-brand-light)]">
+                {KIND_LABEL[m.kind]}
+              </Link>
+            ) : (
+              <span className="text-sm font-medium">{KIND_LABEL[m.kind]}</span>
+            )}
             <span className="text-sm font-semibold tabular-nums" style={{ color: qtyColor(m) }}>{qty(m)}</span>
           </div>
           <p className="text-xs text-[var(--color-text-muted)]">

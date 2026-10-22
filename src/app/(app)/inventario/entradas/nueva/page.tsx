@@ -2,11 +2,13 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Package, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { CameraScanButton } from "@/components/inventory/CameraScanButton";
 import { Button } from "@/components/ui/Button";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { SkeletonList } from "@/components/ui/Skeleton";
@@ -45,6 +47,7 @@ function NuevaEntrada() {
   const withCost = permissions.canReceiveWithCost;
 
   const [products, setProducts] = useState<Product[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [lines, setLines] = useState<Line[]>([]);
   const [query, setQuery] = useState("");
   const [supplierId, setSupplierId] = useState("");
@@ -58,22 +61,31 @@ function NuevaEntrada() {
   const [saving, setSaving] = useState(false);
   const [preloaded, setPreloaded] = useState(false);
 
+  const [reloadKey, setReloadKey] = useState(0);
+
   useEffect(() => {
     if (!workspaceId) return;
     let cancelled = false;
     listProducts(workspaceId)
       .then((list) => {
-        if (!cancelled) setProducts(list.filter((p) => p.active));
+        if (cancelled) return;
+        setProducts(list.filter((p) => p.active));
+        setLoadError(false);
       })
       .catch((err) => {
         if (cancelled) return;
         toast.error(inventoryErrorMessage(err));
-        setProducts([]);
+        setLoadError(true);
       });
     return () => {
       cancelled = true;
     };
-  }, [workspaceId]);
+  }, [workspaceId, reloadKey]);
+
+  function retryLoad() {
+    setLoadError(false);
+    setReloadKey((k) => k + 1);
+  }
 
   const addProduct = useCallback((p: Product) => {
     setLines((prev) => {
@@ -169,6 +181,8 @@ function NuevaEntrada() {
           return;
         }
         supplier = created.id;
+        // Si el registro falla después, un reintento reutiliza este proveedor en vez de crearlo otra vez.
+        setSupplierId(created.id);
       }
       const id = await receiveStock({
         workspaceId,
@@ -209,12 +223,16 @@ function NuevaEntrada() {
     return () => window.removeEventListener("keydown", onKey);
   }, [submit]);
 
-  if (!hydrated || (permissions.canReceiveStock && products === null)) {
+  const backHref = permissions.canViewCosts ? "/inventario/entradas" : "/inventario";
+
+  if (!hydrated || (permissions.canReceiveStock && products === null && !loadError)) {
     return (
       <>
         <AppHeader />
-        <PageHeader title="Nueva entrada" backHref="/inventario/entradas" />
-        <SkeletonList count={3} className="mx-4 mt-5" />
+        <PageContainer size="narrow">
+          <PageHeader title="Nueva entrada" backHref={backHref} />
+          <SkeletonList count={3} className="mx-4 mt-5" />
+        </PageContainer>
       </>
     );
   }
@@ -223,8 +241,30 @@ function NuevaEntrada() {
     return (
       <>
         <AppHeader />
-        <PageHeader title="Nueva entrada" backHref="/inventario/entradas" />
-        <p className="mx-4 mt-5 text-sm text-[var(--color-text-muted)]">No tienes permiso para registrar entradas.</p>
+        <PageContainer size="narrow">
+          <PageHeader title="Nueva entrada" backHref={backHref} />
+          <p className="mx-4 mt-5 text-sm text-[var(--color-text-muted)]">No tienes permiso para registrar entradas.</p>
+        </PageContainer>
+      </>
+    );
+  }
+
+  if (loadError || products === null) {
+    return (
+      <>
+        <AppHeader />
+        <PageContainer size="narrow">
+          <PageHeader title="Nueva entrada" backHref={backHref} />
+          <div className="mx-4 mt-5">
+            <EmptyState
+              icon={Package}
+              tone="error"
+              title="No pudimos cargar los productos"
+              description="Revisa tu conexión e inténtalo de nuevo."
+              action={{ label: "Reintentar", onClick: retryLoad }}
+            />
+          </div>
+        </PageContainer>
       </>
     );
   }
@@ -232,13 +272,14 @@ function NuevaEntrada() {
   return (
     <>
       <AppHeader />
-      <PageHeader title="Nueva entrada" subtitle="Escanea o busca los productos que llegaron." backHref="/inventario/entradas" />
+      <PageContainer size="narrow">
+      <PageHeader title="Nueva entrada" subtitle="Escanea o busca los productos que llegaron." backHref={backHref} />
       <form
         onSubmit={(e) => {
           e.preventDefault();
           void submit();
         }}
-        className="mx-4 mt-5 flex max-w-2xl flex-col gap-5 pb-24"
+        className="mx-4 mt-5 flex flex-col gap-5 pb-24"
       >
         <section className="flex flex-col gap-2">
           <div className="flex items-end gap-2">
@@ -441,9 +482,16 @@ function NuevaEntrada() {
           </p>
         ) : null}
         <Button type="submit" size="lg" loading={saving}>
-          {saving ? "Guardando..." : "Registrar entrada (F2)"}
+          {saving ? (
+            "Guardando..."
+          ) : (
+            <>
+              Registrar entrada<span className="hidden lg:inline"> (F2)</span>
+            </>
+          )}
         </Button>
       </form>
+      </PageContainer>
     </>
   );
 }
