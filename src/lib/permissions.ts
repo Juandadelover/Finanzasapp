@@ -16,6 +16,10 @@ export interface Permissions {
   canReceiveWithCost: boolean;
   canAdjustStock: boolean;
   canImportProducts: boolean;
+  // Venta POS (spec 2026-10-22-pos-ventas-design.md, P5)
+  canSell: boolean;
+  canVoidSale: boolean;
+  canManagePosSettings: boolean;
 }
 
 const NONE: Permissions = {
@@ -31,6 +35,9 @@ const NONE: Permissions = {
   canReceiveWithCost: false,
   canAdjustStock: false,
   canImportProducts: false,
+  canSell: false,
+  canVoidSale: false,
+  canManagePosSettings: false,
 };
 
 export function permissionsFor(role: WorkspaceRole | null): Permissions {
@@ -49,6 +56,9 @@ export function permissionsFor(role: WorkspaceRole | null): Permissions {
         canReceiveWithCost: true,
         canAdjustStock: true,
         canImportProducts: true,
+        canSell: true,
+        canVoidSale: true,
+        canManagePosSettings: true,
       };
     case "admin":
       return {
@@ -64,6 +74,9 @@ export function permissionsFor(role: WorkspaceRole | null): Permissions {
         canReceiveWithCost: true,
         canAdjustStock: true,
         canImportProducts: true,
+        canSell: true,
+        canVoidSale: true,
+        canManagePosSettings: true,
       };
     case "editor":
       return {
@@ -78,11 +91,12 @@ export function permissionsFor(role: WorkspaceRole | null): Permissions {
         canReceiveStock: true,
         canReceiveWithCost: true,
         canImportProducts: true,
+        canSell: true,
       };
     case "accountant":
       return { ...NONE, canViewCosts: true };
     case "recorder":
-      return { ...NONE, canCreateExpense: true, canReceiveStock: true };
+      return { ...NONE, canCreateExpense: true, canReceiveStock: true, canSell: true };
     default:
       return NONE;
   }
