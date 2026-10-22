@@ -33,8 +33,16 @@ test.describe("inventario", () => {
     await page.getByLabel(/^Cantidad/).fill("3");
     await page.getByLabel("Costo unitario").fill("3200");
     const expense = page.getByRole("switch", { name: "Registrar el gasto" });
-    if ((await expense.getAttribute("aria-checked")) === "true") await expense.click();
+    // Es un <input type="checkbox" role="switch">: no lleva aria-checked, el estado se lee con isChecked().
+    await expense.uncheck();
+    await expect(expense).not.toBeChecked();
     await page.getByRole("button", { name: /Registrar entrada/ }).click();
+    // Si la página muestra un error (validación o RPC), que aparezca en el log de la falla.
+    const alert = page.locator('p[role="alert"]');
+    await alert.waitFor({ state: "visible", timeout: 2000 }).catch(() => {});
+    if (await alert.isVisible()) {
+      throw new Error(`Registrar entrada mostró un error: ${(await alert.innerText()).trim()}`);
+    }
     await expect(page).toHaveURL(/\/inventario\/entradas\/[0-9a-f-]+$/);
 
     // Ficha: stock 8 y kardex con stock inicial y entrada.
