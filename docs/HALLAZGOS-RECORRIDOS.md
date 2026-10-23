@@ -16,13 +16,13 @@ Fecha: 23 de octubre de 2026. Un agente automatizado (Playwright, celular de 390
 - Además, esas peticiones 404 se disparan en cada pantalla, porque el inventario se carga al abrir la app.
 - Arreglo: aplicar la migración en Supabase. No lo hice porque cambia el esquema de tu base real.
 
-**2. Un dueño nuevo no puede cobrarle a nadie.**
+**2. Un dueño nuevo no puede cobrarle a nadie.** *(Resuelto: el formulario ahora tiene "+ Agregar cliente" con nombre y WhatsApp; verificado en la app real.)*
 - Prueba: registrar "Don Pedro me debe $ 80.000". El selector de contacto del formulario solo aparece si ya existe algún contacto (`src/components/TransactionModal.tsx:261`). Un usuario nuevo escribe "Don Pedro" en la descripción.
 - En Cartera la deuda sale como **"Sin contacto"** y el único botón es "Marcar como pagado". El botón de WhatsApp exige un contacto con teléfono (`src/app/(app)/cartera/page.tsx:152`).
 - Es justo el gancho del producto ("Me deben" + WhatsApp) y falla en el primer intento. Lo mismo pasa en `/cobros/nuevo`: "Aún no tienes clientes. Agrégalos en Contactos".
 - Arreglo sugerido: crear el contacto desde el mismo formulario (nombre y teléfono) y, en una deuda sin contacto, un botón "Agregar teléfono para cobrar".
 
-**3. La proyección a 90 días asusta con pocos datos.**
+**3. La proyección a 90 días asusta con pocos datos.** *(Resuelto: no se muestra hasta tener 30 días de movimientos pagados; verificado en la app real.)*
 - Con una sola compra de $ 120.000 en el mes, Estadísticas dice "Proyectado en 90d: **-$ 468.387**".
 - La cuenta (`src/app/(app)/estadisticas/page.tsx`) toma el balance del mes seleccionado, lo divide por los días del mes y lo multiplica por 90. Con un mes casi vacío da un resultado alarmista, y no cuenta lo pendiente ni los recurrentes.
 - Arreglo sugerido: ocultar la proyección hasta tener al menos un mes completo de movimientos, o mostrarla con el aviso "con pocos datos".

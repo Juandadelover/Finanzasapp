@@ -116,6 +116,19 @@ export function lastNMonths(
   return points;
 }
 
+// La proyección extrapola el balance del mes; con menos historia que esto da cifras alarmistas.
+export const PROJECTION_MIN_HISTORY_DAYS = 30;
+
+export function hasEnoughHistoryForProjection(transactions: Transaction[], today: string): boolean {
+  let oldest: string | null = null;
+  for (const t of paidOnly(transactions)) {
+    if (oldest === null || t.date < oldest) oldest = t.date;
+  }
+  if (oldest === null) return false;
+  const days = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${oldest}T00:00:00Z`)) / 86400000);
+  return days >= PROJECTION_MIN_HISTORY_DAYS;
+}
+
 export function projectFutureBalance(
   currentBalance: number,
   avgDailyNet: number,

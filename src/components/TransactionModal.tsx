@@ -34,6 +34,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
     updateTransaction,
     deleteTransaction,
     addCategory,
+    addContact,
     reload,
   } = useFinance();
 
@@ -46,6 +47,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
   const [status, setStatus] = useState<TransactionStatus>(editing?.status ?? "paid");
   const [dueDate, setDueDate] = useState(editing?.dueDate ?? "");
   const [contactId, setContactId] = useState<string | null>(editing?.contactId ?? null);
+  const [newContact, setNewContact] = useState<{ name: string; phone: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [frequency, setFrequency] = useState<Frequency | "none">("none");
@@ -68,6 +70,8 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
     [state.contacts, type, contactId]
   );
 
+  const canAddContact = permissions.canEditTransactions;
+
   const categories = useMemo(
     () => state.categories.filter((c) => c.type === type),
     [state.categories, type]
@@ -89,6 +93,22 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
       return;
     }
 
+    let resolvedContactId = contactId;
+    if (newContact && newContact.name.trim()) {
+      setSaving(true);
+      const created = await addContact({
+        kind: type === "income" ? "client" : "supplier",
+        name: newContact.name.trim(),
+        phone: newContact.phone.trim() || null,
+      });
+      setSaving(false);
+      if (!created) {
+        setError("No se pudo guardar el contacto. Revisa los datos e inténtalo de nuevo.");
+        return;
+      }
+      resolvedContactId = created.id;
+    }
+
     const input = {
       type,
       amount,
@@ -96,7 +116,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
       description: description.trim(),
       date,
       accountId: status === "paid" || accountId ? accountId : null,
-      contactId,
+      contactId: resolvedContactId,
       status,
       dueDate: status === "pending" && dueDate ? dueDate : null,
     };
@@ -113,7 +133,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
         amount,
         categoryId,
         accountId: input.accountId,
-        contactId,
+        contactId: resolvedContactId,
         description: input.description,
         frequency,
         startDate: date,
@@ -176,6 +196,7 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
             setType(next);
             setCategoryId(null);
             setContactId(null);
+            setNewContact(null);
           }}
           options={[
             { value: "expense", label: "Gasto", indicatorClass: "bg-[var(--color-expense)]", activeClass: "text-white" },
@@ -258,25 +279,72 @@ function TransactionSheet({ type: initialType, editing, onClose }: TransactionSh
         </div>
 
         <div className="flex flex-col gap-3">
-          {contacts.length > 0 || contactId ? (
-            <div>
+          {newContact ? (
+            <div className="flex flex-col gap-2">
               <label htmlFor="tx-f1" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
-                {type === "income" ? "Cliente (opcional)" : "Proveedor (opcional)"}
+                {type === "income" ? "Cliente nuevo" : "Proveedor nuevo"}
               </label>
-              <select id="tx-f1"
-                value={contactId ?? ""}
-                onChange={(e) => setContactId(e.target.value || null)}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
+              <input id="tx-f1"
+                type="text"
+                value={newContact.name}
+                onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                placeholder="Nombre"
+                autoComplete="off"
+                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
+              />
+              <input
+                type="tel"
+                inputMode="tel"
+                aria-label="WhatsApp (opcional)"
+                value={newContact.phone}
+                onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                placeholder="WhatsApp (opcional), ej. 300 123 4567"
+                autoComplete="off"
+                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
+              />
+              <button
+                type="button"
+                onClick={() => setNewContact(null)}
+                className="min-h-11 self-start text-sm font-medium text-[var(--color-brand-light)] hover:underline"
               >
-                <option value="">Sin contacto</option>
-                {contacts.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                Cancelar
+              </button>
             </div>
-          ) : null}
+          ) : (
+            <div>
+              {contacts.length > 0 || contactId ? (
+                <>
+                  <label htmlFor="tx-f1" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
+                    {type === "income" ? "Cliente (opcional)" : "Proveedor (opcional)"}
+                  </label>
+                  <select id="tx-f1"
+                    value={contactId ?? ""}
+                    onChange={(e) => setContactId(e.target.value || null)}
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-light)]/40"
+                  >
+                    <option value="">Sin contacto</option>
+                    {contacts.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              ) : null}
+              {canAddContact ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setContactId(null);
+                    setNewContact({ name: "", phone: "" });
+                  }}
+                  className="min-h-11 text-sm font-medium text-[var(--color-brand-light)] hover:underline"
+                >
+                  + {type === "income" ? "Agregar cliente" : "Agregar proveedor"}
+                </button>
+              ) : null}
+            </div>
+          )}
           <div>
             <label htmlFor="tx-f2" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
               Descripción

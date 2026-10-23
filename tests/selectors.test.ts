@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { accountBalances, accountStatement, budgetProgress, categoryBreakdown, computeTotals } from "@/lib/selectors";
+import {
+  accountBalances,
+  accountStatement,
+  budgetProgress,
+  categoryBreakdown,
+  computeTotals,
+  hasEnoughHistoryForProjection,
+  PROJECTION_MIN_HISTORY_DAYS,
+} from "@/lib/selectors";
 import type { Account, Category, Transaction, Transfer } from "@/types/finance";
 
 let n = 0;
@@ -117,5 +125,24 @@ describe("accountStatement", () => {
     const s = accountStatement({ accounts, transactions: [], transfers }, "a2")!;
     expect(s.balance).toBe(300);
     expect(s.entries).toEqual([{ kind: "transfer", transfer: transfers[0], direction: "in" }]);
+  });
+});
+
+describe("hasEnoughHistoryForProjection", () => {
+  const today = "2026-10-23";
+  it("is false without movements", () => {
+    expect(hasEnoughHistoryForProjection([], today)).toBe(false);
+  });
+  it("is false when the oldest paid movement is recent", () => {
+    expect(hasEnoughHistoryForProjection([tx({ date: "2026-10-23" })], today)).toBe(false);
+    expect(hasEnoughHistoryForProjection([tx({ date: "2026-10-01" })], today)).toBe(false);
+  });
+  it("is true once the oldest paid movement is old enough", () => {
+    expect(PROJECTION_MIN_HISTORY_DAYS).toBe(30);
+    expect(hasEnoughHistoryForProjection([tx({ date: "2026-09-23" })], today)).toBe(true);
+    expect(hasEnoughHistoryForProjection([tx({ date: "2026-08-01" }), tx({ date: "2026-10-20" })], today)).toBe(true);
+  });
+  it("ignores pending movements", () => {
+    expect(hasEnoughHistoryForProjection([tx({ date: "2026-08-01", status: "pending" })], today)).toBe(false);
   });
 });

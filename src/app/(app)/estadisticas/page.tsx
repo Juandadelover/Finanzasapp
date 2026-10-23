@@ -22,12 +22,13 @@ import {
   budgetProgress,
   categoryBreakdown,
   computeTotals,
+  hasEnoughHistoryForProjection,
   lastNMonths,
   previousMonth,
   projectFutureBalance,
   transactionsForMonth,
 } from "@/lib/selectors";
-import { formatAmount, formatCompactAmount, monthShortLabel } from "@/lib/format";
+import { formatAmount, formatCompactAmount, monthShortLabel, toISODate } from "@/lib/format";
 
 function percentDelta(current: number, previous: number): number | null {
   if (previous === 0) return null;
@@ -86,6 +87,11 @@ export default function EstadisticasPage() {
     const avgDailyNet = totals.balance / daysInMonth;
     return projectFutureBalance(allTimeBalance, avgDailyNet, 90);
   }, [allTimeBalance, totals.balance, selectedYear, selectedMonth]);
+
+  const canProject = useMemo(
+    () => hasEnoughHistoryForProjection(state.transactions, toISODate(new Date())),
+    [state.transactions]
+  );
 
   const projected90d = projection.at(-1)?.balance ?? 0;
   const projectionUp = projected90d >= allTimeBalance;
@@ -190,6 +196,7 @@ export default function EstadisticasPage() {
         title="Balance Futuro"
         subtitle="Proyección a 90 días"
         footer={
+          !canProject ? undefined : (
           <div className="mt-3 flex items-center justify-between border-t border-[var(--color-border)] pt-3 text-sm">
             <span className="text-[var(--color-text-muted)]">Proyectado en 90d</span>
             <span className="tabular flex min-w-0 items-center gap-1 font-semibold text-[var(--color-text)]">
@@ -207,9 +214,14 @@ export default function EstadisticasPage() {
               {hidden ? MASKED_AMOUNT : formatAmount(projected90d, currency)}
             </span>
           </div>
+          )
         }
       >
-        {hydrated ? (
+        {hydrated && !canProject ? (
+          <p className="flex h-52 items-center justify-center px-6 text-center text-sm text-[var(--color-text-muted)]">
+            Aún es muy pronto para proyectar. Aparece cuando tengas al menos 30 días de movimientos pagados.
+          </p>
+        ) : hydrated ? (
           <FutureBalanceChart data={projection} currency={currency} />
         ) : (
           <Skeleton className="h-52 rounded-2xl" />
