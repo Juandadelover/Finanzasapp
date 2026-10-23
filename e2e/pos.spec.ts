@@ -19,7 +19,9 @@ async function failOnAlert(page: Page, action: string) {
 
 async function addByName(page: Page, name: string) {
   await page.getByLabel("Buscar producto").fill(name);
-  await page.getByRole("button", { name }).click();
+  // Anclado al inicio: tras la primera suma, los botones de la línea del carrito ("Quitar E2E venta…",
+  // "Agregar uno de E2E venta…") también contienen el nombre y hacían la búsqueda ambigua.
+  await page.getByRole("button", { name: new RegExp(`^${name}`) }).click();
 }
 
 test.describe("punto de venta", () => {
