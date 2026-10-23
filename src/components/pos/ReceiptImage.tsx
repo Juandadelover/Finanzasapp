@@ -31,6 +31,19 @@ const bogotaDate = new Intl.DateTimeFormat("es-CO", {
   minute: "2-digit",
 });
 
+/**
+ * Convierte un data URL en Blob sin `fetch`: la CSP de producción (`connect-src 'self'`)
+ * bloquea `fetch("data:...")`.
+ */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const comma = dataUrl.indexOf(",");
+  const mime = /^data:([^;,]+)/.exec(dataUrl)?.[1] ?? "image/jpeg";
+  const bin = atob(dataUrl.slice(comma + 1));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
 function qty(n: number): string {
   return new Intl.NumberFormat("es-CO", { maximumFractionDigits: 3 }).format(n);
 }
@@ -84,13 +97,20 @@ export function ReceiptImage({ saleId, open, onClose }: { saleId: string; open: 
         const node = ticketRef.current;
         if (!node || cancelled) return;
         const { toJpeg } = await import("html-to-image");
-        const dataUrl = await toJpeg(node, { quality: 0.95, pixelRatio: 2, backgroundColor: "#ffffff" });
-        const b = await (await fetch(dataUrl)).blob();
+        let dataUrl: string;
+        try {
+          dataUrl = await toJpeg(node, { quality: 0.95, pixelRatio: 2, backgroundColor: "#ffffff" });
+        } catch (first) {
+          console.error("ReceiptImage: falló toJpeg, reintentando con opciones simples", first);
+          dataUrl = await toJpeg(node, { quality: 0.9, pixelRatio: 1, backgroundColor: "#ffffff", skipFonts: true, cacheBust: true });
+        }
+        const b = dataUrlToBlob(dataUrl);
         if (cancelled) return;
         url = URL.createObjectURL(b);
         setBlob(b);
         setPreviewUrl(url);
-      } catch {
+      } catch (err) {
+        console.error("ReceiptImage: no se pudo crear la imagen", err);
         if (!cancelled) setError("No pudimos crear la imagen. Inténtalo de nuevo.");
       }
     })();
