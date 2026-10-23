@@ -58,7 +58,7 @@ describe("cashChange", () => {
 });
 
 describe("errores de POS", () => {
-  it.each(["DESCUENTO_SOBRE_TOPE", "CLIENTE_REQUERIDO", "PAGO_NO_CUADRA", "VENTA_ANULADA", "PRECIO_NEGATIVO", "STOCK_INSUFICIENTE:Arroz"])("traduce %s", (c) => {
+  it.each(["DESCUENTO_SOBRE_TOPE", "CLIENTE_REQUERIDO", "PAGO_NO_CUADRA", "VENTA_ANULADA", "PRECIO_NEGATIVO", "DESCUENTO_INVALIDO", "SIN_PERMISO", "CANTIDAD_INVALIDA", "PRODUCTO_NO_ENCONTRADO", "MOTIVO_REQUERIDO", "CUENTA_REQUERIDA", "STOCK_INSUFICIENTE:Arroz"])("traduce %s", (c) => {
     expect(inventoryErrorMessage({ message: c })).not.toMatch(/No se pudo completar/);
   });
   it("nombra el producto sin stock", () => expect(inventoryErrorMessage({ message: "STOCK_INSUFICIENTE:Arroz" })).toContain("Arroz"));

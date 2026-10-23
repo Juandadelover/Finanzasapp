@@ -19,6 +19,7 @@ const MESSAGES: Record<string, string> = {
   PAGO_NO_CUADRA: "Los pagos no cuadran con el total de la venta.",
   VENTA_ANULADA: "Esta venta ya fue anulada.",
   PRECIO_NEGATIVO: "El precio no puede ser negativo.",
+  DESCUENTO_INVALIDO: "El descuento no es válido. Revisa el tipo y el valor (el tope va de 0 a 100 %).",
   "LIMITE_PLAN:max_active_products": "Llegaste al límite de 30 productos activos del plan Gratis.",
 };
 
