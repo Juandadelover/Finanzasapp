@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -16,6 +17,7 @@ import {
   Package,
   Palette,
   Plus,
+  Receipt,
   ShieldCheck,
   Sparkles,
   Star,
@@ -43,6 +45,7 @@ import {
   registerAppLock,
 } from "@/lib/webauthn";
 import { formatAmount } from "@/lib/format";
+import { getPosSettings, inventoryErrorMessage, updatePosSettings } from "@/lib/pos/api";
 import type { Category, CurrencyCode, TransactionType } from "@/types/finance";
 
 const groupTitleClass = "mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]";
@@ -132,11 +135,98 @@ function CategoryRow({
   );
 }
 
+function PosSettingsGroup({ workspaceId }: { workspaceId: string }) {
+  const [maxPct, setMaxPct] = useState("10");
+  const [allowNeg, setAllowNeg] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPosSettings(workspaceId)
+      .then((s) => {
+        if (cancelled) return;
+        setMaxPct(String(s.maxDiscountPct));
+        setAllowNeg(s.allowNegativeStock);
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) setError("No pudimos cargar los ajustes de venta.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId]);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const pct = Number(maxPct.replace(",", "."));
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      setError("El tope de descuento debe estar entre 0 y 100.");
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      await updatePosSettings({ workspaceId, maxDiscountPct: pct, allowNegativeStock: allowNeg });
+      toast.success("Ajustes de venta guardados.");
+    } catch (err) {
+      setError(inventoryErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Group title="Ventas">
+      <form onSubmit={save} className="flex flex-col gap-3 p-2.5">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium">Tope de descuento (%)</span>
+          <span className="mb-1.5 block text-xs text-[var(--color-text-muted)]">
+            Para editores y registradores. Administración no tiene tope.
+          </span>
+          <input
+            inputMode="decimal"
+            value={maxPct}
+            onChange={(e) => setMaxPct(e.target.value)}
+            disabled={!loaded}
+            className="w-full min-h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-base outline-none focus:border-[var(--color-brand)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/40"
+          />
+        </label>
+        <label className="flex min-h-11 items-center justify-between gap-3">
+          <span>
+            <span className="block text-sm font-medium">Permitir vender sin stock</span>
+            <span className="block text-xs text-[var(--color-text-muted)]">El inventario puede quedar en negativo.</span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            checked={allowNeg}
+            disabled={!loaded}
+            onChange={(e) => setAllowNeg(e.target.checked)}
+            className="h-5 w-5 accent-[var(--color-brand)]"
+          />
+        </label>
+        {error ? (
+          <p role="alert" className="text-sm text-[var(--color-expense)]">
+            {error}
+          </p>
+        ) : null}
+        <Button type="submit" loading={saving} disabled={!loaded}>
+          {saving ? "Guardando..." : "Guardar"}
+        </Button>
+      </form>
+    </Group>
+  );
+}
+
 export default function AjustesPage() {
   const {
     user,
     isPlatformAdmin,
     state,
+    currentWorkspace,
     permissions,
     addCategory,
     updateCategory,
@@ -316,8 +406,11 @@ export default function AjustesPage() {
         <NavRow href="/equipo" icon={Users} label="Equipo" hint="Invitaciones y roles" />
         <NavRow href="/cuentas" icon={Landmark} label="Cuentas" hint="Nequi, bancos y efectivo" />
         <NavRow href="/inventario" icon={Package} label="Inventario" hint="Productos, existencias y entradas" />
+        <NavRow href="/ventas" icon={Receipt} label="Ventas" hint="Historial, comprobantes y anulaciones" />
         <NavRow href="#categorias" icon={Tags} label="Categorías" hint="De gastos e ingresos" />
       </Group>
+
+      {permissions.canManagePosSettings && currentWorkspace ? <PosSettingsGroup key={currentWorkspace.id} workspaceId={currentWorkspace.id} /> : null}
 
       <Group title="Finanzas">
         <NavRow href="/recurrentes" icon={CalendarClock} label="Recurrentes" hint="Gastos e ingresos que se repiten" />

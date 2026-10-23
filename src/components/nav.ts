@@ -11,6 +11,7 @@ import {
   Receipt,
   Repeat,
   Settings,
+  ShoppingCart,
   Users,
   Wallet,
   type LucideIcon,
@@ -25,6 +26,8 @@ export interface NavItem {
 /** Sidebar (lg+) primary group. The mobile BottomNav keeps its own 5-item list. */
 export const PRIMARY_NAV: NavItem[] = [
   { href: "/", label: "Inicio", icon: Home },
+  { href: "/vender", label: "Vender", icon: ShoppingCart },
+  { href: "/ventas", label: "Ventas", icon: Receipt },
   { href: "/movimientos", label: "Movimientos", icon: Wallet },
   { href: "/cartera", label: "Cartera", icon: HandCoins },
   { href: "/estadisticas", label: "Estadísticas", icon: BarChart3 },
