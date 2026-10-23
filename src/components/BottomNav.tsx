@@ -3,7 +3,7 @@
 import { useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Wallet, HandCoins, BarChart3, Settings } from "lucide-react";
+import { Home, Wallet, HandCoins, BarChart3, Settings, ShoppingCart } from "lucide-react";
 import { ADMIN_CONSOLE_NAV, isActivePath } from "@/components/nav";
 import { useFinance } from "@/context/FinanceContext";
 import { cn } from "@/lib/cn";
@@ -12,6 +12,7 @@ import { SPRINGS, createSpring, useReducedMotion, type Spring } from "@/componen
 const TENANT_ITEMS = [
   { href: "/", label: "Inicio", icon: Home },
   { href: "/movimientos", label: "Movimientos", icon: Wallet },
+  { href: "/vender", label: "Vender", icon: ShoppingCart },
   { href: "/cartera", label: "Cartera", icon: HandCoins },
   { href: "/estadisticas", label: "Estadísticas", icon: BarChart3 },
   { href: "/ajustes", label: "Ajustes", icon: Settings },
@@ -19,8 +20,10 @@ const TENANT_ITEMS = [
 
 export function BottomNav() {
   const pathname = usePathname();
-  const { isPlatformAdmin } = useFinance();
-  const NAV_ITEMS = isPlatformAdmin ? ADMIN_CONSOLE_NAV : TENANT_ITEMS;
+  const { isPlatformAdmin, permissions } = useFinance();
+  const NAV_ITEMS = isPlatformAdmin
+    ? ADMIN_CONSOLE_NAV
+    : TENANT_ITEMS.filter(({ href }) => href !== "/vender" || permissions.canSell);
   const reduced = useReducedMotion();
   const pill = useRef<HTMLSpanElement>(null);
   const spring = useRef<Spring | null>(null);
